@@ -3,14 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Indeed Flow</title>
+  <title>Indeed Flow — 自动化工作流</title>
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
   <div id="app">
-    <h1>⚙️ Indeed Flow</h1>
-    <p>自动化工作流 — 已上线</p>
-    <p class="version">v1.0.0</p>
+    <header>
+      <div class="logo">⚙️</div>
+      <h1>Indeed Flow</h1>
+      <p class="tagline">自动化工作流平台</p>
+    </header>
+
+    <main>
+      <section class="features">
+        <div class="feature-card">
+          <div class="icon">🚀</div>
+          <h3>快速部署</h3>
+          <p>代码推送即自动构建部署</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🔄</div>
+          <h3>CI/CD</h3>
+          <p>GitHub Actions 自动化流程</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📊</div>
+          <h3>可视化</h3>
+          <p>清晰的构建状态与日志</p>
+        </div>
+      </section>
+
+      <section class="status">
+        <h2>系统状态</h2>
+        <div class="status-item">
+          <span class="status-dot online"></span>
+          <span>构建服务：在线</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot online"></span>
+          <span>部署服务：在线</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot online"></span>
+          <span>监控服务：在线</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>由 智动 驱动 | <a href="https://github.com/FenGsHt/indeed-flow">GitHub</a></p>
+    </footer>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
