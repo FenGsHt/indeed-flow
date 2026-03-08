@@ -6,14 +6,67 @@
 
 body {
   min-height: 100vh;
+  background: #0a0a0a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 导航 */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 40px;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-brand {
+  font-weight: 900;
+  font-size: 1.5rem;
+  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-links a {
+  color: #888;
+  text-decoration: none;
+  margin-left: 30px;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #fff;
+}
+
+/* 容器 */
+.container {
+  padding-top: 80px;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* 首页 */
+.home {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0a0a0a;
+  text-align: center;
+  padding: 120px 20px 40px;
 }
 
 .rainbow-text {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: clamp(4rem, 20vw, 12rem);
   font-weight: 900;
   text-transform: uppercase;
@@ -41,4 +94,211 @@ body {
   to {
     background-position: 200% center;
   }
+}
+
+.subtitle {
+  color: #666;
+  margin-top: 20px;
+  font-size: 1.2rem;
+}
+
+/* 菜单卡片 */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 1000px;
+  margin: 60px auto 0;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.menu-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 40px 30px;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.menu-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px);
+}
+
+.menu-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.menu-card h3 {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+
+.menu-card p {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* 游戏列表页 */
+.games-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 100px 20px 40px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.page-header p {
+  color: #888;
+}
+
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.game-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.game-rank {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #666;
+  min-width: 50px;
+}
+
+.game-info {
+  flex: 1;
+}
+
+.game-info h3 {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.game-info p {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.game-arrow {
+  color: #666;
+  font-size: 1.5rem;
+}
+
+/* 游戏详情页 */
+.game-detail {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 100px 20px 40px;
+}
+
+.back-link {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.back-link:hover {
+  color: #fff;
+}
+
+.detail-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.detail-card h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.detail-card .desc {
+  color: #888;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.detail-stats {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
 }
