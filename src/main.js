@@ -163,6 +163,36 @@ document.getElementById('cancel-add').addEventListener('click', () => {
   closeModal('add-modal');
 });
 
+// 自动搜索游戏图片
+let searchTimeout;
+document.getElementById('game-name').addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  const name = e.target.value.trim();
+  const preview = document.getElementById('image-preview');
+  
+  if (name.length < 2) {
+    preview.style.display = 'none';
+    return;
+  }
+  
+  // 防抖搜索
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/search-image?q=${encodeURIComponent(name)}`);
+      const data = await res.json();
+      if (data.image) {
+        document.getElementById('game-image').value = data.image;
+        preview.innerHTML = `<img src="${data.image}" alt="${data.name}">`;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    } catch (e) {
+      console.error('Search error:', e);
+    }
+  }, 500);
+});
+
 // 添加游戏
 document.getElementById('confirm-add').addEventListener('click', async () => {
   const name = document.getElementById('game-name').value;

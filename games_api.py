@@ -4,8 +4,12 @@
 """
 
 import json
+import uuid
+from datetime import datetime
 from flask import Flask, jsonify, request
 import pymysql
+import urllib.request
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -43,6 +47,64 @@ def init_db():
     conn.close()
 
 
+# ============ 游戏图片搜索 ============
+
+@app.route('/api/search-image', methods=['GET'])
+def search_game_image():
+    """搜索游戏图片 - 使用 RAWG API"""
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'image': None})
+    
+    try:
+        # 使用 RAWG 免费 API
+        url = f"https://api.rawg.io/api/games?key=5d1eb2a07cda4e899f6020e3d7465b1c&search={urllib.parse.quote(query)}&page_size=1"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            if data.get('results'):
+                game = data['results'][0]
+                return jsonify({
+                    'image': game.get('background_image'),
+                    'name': game.get('name'),
+                    'released': game.get('released')
+                })
+    except Exception as e:
+        print(f"Image search error: {e}")
+    
+    return jsonify({'image': None})
+
+
+# ============ 游戏新闻获取 ============
+
+@app.route('/api/game-news', methods=['GET'])
+def get_game_news():
+    """获取游戏新闻 - 使用 RAWD API"""
+    query = request.args.get('game', '')
+    if not query:
+        return jsonify({'news': []})
+    
+    try:
+        # 搜索相关游戏新闻
+        url = f"https://api.rawg.io/api/games?key=5d1eb2a07cda4e899f6020e3d7465b1c&search={urllib.parse.quote(query)}&page_size=3"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            news = []
+            for game in data.get('results', [])[:3]:
+                news.append({
+                    'title': game.get('name'),
+                    'image': game.get('background_image'),
+                    'released': game.get('released'),
+                    'rating': game.get('rating')
+                })
+            return jsonify({'news': news})
+    except Exception as e:
+        print(f"News search error: {e}")
+    
+    return jsonify({'news': []})
+
+
+# ============ 游戏 CRUD ============
+
 @app.route('/api/games', methods=['GET'])
 def get_games():
     """获取游戏列表"""
@@ -59,6 +121,7 @@ def get_games():
         # 计算平均分
         ratings = game['ratings']
         game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
+        game['rating_count'] = len(ratings)
     
     # 按评分排序
     games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
@@ -69,7 +132,6 @@ def get_games():
 def add_game():
     """添加游戏"""
     data = request.json
-    import uuid
     
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
@@ -117,7 +179,7 @@ def rate_game(game_id):
     conn.close()
     
     avg = sum(ratings.values()) / len(ratings)
-    return jsonify({'success': True, 'avg_rating': avg})
+    return jsonify({'success': True, 'avg_rating': avg, 'rating_count': len(ratings)})
 
 
 @app.route('/api/games/<game_id>/comment', methods=['POST'])
@@ -126,8 +188,6 @@ def comment_game(game_id):
     data = request.json
     user = data.get('user', '匿名')
     text = data.get('text', '')
-    
-    from datetime import datetime
     
     conn = get_db()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
