@@ -1,160 +1,223 @@
-// indeed-flow - 待玩游戏列表
+// 游戏数据存储
+const GAMES_STORAGE_KEY = 'indeed-games';
 
-import './style.css';
-import gamesData from './games.json';
-
-const app = document.getElementById('app');
-
-// 路由
-const routes = {
-  '/': renderHome,
-  '/games': renderGames,
-  '/game/:id': renderGameDetail
-};
-
-function navigate(path) {
-  window.history.pushState({}, '', path);
-  render();
+// 初始化游戏数据
+function getGames() {
+  const data = localStorage.getItem(GAMES_STORAGE_KEY);
+  return data ? JSON.parse(data) : [];
 }
 
-function render() {
-  const path = window.location.pathname;
-  const hash = window.location.hash.slice(1);
+function saveGames(games) {
+  localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
+}
+
+// 计算平均分
+function calcAvgRating(ratings) {
+  if (!ratings || Object.keys(ratings).length === 0) return 0;
+  const sum = Object.values(ratings).reduce((a, b) => a + b, 0);
+  return sum / Object.keys(ratings).length;
+}
+
+// 页面切换
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const page = e.target.dataset.page;
+    
+    // 更新导航
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    // 切换页面
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`${page}-page`).classList.add('active');
+    
+    if (page === 'games') loadGames();
+  });
+});
+
+// 加载游戏列表
+function loadGames() {
+  const games = getGames();
+  document.getElementById('total-games').textContent = games.length;
   
-  if (path === '/' || path === '/index.html') {
-    renderHome();
-  } else if (path === '/games' || hash === 'games') {
-    renderGames();
-  } else if (path.startsWith('/game/')) {
-    const id = path.split('/game/')[1];
-    renderGameDetail(id);
-  }
-}
-
-// 首页
-function renderHome() {
-  app.innerHTML = `
-    <nav class="nav">
-      <div class="nav-brand">INDEED</div>
-      <div class="nav-links">
-        <a href="/" class="active">首页</a>
-        <a href="#games">待玩游戏</a>
-        <a href="#console">控制台</a>
-      </div>
-    </nav>
-    <div class="container home">
-      <h1 class="rainbow-text">INDEED</h1>
-      <p class="subtitle">自动化工作流演示项目</p>
-      <div class="menu-grid">
-        <a href="#games" class="menu-card">
-          <div class="menu-icon">🎮</div>
-          <h3>待玩游戏</h3>
-          <p>查看群里想玩的游戏列表，按优先级排序</p>
-        </a>
-        <a href="#console" class="menu-card">
-          <div class="menu-icon">⚙️</div>
-          <h3>控制台</h3>
-          <p>OpenClaw 管理界面</p>
-        </a>
-        <a href="https://github.com/FenGsHt/indeed-flow" target="_blank" class="menu-card">
-          <div class="menu-icon">📖</div>
-          <h3>文档</h3>
-          <p>项目源码和说明</p>
-        </a>
-      </div>
-    </div>
-  `;
-}
-
-// 游戏列表页
-function renderGames() {
-  const games = gamesData;
+  // 按评分排序
+  games.sort((a, b) => calcAvgRating(b.ratings) - calcAvgRating(a.ratings));
   
-  app.innerHTML = `
-    <nav class="nav">
-      <div class="nav-brand">INDEED</div>
-      <div class="nav-links">
-        <a href="/">首页</a>
-        <a href="#games" class="active">待玩游戏</a>
-        <a href="#console">控制台</a>
-      </div>
-    </nav>
-    <div class="container games-page">
-      <div class="page-header">
-        <h1>🎮 待玩游戏列表</h1>
-        <p>共 ${games.length} 个游戏，按优先级排序</p>
-      </div>
-      <div class="games-list">
-        ${games.map((game, index) => `
-          <a href="#game/${game.id}" class="game-card">
-            <div class="game-rank">#${index + 1}</div>
-            <div class="game-info">
-              <h3>${game.name}</h3>
-              ${game.desc ? `<p>${game.desc}</p>` : ''}
-            </div>
-            <div class="game-arrow">→</div>
-          </a>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-// 游戏详情页
-function renderGameDetail(id) {
-  const game = gamesData.find(g => g.id === id);
+  const list = document.getElementById('games-list');
   
-  if (!game) {
-    app.innerHTML = `
-      <nav class="nav">
-        <div class="nav-brand">INDEED</div>
-        <div class="nav-links">
-          <a href="/">首页</a>
-          <a href="#games">待玩游戏</a>
-        </div>
-      </nav>
-      <div class="container">
-        <h1>游戏未找到</h1>
-        <a href="#games" class="btn">返回列表</a>
-      </div>
-    `;
+  if (games.length === 0) {
+    list.innerHTML = '<p class="empty-hint">暂无游戏，点击添加</p>';
     return;
   }
   
-  app.innerHTML = `
-    <nav class="nav">
-      <div class="nav-brand">INDEED</div>
-      <div class="nav-links">
-        <a href="/">首页</a>
-        <a href="#games">待玩游戏</a>
-      </div>
-    </nav>
-    <div class="container game-detail">
-      <a href="#games" class="back-link">← 返回列表</a>
-      <div class="detail-card">
-        <h1>${game.name}</h1>
-        ${game.desc ? `<p class="desc">${game.desc}</p>` : ''}
-        <div class="detail-stats">
-          <div class="stat">
-            <span class="stat-label">评分</span>
-            <span class="stat-value">暂无</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">留言</span>
-            <span class="stat-value">0</span>
-          </div>
-        </div>
-        <div class="detail-actions">
-          <button class="btn btn-primary">评分</button>
-          <button class="btn">留言</button>
+  list.innerHTML = games.map((g, i) => `
+    <div class="game-card" data-id="${g.id}">
+      <div class="game-rank">${i + 1}</div>
+      ${g.image && g.image.startsWith('http') ? 
+        `<img src="${g.image}" alt="${g.name}" onerror="this.style.display='none'">` : 
+        `<div class="game-placeholder">${g.name[0]}</div>`}
+      <div class="game-info">
+        <h3>${g.name}</h3>
+        <div class="game-meta">
+          <span class="rating">${calcAvgRating(g.ratings) > 0 ? '⭐ ' + calcAvgRating(g.ratings).toFixed(1) : '暂无评分'}</span>
+          <span class="stats">${Object.keys(g.ratings || {}).length}评 · ${(g.comments || []).length}言</span>
         </div>
       </div>
     </div>
-  `;
+  `).join('');
+  
+  // 添加点击事件
+  document.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('click', () => showDetail(card.dataset.id));
+  });
 }
 
-// 监听 hashchange
-window.addEventListener('hashchange', render);
+// 显示游戏详情
+function showDetail(id) {
+  const games = getGames();
+  const game = games.find(g => g.id === id);
+  if (!game) return;
+  
+  const avg = calcAvgRating(game.ratings);
+  
+  document.getElementById('detail-content').innerHTML = `
+    <h2>${game.name}</h2>
+    <p class="added-by">添加者: ${game.created_by} · ${game.created_at?.slice(0,10) || '-'}</p>
+    ${game.image && game.image.startsWith('http') ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
+    
+    <div class="rating-section">
+      <h3>评分: ${avg > 0 ? '⭐ ' + avg.toFixed(1) : '暂无'}</h3>
+      <div class="rate-buttons">
+        ${[1,2,3,4,5].map(n => `<button onclick="rateGame('${id}', ${n})" class="rate-btn">${n}⭐</button>`).join('')}
+      </div>
+      <input type="text" id="rater-name" placeholder="你的名字">
+    </div>
+    
+    <div class="comments-section">
+      <h3>💬 留言 (${(game.comments || []).length})</h3>
+      <div class="comments-list">
+        ${(game.comments || []).length ? game.comments.map(c => `
+          <div class="comment"><strong>${c.user}</strong>: ${c.text} <span class="time">${c.timestamp?.slice(0,10) || ''}</span></div>
+        `).join('') : '<p class="hint">暂无留言</p>'}
+      </div>
+      <div class="add-comment">
+        <input type="text" id="comment-user" placeholder="名字" style="width:80px;">
+        <input type="text" id="comment-text" placeholder="留言...">
+        <button onclick="addComment('${id}')" class="btn-small">发送</button>
+      </div>
+    </div>
+    
+    <div class="detail-actions">
+      <button onclick="deleteGame('${id}')" class="btn-danger">删除</button>
+      <button onclick="closeModal('detail-modal')" class="btn-secondary">关闭</button>
+    </div>
+  `;
+  
+  document.getElementById('detail-modal').style.display = 'flex';
+}
 
-// 初始化
-render();
+// 评分
+function rateGame(id, score) {
+  const user = document.getElementById('rater-name').value || '匿名';
+  const games = getGames();
+  const game = games.find(g => g.id === id);
+  if (!game) return;
+  
+  game.ratings = game.ratings || {};
+  game.ratings[user] = score;
+  saveGames(games);
+  showDetail(id);
+  loadGames();
+}
+
+// 留言
+function addComment(id) {
+  const user = document.getElementById('comment-user').value || '匿名';
+  const text = document.getElementById('comment-text').value;
+  if (!text) return;
+  
+  const games = getGames();
+  const game = games.find(g => g.id === id);
+  if (!game) return;
+  
+  game.comments = game.comments || [];
+  game.comments.push({
+    user,
+    text,
+    timestamp: new Date().toISOString()
+  });
+  saveGames(games);
+  showDetail(id);
+}
+
+// 删除游戏
+function deleteGame(id) {
+  if (!confirm('确定删除？')) return;
+  
+  const games = getGames();
+  const filtered = games.filter(g => g.id !== id);
+  saveGames(filtered);
+  closeModal('detail-modal');
+  loadGames();
+}
+
+// 弹窗控制
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+// 添加游戏
+document.getElementById('add-game-btn').addEventListener('click', () => {
+  document.getElementById('add-modal').style.display = 'flex';
+});
+
+document.getElementById('cancel-add').addEventListener('click', () => {
+  closeModal('add-modal');
+});
+
+document.getElementById('confirm-add').addEventListener('click', () => {
+  const name = document.getElementById('game-name').value;
+  const image = document.getElementById('game-image').value;
+  const user = document.getElementById('game-user').value || '匿名';
+  
+  if (!name) {
+    alert('请输入游戏名称');
+    return;
+  }
+  
+  const games = getGames();
+  games.push({
+    id: Date.now().toString(36),
+    name,
+    image,
+    created_by: user,
+    created_at: new Date().toISOString(),
+    comments: [],
+    ratings: {}
+  });
+  
+  saveGames(games);
+  
+  // 清空输入
+  document.getElementById('game-name').value = '';
+  document.getElementById('game-image').value = '';
+  
+  closeModal('add-modal');
+  loadGames();
+});
+
+// 关闭弹窗
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
+
+// 全局函数
+window.rateGame = rateGame;
+window.addComment = addComment;
+window.deleteGame = deleteGame;
+window.closeModal = closeModal;

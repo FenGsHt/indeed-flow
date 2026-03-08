@@ -9,7 +9,53 @@
 <body>
   <div id="app">
     <h1 class="rainbow-text">INDEED</h1>
+    
+    <!-- 导航菜单 -->
+    <nav class="main-nav">
+      <a href="#" class="nav-link active" data-page="home">首页</a>
+      <a href="#" class="nav-link" data-page="games">待玩游戏</a>
+    </nav>
+    
+    <!-- 首页内容 -->
+    <div id="home-page" class="page active">
+      <p class="subtitle">一个简单的静态网站</p>
+    </div>
+    
+    <!-- 游戏列表页 -->
+    <div id="games-page" class="page">
+      <h2>🎮 待玩游戏列表</h2>
+      <p class="subtitle">点击游戏进行评分和留言</p>
+      
+      <div class="games-toolbar">
+        <button id="add-game-btn" class="btn">+ 添加游戏</button>
+        <span class="games-count">共 <span id="total-games">0</span> 款游戏</span>
+      </div>
+      
+      <div id="games-list" class="games-grid"></div>
+    </div>
   </div>
+  
+  <!-- 添加游戏弹窗 -->
+  <div id="add-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>添加新游戏</h3>
+      <input type="text" id="game-name" placeholder="游戏名称 *">
+      <input type="text" id="game-image" placeholder="图片URL (可选)">
+      <input type="text" id="game-user" placeholder="你的名字">
+      <div class="modal-buttons">
+        <button id="confirm-add" class="btn">确认</button>
+        <button id="cancel-add" class="btn-secondary">取消</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 游戏详情弹窗 -->
+  <div id="detail-modal" class="modal" style="display:none;">
+    <div class="modal-content game-detail">
+      <div id="detail-content"></div>
+    </div>
+  </div>
+  
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
