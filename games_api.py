@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""
+待玩游戏后端 API
+"""
+
+import json
+from flask import Flask, jsonify, request
+import pymysql
+
+app = Flask(__name__)
+
+# 数据库配置
+DB_CONFIG = {
+    'host': '150.158.110.168',
+    'port': 3306,
+    'user': 'feng-bot',
+    'password': 'dak2dcCHCczb2wKW',
+    'database': 'feng-bot',
+    'charset': 'utf8mb4'
+}
+
+
+def get_db():
+    return pymysql.connect(**DB_CONFIG)
+
+
+def init_db():
+    """初始化数据库表"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS games (
+            id VARCHAR(36) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            image VARCHAR(512),
+            created_by VARCHAR(100),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            ratings JSON,
+            comments JSON
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+@app.route('/api/games', methods=['GET'])
+def get_games():
+    """获取游戏列表"""
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT * FROM games ORDER BY created_at DESC')
+    games = cursor.fetchall()
+    conn.close()
+    
+    # 处理 JSON 字段
+    for game in games:
+        game['ratings'] = json.loads(game['ratings']) if game['ratings'] else {}
+        game['comments'] = json.loads(game['comments']) if game['comments'] else []
+        # 计算平均分
+        ratings = game['ratings']
+        game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
+    
+    # 按评分排序
+    games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
+    return jsonify(games)
+
+
+@app.route('/api/games', methods=['POST'])
+def add_game():
+    """添加游戏"""
+    data = request.json
+    import uuid
+    
+    game = {
+        'id': data.get('id') or str(uuid.uuid4())[:8],
+        'name': data.get('name'),
+        'image': data.get('image', ''),
+        'created_by': data.get('user', '匿名'),
+        'ratings': {},
+        'comments': []
+    }
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        'INSERT INTO games (id, name, image, created_by, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s)',
+        (game['id'], game['name'], game['image'], game['created_by'], 
+         json.dumps(game['ratings']), json.dumps(game['comments']))
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'game': game})
+
+
+@app.route('/api/games/<game_id>/rate', methods=['POST'])
+def rate_game(game_id):
+    """评分"""
+    data = request.json
+    user = data.get('user', '匿名')
+    score = data.get('score', 3)
+    
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT ratings FROM games WHERE id = %s', (game_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return jsonify({'success': False, 'error': '游戏不存在'}), 404
+    
+    ratings = json.loads(row['ratings']) if row['ratings'] else {}
+    ratings[user] = score
+    
+    cursor.execute('UPDATE games SET ratings = %s WHERE id = %s', (json.dumps(ratings), game_id))
+    conn.commit()
+    conn.close()
+    
+    avg = sum(ratings.values()) / len(ratings)
+    return jsonify({'success': True, 'avg_rating': avg})
+
+
+@app.route('/api/games/<game_id>/comment', methods=['POST'])
+def comment_game(game_id):
+    """留言"""
+    data = request.json
+    user = data.get('user', '匿名')
+    text = data.get('text', '')
+    
+    from datetime import datetime
+    
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT comments FROM games WHERE id = %s', (game_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return jsonify({'success': False, 'error': '游戏不存在'}), 404
+    
+    comments = json.loads(row['comments']) if row['comments'] else []
+    comments.append({
+        'user': user,
+        'text': text,
+        'timestamp': datetime.now().isoformat()
+    })
+    
+    cursor.execute('UPDATE games SET comments = %s WHERE id = %s', (json.dumps(comments), game_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/games/<game_id>', methods=['DELETE'])
+def delete_game(game_id):
+    """删除游戏"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM games WHERE id = %s', (game_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+if __name__ == '__main__':
+    print("🚀 初始化数据库...")
+    init_db()
+    print("✅ 数据库就绪")
+    print("🌐 启动服务: http://0.0.0.0:9000")
+    app.run(host='0.0.0.0', port=9000, debug=True)

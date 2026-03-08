@@ -1,14 +1,10 @@
-// 游戏数据存储
-const GAMES_STORAGE_KEY = 'indeed-games';
+// API 基础 URL
+const API_BASE = ''; // 与静态网站同源
 
-// 初始化游戏数据
-function getGames() {
-  const data = localStorage.getItem(GAMES_STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-}
-
-function saveGames(games) {
-  localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(games));
+// 从 API 获取游戏列表
+async function getGames() {
+  const res = await fetch(`${API_BASE}/api/games`);
+  return await res.json();
 }
 
 // 计算平均分
@@ -37,12 +33,9 @@ document.querySelectorAll('.nav-link').forEach(link => {
 });
 
 // 加载游戏列表
-function loadGames() {
-  const games = getGames();
+async function loadGames() {
+  const games = await getGames();
   document.getElementById('total-games').textContent = games.length;
-  
-  // 按评分排序
-  games.sort((a, b) => calcAvgRating(b.ratings) - calcAvgRating(a.ratings));
   
   const list = document.getElementById('games-list');
   
@@ -60,7 +53,7 @@ function loadGames() {
       <div class="game-info">
         <h3>${g.name}</h3>
         <div class="game-meta">
-          <span class="rating">${calcAvgRating(g.ratings) > 0 ? '⭐ ' + calcAvgRating(g.ratings).toFixed(1) : '暂无评分'}</span>
+          <span class="rating">${g.avg_rating > 0 ? '⭐ ' + g.avg_rating.toFixed(1) : '暂无评分'}</span>
           <span class="stats">${Object.keys(g.ratings || {}).length}评 · ${(g.comments || []).length}言</span>
         </div>
       </div>
@@ -74,12 +67,12 @@ function loadGames() {
 }
 
 // 显示游戏详情
-function showDetail(id) {
-  const games = getGames();
+async function showDetail(id) {
+  const games = await getGames();
   const game = games.find(g => g.id === id);
   if (!game) return;
   
-  const avg = calcAvgRating(game.ratings);
+  const avg = game.avg_rating || 0;
   
   document.getElementById('detail-content').innerHTML = `
     <h2>${game.name}</h2>
@@ -118,46 +111,40 @@ function showDetail(id) {
 }
 
 // 评分
-function rateGame(id, score) {
+async function rateGame(id, score) {
   const user = document.getElementById('rater-name').value || '匿名';
-  const games = getGames();
-  const game = games.find(g => g.id === id);
-  if (!game) return;
   
-  game.ratings = game.ratings || {};
-  game.ratings[user] = score;
-  saveGames(games);
+  await fetch(`${API_BASE}/api/games/${id}/rate`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({user, score})
+  });
+  
   showDetail(id);
   loadGames();
 }
 
 // 留言
-function addComment(id) {
+async function addComment(id) {
   const user = document.getElementById('comment-user').value || '匿名';
   const text = document.getElementById('comment-text').value;
   if (!text) return;
   
-  const games = getGames();
-  const game = games.find(g => g.id === id);
-  if (!game) return;
-  
-  game.comments = game.comments || [];
-  game.comments.push({
-    user,
-    text,
-    timestamp: new Date().toISOString()
+  await fetch(`${API_BASE}/api/games/${id}/comment`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({user, text})
   });
-  saveGames(games);
+  
   showDetail(id);
 }
 
 // 删除游戏
-function deleteGame(id) {
+async function deleteGame(id) {
   if (!confirm('确定删除？')) return;
   
-  const games = getGames();
-  const filtered = games.filter(g => g.id !== id);
-  saveGames(filtered);
+  await fetch(`${API_BASE}/api/games/${id}`, {method: 'DELETE'});
+  
   closeModal('detail-modal');
   loadGames();
 }
@@ -167,7 +154,7 @@ function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-// 添加游戏
+// 添加游戏按钮
 document.getElementById('add-game-btn').addEventListener('click', () => {
   document.getElementById('add-modal').style.display = 'flex';
 });
@@ -176,7 +163,8 @@ document.getElementById('cancel-add').addEventListener('click', () => {
   closeModal('add-modal');
 });
 
-document.getElementById('confirm-add').addEventListener('click', () => {
+// 添加游戏
+document.getElementById('confirm-add').addEventListener('click', async () => {
   const name = document.getElementById('game-name').value;
   const image = document.getElementById('game-image').value;
   const user = document.getElementById('game-user').value || '匿名';
@@ -186,18 +174,11 @@ document.getElementById('confirm-add').addEventListener('click', () => {
     return;
   }
   
-  const games = getGames();
-  games.push({
-    id: Date.now().toString(36),
-    name,
-    image,
-    created_by: user,
-    created_at: new Date().toISOString(),
-    comments: [],
-    ratings: {}
+  await fetch(`${API_BASE}/api/games`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, image, user})
   });
-  
-  saveGames(games);
   
   // 清空输入
   document.getElementById('game-name').value = '';
