@@ -319,6 +319,17 @@ async function loadHotNews() {
   }
 }
 
+// 翻译功能
+async function translateText(text, targetLang = 'zh') {
+  try {
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await res.json();
+    return data[0]?.map(t => t[0]).join('') || text;
+  } catch {
+    return text;
+  }
+}
+
 async function loadIranNews() {
   try {
     const res = await fetch('/data/news.json');
@@ -326,13 +337,15 @@ async function loadIranNews() {
     
     const container = document.getElementById('iran-news');
     if (data.iran && data.iran.length > 0) {
-      container.innerHTML = data.iran.map(item => `
+      container.innerHTML = data.iran.map((item, idx) => `
         <div class="iran-item">
           <h4>${item.title}</h4>
           <div class="meta">
             <span class="source">${item.source}</span> | <span>${item.time}</span>
+            <button class="translate-btn" onclick="toggleTranslate(${idx}, '${targetLang || 'zh'}')">翻译</button>
           </div>
-          <p>${item.summary}</p>
+          <p class="summary">${item.summary}</p>
+          <p class="summary-zh" style="display:none;"></p>
           <a href="${item.url}" target="_blank" class="news-link">查看详情 →</a>
         </div>
       `).join('');
@@ -341,6 +354,31 @@ async function loadIranNews() {
     }
   } catch (e) {
     console.error('加载伊朗新闻失败:', e);
+  }
+}
+
+let targetLang = 'zh';
+
+async function toggleTranslate(idx, lang) {
+  const items = document.querySelectorAll('.iran-item');
+  const item = items[idx];
+  const zhText = item.querySelector('.summary-zh');
+  const summaryText = item.querySelector('.summary');
+  const btn = item.querySelector('.translate-btn');
+  
+  if (zhText.style.display === 'none') {
+    // 翻译
+    const text = summaryText.textContent;
+    const translated = await translateText(text, 'zh');
+    zhText.textContent = translated;
+    zhText.style.display = 'block';
+    summaryText.style.display = 'none';
+    btn.textContent = '原文';
+  } else {
+    // 显示原文
+    zhText.style.display = 'none';
+    summaryText.style.display = 'block';
+    btn.textContent = '翻译';
   }
 }
 
