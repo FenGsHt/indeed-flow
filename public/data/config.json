@@ -1,0 +1,6 @@
+{
+  "newsTabs": [
+    {"id": "hot", "name": "🔥 热点专区", "type": "hot"},
+    {"id": "iran", "name": "⚔️ 伊朗战争", "type": "custom", "api": "iran"}
+  ]
+}

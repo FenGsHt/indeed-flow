@@ -58,6 +58,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     document.getElementById(`${page}-page`).classList.add('active');
     
     if (page === 'games') loadGames();
+    if (page === 'news') loadNewsTabs();
   });
 });
 
@@ -301,7 +302,41 @@ document.querySelectorAll('.modal').forEach(modal => {
 
 // ============== 新闻专区 ==============
 
-// 新闻 Tab 切换
+// 加载新闻Tab配置
+async function loadNewsTabs() {
+  try {
+    const res = await fetch('/data/config.json');
+    const config = await res.json();
+    const tabsContainer = document.querySelector('.news-tabs');
+    if (tabsContainer && config.newsTabs) {
+      tabsContainer.innerHTML = config.newsTabs.map(t => 
+        `<button class="news-tab ${t.id === 'hot' ? 'active' : ''}" data-tab="${t.id}">${t.name}</button>`
+      ).join('');
+      
+      // 重新绑定事件
+      initNewsTabs();
+    }
+  } catch (e) {
+    console.log('使用默认新闻Tab');
+  }
+}
+
+function initNewsTabs() {
+  document.querySelectorAll('.news-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.news-tab-content').forEach(c => c.classList.remove('active'));
+      
+      e.target.classList.add('active');
+      document.getElementById(`${e.target.dataset.tab}-tab`).classList.add('active');
+      
+      if (e.target.dataset.tab === 'hot') loadHotNews();
+      if (e.target.dataset.tab === 'iran') loadIranNews();
+    });
+  });
+}
+
+// 新闻 Tab 切换（已废弃，用initNewsTabs）
 document.querySelectorAll('.news-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
     document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
