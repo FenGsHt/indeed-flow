@@ -19,10 +19,21 @@ if (themeToggle) {
   if (isDark) themeToggle.textContent = '☀️';
 }
 
-// 从 API 获取游戏列表
+// 从 API 获取游戏列表，失败则用本地静态数据
 async function getGames() {
-  const res = await fetch(`${API_BASE}/api/games`);
-  return await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/games`);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.log('API不可用，使用本地数据');
+  }
+  // 后备：本地静态数据
+  try {
+    const res = await fetch('/data/games.json');
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 // 计算平均分
@@ -132,14 +143,17 @@ async function showDetail(id) {
 async function rateGame(id, score) {
   const user = document.getElementById('rater-name').value || '匿名';
   
-  await fetch(`${API_BASE}/api/games/${id}/rate`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({user, score})
-  });
-  
-  showDetail(id);
-  loadGames();
+  try {
+    await fetch(`${API_BASE}/api/games/${id}/rate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({user, score})
+    });
+    showDetail(id);
+    loadGames();
+  } catch {
+    alert('评分功能需要后端服务，请稍后重试');
+  }
 }
 
 // 留言
@@ -148,21 +162,27 @@ async function addComment(id) {
   const text = document.getElementById('comment-text').value;
   if (!text) return;
   
-  await fetch(`${API_BASE}/api/games/${id}/comment`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({user, text})
-  });
-  
-  showDetail(id);
+  try {
+    await fetch(`${API_BASE}/api/games/${id}/comment`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({user, text})
+    });
+    showDetail(id);
+  } catch {
+    alert('留言功能需要后端服务，请稍后重试');
+  }
 }
 
 // 删除游戏
 async function deleteGame(id) {
   if (!confirm('确定删除？')) return;
   
-  await fetch(`${API_BASE}/api/games/${id}`, {method: 'DELETE'});
-  
+  try {
+    await fetch(`${API_BASE}/api/games/${id}`, {method: 'DELETE'});
+  } catch {
+    alert('删除功能需要后端服务，请稍后重试');
+  }
   closeModal('detail-modal');
   loadGames();
 }
@@ -222,11 +242,15 @@ document.getElementById('confirm-add').addEventListener('click', async () => {
     return;
   }
   
-  await fetch(`${API_BASE}/api/games`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({name, image, user})
-  });
+  try {
+    await fetch(`${API_BASE}/api/games`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, image, user})
+    });
+  } catch {
+    alert('后端服务未运行，添加功能暂时不可用');
+  }
   
   // 清空输入
   document.getElementById('game-name').value = '';
