@@ -687,3 +687,45 @@ main {
   padding: 40px;
   color: var(--text-muted);
 }
+
+/* 热点悬停预览 */
+.hot-item {
+  position: relative;
+}
+
+.hot-summary {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.hot-tooltip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  min-width: 200px;
+  max-width: 300px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.hot-item:hover .hot-tooltip {
+  display: block;
+}
+
+.hot-item a {
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.hot-item a:hover {
+  color: var(--accent);
+}
