@@ -272,8 +272,7 @@ async function loadHotNews() {
     // 贴吧
     document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === "object" ? item.url : ""; const summary = typeof item === "object" ? (item.summary || "") : "";
-      const summary = typeof item === 'object' ? (item.summary || title) : title;
+      const summary = typeof item === 'object' ? (item.summary || '') : '';
       return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
