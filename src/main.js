@@ -61,9 +61,24 @@ document.querySelectorAll('.nav-link').forEach(link => {
   });
 });
 
+// 搜索和排序事件
+document.getElementById('search-games')?.addEventListener('input', loadGames);
+document.getElementById('sort-games')?.addEventListener('change', loadGames);
+
 // 加载游戏列表
 async function loadGames() {
-  const games = await getGames();
+  let games = await getGames();
+  
+  // 搜索过滤
+  const search = document.getElementById('search-games')?.value?.toLowerCase() || '';
+  if (search) games = games.filter(g => g.name.toLowerCase().includes(search));
+  
+  // 排序
+  const sort = document.getElementById('sort-games')?.value || 'time';
+  if (sort === 'rating') games.sort((a,b) => (b.avg_rating||0) - (a.avg_rating||0));
+  else if (sort === 'name') games.sort((a,b) => a.name.localeCompare(b.name, 'zh'));
+  else games.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  
   document.getElementById('total-games').textContent = games.length;
   
   const list = document.getElementById('games-list');

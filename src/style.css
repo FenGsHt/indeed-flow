@@ -729,3 +729,28 @@ main {
 .hot-item a:hover {
   color: var(--accent);
 }
+
+/* 搜索和排序 */
+.search-input, .sort-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.search-input {
+  width: 200px;
+}
+
+.sort-select {
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
