@@ -272,36 +272,41 @@ async function loadHotNews() {
     // 贴吧
     document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      const url = typeof item === "object" ? item.url : ""; const summary = typeof item === "object" ? (item.summary || "") : "";
+      const summary = typeof item === 'object' ? (item.summary || title) : title;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
     // 微博
     document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      const summary = typeof item === 'object' ? (item.summary || '') : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
     // B站
     document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      const summary = typeof item === 'object' ? (item.summary || '') : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
     // 抖音
     document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      const summary = typeof item === 'object' ? (item.summary || '') : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
     // 小红书
     document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      const summary = typeof item === 'object' ? (item.summary || '') : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li>加载失败</li>';
     
     // 公共热点
@@ -338,17 +343,25 @@ async function loadIranNews() {
     const container = document.getElementById('iran-news');
     if (data.iran && data.iran.length > 0) {
       container.innerHTML = data.iran.map((item, idx) => `
-        <div class="iran-item">
+        <div class="iran-item" data-idx="${idx}">
           <h4>${item.title}</h4>
           <div class="meta">
             <span class="source">${item.source}</span> | <span>${item.time}</span>
-            <button class="translate-btn" onclick="toggleTranslate(${idx}, '${targetLang || 'zh'}')">翻译</button>
+            <button class="translate-btn" data-idx="${idx}">翻译</button>
           </div>
           <p class="summary">${item.summary}</p>
           <p class="summary-zh" style="display:none;"></p>
           <a href="${item.url}" target="_blank" class="news-link">查看详情 →</a>
         </div>
       `).join('');
+      
+      // 绑定翻译按钮事件
+      document.querySelectorAll('.translate-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const idx = this.getAttribute('data-idx');
+          toggleTranslate(idx);
+        });
+      });
     } else {
       container.innerHTML = '<p class="hint">暂无新闻</p>';
     }
@@ -357,11 +370,11 @@ async function loadIranNews() {
   }
 }
 
-let targetLang = 'zh';
-
-async function toggleTranslate(idx, lang) {
+async function toggleTranslate(idx) {
   const items = document.querySelectorAll('.iran-item');
   const item = items[idx];
+  if (!item) return;
+  
   const zhText = item.querySelector('.summary-zh');
   const summaryText = item.querySelector('.summary');
   const btn = item.querySelector('.translate-btn');
