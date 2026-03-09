@@ -227,6 +227,101 @@ document.querySelectorAll('.modal').forEach(modal => {
   });
 });
 
+// ============== 新闻专区 ==============
+
+// 新闻 Tab 切换
+document.querySelectorAll('.news-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.news-tab-content').forEach(c => c.classList.remove('active'));
+    
+    e.target.classList.add('active');
+    document.getElementById(`${e.target.dataset.tab}-tab`).classList.add('active');
+    
+    if (e.target.dataset.tab === 'hot') {
+      loadHotNews();
+    } else {
+      loadIranNews();
+    }
+  });
+});
+
+async function loadHotNews() {
+  try {
+    const res = await fetch('/data/news.json');
+    const data = await res.json();
+    
+    // 贴吧
+    document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => 
+      `<li><span class="rank">${i+1}</span>${item}</li>`
+    ).join('') || '<li>加载失败</li>';
+    
+    // 微博
+    document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => 
+      `<li><span class="rank">${i+1}</span>${item}</li>`
+    ).join('') || '<li>加载失败</li>';
+    
+    // B站
+    document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => 
+      `<li><span class="rank">${i+1}</span>${item}</li>`
+    ).join('') || '<li>加载失败</li>';
+    
+    // 抖音
+    document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => 
+      `<li><span class="rank">${i+1}</span>${item}</li>`
+    ).join('') || '<li>加载失败</li>';
+    
+    // 小红书
+    document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => 
+      `<li><span class="rank">${i+1}</span>${item}</li>`
+    ).join('') || '<li>加载失败</li>';
+    
+    // 公共热点
+    const publicHot = document.getElementById('public-hot');
+    if (data.public && data.public.length > 0) {
+      publicHot.innerHTML = '<h3>🌐 公共热点</h3><ul>' + 
+        data.public.map(item => 
+          `<li>${item.topic}<span class="platforms">${item.platforms.join(', ')}</span></li>`
+        ).join('') + '</ul>';
+    } else {
+      publicHot.innerHTML = '<h3>🌐 公共热点</h3><p class="hint">暂无公共热点</p>';
+    }
+  } catch (e) {
+    console.error('加载热点失败:', e);
+  }
+}
+
+async function loadIranNews() {
+  try {
+    const res = await fetch('/data/news.json');
+    const data = await res.json();
+    
+    const container = document.getElementById('iran-news');
+    if (data.iran && data.iran.length > 0) {
+      container.innerHTML = data.iran.map(item => `
+        <div class="iran-item">
+          <h4>${item.title}</h4>
+          <div class="meta">
+            <span class="source">${item.source}</span> | <span>${item.time}</span>
+          </div>
+          <p>${item.summary}</p>
+          <a href="${item.url}" target="_blank" class="news-link">查看详情 →</a>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p class="hint">暂无新闻</p>';
+    }
+  } catch (e) {
+    console.error('加载伊朗新闻失败:', e);
+  }
+}
+
+// 页面切换时加载新闻
+const originalNavHandler = document.querySelector('.nav-link[data-page="news"]');
+document.querySelector('.nav-link[data-page="news"]').addEventListener('click', () => {
+  loadHotNews();
+});
+
 // 全局函数
 window.rateGame = rateGame;
 window.addComment = addComment;

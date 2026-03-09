@@ -531,3 +531,142 @@ main {
     align-items: stretch;
   }
 }
+/* ============== 新闻专区样式 ============== */
+.news-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.news-tab {
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.news-tab:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.news-tab.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.news-tab-content {
+  display: none;
+}
+
+.news-tab-content.active {
+  display: block;
+}
+
+.public-hot {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: var(--radius);
+  margin-bottom: 30px;
+}
+
+.public-hot h3 {
+  margin-top: 0;
+  color: white;
+}
+
+.public-hot ul {
+  list-style: none;
+}
+
+.public-hot li {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  color: white;
+}
+
+.public-hot .platforms {
+  font-size: 12px;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 10px;
+}
+
+.hot-platform {
+  margin-bottom: 25px;
+}
+
+.hot-platform h3 {
+  margin: 15px 0 10px;
+  color: var(--text-primary);
+}
+
+.hot-list {
+  list-style: none;
+}
+
+.hot-list li {
+  padding: 10px 15px;
+  margin: 5px 0;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+}
+
+.hot-list .rank {
+  font-weight: bold;
+  color: var(--accent);
+  margin-right: 12px;
+  min-width: 24px;
+}
+
+.iran-news {
+  margin-top: 20px;
+}
+
+.iran-item {
+  padding: 15px;
+  margin: 10px 0;
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius-sm);
+}
+
+.iran-item h4 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.iran-item .meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.iran-item .source {
+  color: var(--success);
+  font-weight: bold;
+}
+
+.news-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.news-link:hover {
+  text-decoration: underline;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}

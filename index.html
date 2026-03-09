@@ -16,6 +16,7 @@
       <nav class="main-nav">
         <a href="#" class="nav-link active" data-page="home">首页</a>
         <a href="#" class="nav-link" data-page="games">待玩游戏</a>
+        <a href="#" class="nav-link" data-page="news">新闻专区</a>
       </nav>
     </header>
     
@@ -41,6 +42,58 @@
       </div>
       
       <div id="games-list" class="games-grid"></div>
+    </main>
+    
+    <!-- 新闻专区页 -->
+    <main id="news-page" class="page">
+      <div class="page-header">
+        <h2>📰 新闻专区</h2>
+      </div>
+      
+      <div class="news-tabs">
+        <button class="news-tab active" data-tab="hot">🔥 热点专区</button>
+        <button class="news-tab" data-tab="iran">⚔️ 伊朗战争</button>
+      </div>
+      
+      <!-- 热点专区 -->
+      <div id="hot-tab" class="news-tab-content active">
+        <div class="public-hot" id="public-hot">
+          <h3>🌐 公共热点</h3>
+          <div class="loading">加载中...</div>
+        </div>
+        
+        <div class="hot-platform">
+          <h3>📌 贴吧热点</h3>
+          <ul class="hot-list" id="tieba-hot"></ul>
+        </div>
+        
+        <div class="hot-platform">
+          <h3>📌 微博热搜</h3>
+          <ul class="hot-list" id="weibo-hot"></ul>
+        </div>
+        
+        <div class="hot-platform">
+          <h3>📌 B站热点</h3>
+          <ul class="hot-list" id="bilibili-hot"></ul>
+        </div>
+        
+        <div class="hot-platform">
+          <h3>📌 抖音热点</h3>
+          <ul class="hot-list" id="douyin-hot"></ul>
+        </div>
+        
+        <div class="hot-platform">
+          <h3>📌 小红书热点</h3>
+          <ul class="hot-list" id="xiaohongshu-hot"></ul>
+        </div>
+      </div>
+      
+      <!-- 伊朗战争专区 -->
+      <div id="iran-tab" class="news-tab-content">
+        <div class="iran-news" id="iran-news">
+          <div class="loading">加载中...</div>
+        </div>
+      </div>
     </main>
   </div>
   
