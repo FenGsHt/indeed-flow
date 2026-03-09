@@ -1,5 +1,23 @@
 // API 基础 URL
-const API_BASE = ''; // 与静态网站同源
+const API_BASE = 'http://150.158.110.168:5001'; // API 后端地址
+
+// 夜间模式切换
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+  // 读取保存的主题
+  const isDark = localStorage.getItem('theme') === 'dark';
+  if (isDark) document.body.classList.add('dark-mode');
+  
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const dark = document.body.classList.contains('dark-mode');
+    themeToggle.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  });
+  
+  // 初始化图标
+  if (isDark) themeToggle.textContent = '☀️';
+}
 
 // 从 API 获取游戏列表
 async function getGames() {
@@ -252,29 +270,39 @@ async function loadHotNews() {
     const data = await res.json();
     
     // 贴吧
-    document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => 
-      `<li><span class="rank">${i+1}</span>${item}</li>`
-    ).join('') || '<li>加载失败</li>';
+    document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => {
+      const title = typeof item === 'string' ? item : (item.title || '');
+      const url = typeof item === 'object' ? item.url : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+    }).join('') || '<li>加载失败</li>';
     
     // 微博
-    document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => 
-      `<li><span class="rank">${i+1}</span>${item}</li>`
-    ).join('') || '<li>加载失败</li>';
+    document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => {
+      const title = typeof item === 'string' ? item : (item.title || '');
+      const url = typeof item === 'object' ? item.url : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+    }).join('') || '<li>加载失败</li>';
     
     // B站
-    document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => 
-      `<li><span class="rank">${i+1}</span>${item}</li>`
-    ).join('') || '<li>加载失败</li>';
+    document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => {
+      const title = typeof item === 'string' ? item : (item.title || '');
+      const url = typeof item === 'object' ? item.url : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+    }).join('') || '<li>加载失败</li>';
     
     // 抖音
-    document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => 
-      `<li><span class="rank">${i+1}</span>${item}</li>`
-    ).join('') || '<li>加载失败</li>';
+    document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => {
+      const title = typeof item === 'string' ? item : (item.title || '');
+      const url = typeof item === 'object' ? item.url : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+    }).join('') || '<li>加载失败</li>';
     
     // 小红书
-    document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => 
-      `<li><span class="rank">${i+1}</span>${item}</li>`
-    ).join('') || '<li>加载失败</li>';
+    document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => {
+      const title = typeof item === 'string' ? item : (item.title || '');
+      const url = typeof item === 'object' ? item.url : '';
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+    }).join('') || '<li>加载失败</li>';
     
     // 公共热点
     const publicHot = document.getElementById('public-hot');

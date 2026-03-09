@@ -1,6 +1,26 @@
-/* Claude 风格深色主题 */
-
+/* 默认浅色主题 */
 :root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --border: #d0d7de;
+  --text-primary: #1f2328;
+  --text-secondary: #59636e;
+  --text-muted: #8c959f;
+  --accent: #0969da;
+  --accent-hover: #0550ae;
+  --accent-dim: rgba(9, 105, 218, 0.1);
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #cf222e;
+  --code-bg: #f6f8fa;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  --radius: 8px;
+  --radius-sm: 6px;
+}
+
+/* 夜间模式 */
+.dark-mode {
   --bg-primary: #0D1117;
   --bg-secondary: #161B22;
   --bg-tertiary: #21262D;
@@ -15,9 +35,6 @@
   --warning: #D29922;
   --danger: #F85149;
   --code-bg: #1E1E1E;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
-  --radius: 8px;
-  --radius-sm: 6px;
 }
 
 * {
