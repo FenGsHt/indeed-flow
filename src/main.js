@@ -108,6 +108,21 @@ async function loadGames() {
   document.querySelectorAll('.game-card').forEach(card => {
     card.addEventListener('click', () => showDetail(card.dataset.id));
   });
+  
+  // 更新首页统计
+  loadStats(games);
+}
+
+// 加载首页统计
+function loadStats(games) {
+  let totalRatings = 0, totalComments = 0;
+  games.forEach(g => {
+    totalRatings += Object.keys(g.ratings || {}).length;
+    totalComments += (g.comments || []).length;
+  });
+  document.getElementById('stat-games').textContent = games.length;
+  document.getElementById('stat-ratings').textContent = totalRatings;
+  document.getElementById('stat-comments').textContent = totalComments;
 }
 
 // 显示游戏详情
