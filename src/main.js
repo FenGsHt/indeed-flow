@@ -300,6 +300,45 @@ document.querySelectorAll('.modal').forEach(modal => {
   });
 });
 
+// ============== Steam 图片搜索 ==============
+
+// Steam搜索按钮
+document.getElementById('search-steam-btn')?.addEventListener('click', async () => {
+  const name = document.getElementById('game-name').value.trim();
+  if (!name) {
+    alert('请先输入游戏名称');
+    return;
+  }
+  
+  const resultsDiv = document.getElementById('steam-results');
+  resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
+  
+  try {
+    // Steam 商店搜索API
+    const res = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&l=schinese&cc=CN`);
+    const data = await res.json();
+    
+    if (data.items && data.items.length > 0) {
+      resultsDiv.innerHTML = data.items.slice(0, 5).map(item => `
+        <div class="steam-item" onclick="selectSteamImage('${item.price?.final?.final?.replace(/[^0-9]/g, '') ? 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + item.id + '/header.jpg' : ''}', '${item.name}')">
+          <img src="${item.thumb}" onerror="this.style.display='none'">
+          <span>${item.name}</span>
+        </div>
+      `).join('');
+    } else {
+      resultsDiv.innerHTML = '<div class="empty-hint">未找到相关游戏</div>';
+    }
+  } catch (e) {
+    resultsDiv.innerHTML = '<div class="error-state">搜索失败，请手动输入图片URL</div>';
+  }
+});
+
+function selectSteamImage(url, name) {
+  document.getElementById('game-image').value = url;
+  document.getElementById('steam-results').innerHTML = '';
+  document.getElementById('image-preview').innerHTML = url ? `<img src="${url}" onerror="this.parentElement.innerHTML=''">` : '';
+}
+
 // ============== 新闻专区 ==============
 
 // 加载新闻Tab配置

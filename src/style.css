@@ -801,3 +801,41 @@ main {
   cursor: pointer;
   font-size: 0.75rem;
 }
+
+/* Steam搜索结果 */
+.steam-results {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.steam-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+
+.steam-item:hover {
+  background: var(--bg-secondary);
+}
+
+.steam-item img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.steam-item span {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
