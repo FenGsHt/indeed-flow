@@ -4,6 +4,7 @@ const API_BASE = 'http://150.158.110.168:5001';
 // 当前选中的游戏
 let currentGames = [];
 let currentTab = 'library';
+let bookmarks = []; // 收藏列表
 
 // 用户身份系统 - localStorage
 const USER_KEY = 'indeed_user_name';
@@ -235,24 +236,107 @@ async function loadIranNews() {
   const list = document.getElementById('iran-news-list');
   if (!list) return;
   
+  // 加载收藏列表
+  await loadBookmarks();
+  
   try {
     const res = await fetch('/data/news.json');
     const data = await res.json();
     
     if (data.iran && data.iran.length > 0) {
-      list.innerHTML = data.iran.map(item => `
+      list.innerHTML = data.iran.map(item => {
+        const isBookmarked = bookmarks.some(b => b.id === item.id);
+        return `
         <div class="news-item">
           <h3>${item.title}</h3>
           <p>${item.summary || ''}</p>
-          ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+          <div class="news-actions">
+            <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" onclick="toggleBookmark('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.summary || ''}', '${item.url || ''}', 'iran')">
+              ${isBookmarked ? '★' : '☆'}
+            </button>
+            ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+          </div>
         </div>
-      `).join('');
+      `}).join('');
     } else {
       list.innerHTML = '<div class="empty-hint">暂无新闻</div>';
     }
   } catch (e) {
     list.innerHTML = '<div class="empty-hint">加载失败</div>';
   }
+}
+
+// 加载收藏列表
+async function loadBookmarks() {
+  try {
+    const res = await fetch(`${API_BASE}/api/bookmarks`);
+    if (res.ok) {
+      bookmarks = await res.json();
+    }
+  } catch (e) {
+    console.log('Failed to load bookmarks');
+    bookmarks = [];
+  }
+}
+
+// 切换收藏状态
+async function toggleBookmark(id, title, summary, url, source) {
+  const isBookmarked = bookmarks.some(b => b.id === id);
+  
+  try {
+    if (isBookmarked) {
+      // 取消收藏
+      const res = await fetch(`${API_BASE}/api/bookmarks/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        bookmarks = data.bookmarks || [];
+      }
+    } else {
+      // 添加收藏
+      const res = await fetch(`${API_BASE}/api/bookmarks`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id, title, summary, url, source })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        bookmarks = data.bookmarks || [];
+      }
+    }
+    
+    // 重新渲染新闻列表
+    if (document.getElementById('iran-news-list')) {
+      loadIranNews();
+    }
+    // 如果在收藏页面，也刷新
+    if (document.getElementById('bookmarks-list')) {
+      renderBookmarks();
+    }
+  } catch (e) {
+    console.error('Bookmark error:', e);
+  }
+}
+
+// 渲染收藏列表
+function renderBookmarks() {
+  const list = document.getElementById('bookmarks-list');
+  if (!list) return;
+  
+  if (bookmarks.length === 0) {
+    list.innerHTML = '<div class="empty-hint">暂无收藏</div>';
+    return;
+  }
+  
+  list.innerHTML = bookmarks.map(item => `
+    <div class="news-item">
+      <h3>${item.title}</h3>
+      <p>${item.summary || ''}</p>
+      <div class="news-actions">
+        <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.summary || ''}', '${item.url || ''}', '${item.source || ''}')">★</button>
+        ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
 // 加载Stats页面
@@ -552,6 +636,23 @@ window.selectSteamGame = selectSteamGame;
 window.changeImage = changeImage;
 window.fetchSteamImage = fetchSteamImage;
 window.updateGameStatus = updateGameStatus;
+window.toggleBookmark = toggleBookmark;
+
+// 新闻 Tab 切换
+document.querySelectorAll('.news-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.news-content').forEach(c => c.classList.remove('active'));
+    
+    tab.classList.add('active');
+    const newsType = tab.dataset.news;
+    document.getElementById(`news-${newsType}`).classList.add('active');
+    
+    if (newsType === 'bookmarks') {
+      loadBookmarks().then(() => renderBookmarks());
+    }
+  });
+});
 
 // 初始化
 loadGames();

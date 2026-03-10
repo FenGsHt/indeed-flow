@@ -55,8 +55,90 @@ def init_db():
     cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'")
     # 添加 source 列（如果不存在）- 推荐来源
     cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS source VARCHAR(255)")
+    # 添加 bookmarked 列（如果不存在）- 收藏的新闻
+    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS bookmarked JSON")
     conn.commit()
     conn.close()
+
+
+# ============ 收藏功能 ============
+
+@app.route('/api/bookmarks', methods=['GET'])
+def get_bookmarks():
+    """获取收藏列表"""
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row and row.get('bookmarked'):
+        return jsonify(json.loads(row['bookmarked']))
+    return jsonify([])
+
+
+@app.route('/api/bookmarks', methods=['POST'])
+def add_bookmark():
+    """收藏新闻"""
+    data = request.json
+    news_item = {
+        'id': data.get('id'),
+        'title': data.get('title'),
+        'summary': data.get('summary'),
+        'url': data.get('url'),
+        'source': data.get('source'),
+        'bookmarked_at': datetime.now().isoformat()
+    }
+    
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+    row = cursor.fetchone()
+    
+    bookmarks = []
+    if row and row.get('bookmarked'):
+        bookmarks = json.loads(row['bookmarked'])
+    
+    # 检查是否已收藏
+    if any(b.get('id') == news_item['id'] for b in bookmarks):
+        conn.close()
+        return jsonify({'success': False, 'error': 'Already bookmarked'})
+    
+    bookmarks.append(news_item)
+    
+    cursor.execute(
+        'INSERT INTO games (id, bookmarked) VALUES ("bookmarks", %s) ON DUPLICATE KEY UPDATE bookmarked = %s',
+        (json.dumps(bookmarks), json.dumps(bookmarks))
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'bookmarks': bookmarks})
+
+
+@app.route('/api/bookmarks/<news_id>', methods=['DELETE'])
+def remove_bookmark(news_id):
+    """取消收藏"""
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+    row = cursor.fetchone()
+    
+    if not row or not row.get('bookmarked'):
+        conn.close()
+        return jsonify({'success': True, 'bookmarks': []})
+    
+    bookmarks = json.loads(row['bookmarked'])
+    bookmarks = [b for b in bookmarks if b.get('id') != news_id]
+    
+    cursor.execute(
+        'INSERT INTO games (id, bookmarked) VALUES ("bookmarks", %s) ON DUPLICATE KEY UPDATE bookmarked = %s',
+        (json.dumps(bookmarks), json.dumps(bookmarks))
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'bookmarks': bookmarks})
 
 
 # ============ 游戏图片搜索 ============

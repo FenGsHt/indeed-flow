@@ -115,8 +115,19 @@
         <h2>📰 伊朗局势</h2>
         <p>实时热点追踪</p>
       </div>
-      <div id="iran-news-list" class="news-list">
-        <div class="loading">加载中...</div>
+      <div class="news-tabs">
+        <span class="news-tab active" data-news="iran">伊朗新闻</span>
+        <span class="news-tab" data-news="bookmarks">⭐ 我的收藏</span>
+      </div>
+      <div class="news-content active" id="news-iran">
+        <div id="iran-news-list" class="news-list">
+          <div class="loading">加载中...</div>
+        </div>
+      </div>
+      <div class="news-content" id="news-bookmarks">
+        <div id="bookmarks-list" class="news-list">
+          <div class="loading">加载中...</div>
+        </div>
       </div>
     </main>
   </div>
