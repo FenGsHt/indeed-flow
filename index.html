@@ -10,149 +10,116 @@
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-  <!-- Hero Section with Tabs -->
-  <header class="hero-section">
-    <div class="hero-tabs">
-      <span class="hero-tab active" data-hero="library">📚 Library</span>
-      <span class="hero-tab" data-hero="news">📰 News</span>
-    </div>
-  </header>
+  <!-- Hero Tabs -->
+  <div class="hero-tabs">
+    <span class="hero-tab active" data-hero="library">📚 Library</span>
+    <span class="hero-tab" data-hero="news">📰 News</span>
+  </div>
 
-  <!-- Content Sections -->
-  <div id="library-section">
-    <div class="featured-game" id="featured-game">
-      <div class="featured-image-wrapper" id="featured-image">
-        <div class="featured-placeholder">🎮</div>
-      </div>
-      <div class="featured-meta">
-        <div class="featured-title" id="featured-title">选择游戏</div>
-        <div class="featured-time" id="featured-time">0 HRS</div>
-      </div>
-    </div>
-
-    <div class="hero-stats">
-      <div class="stat-block-large">
-        <div class="stat-number" id="stat-games">0<span style="font-size:3rem;color:rgba(0,0,0,0.4)"> / 365</span></div>
-        <div class="stat-label">Games Total</div>
-      </div>
-      <div class="hero-details">
-        <div class="detail-col">
-          <span class="detail-label">Current Focus</span>
-          <p>评分 &middot; 留言 &middot; 推荐</p>
+  <!-- Library Section -->
+  <div id="hero-library" class="hero-content active">
+    <header class="hero-section">
+      <div class="featured-game" id="featured-game">
+        <div class="featured-image-wrapper" id="featured-image">
+          <div class="featured-placeholder">🎮</div>
         </div>
-        <div class="detail-col">
-          <span class="detail-label">This Year</span>
-          <p id="stat-year">0 games played</p>
+        <div class="featured-meta">
+          <div class="featured-title" id="featured-title">选择游戏</div>
+          <div class="featured-time" id="featured-time">0 HRS</div>
         </div>
       </div>
-    </div>
 
-    <div class="hero-title-vertical">BACKLOG</div>
-  </header>
-
-  <!-- List Section -->
-  <main class="list-section">
-    <div class="list-header-bar">
-      <div class="tabs">
-        <div class="tab active" data-tab="all">全部</div>
-        <div class="tab" data-tab="wishlist">想玩</div>
-        <div class="tab" data-tab="playing">在玩</div>
-        <div class="tab" data-tab="completed">已玩</div>
-        <div class="tab" data-tab="stats">Stats</div>
-      </div>
-      <div class="list-actions">
-        <div class="barcode"></div>
-        <button class="btn" id="add-game-btn">+ Add Game</button>
-      </div>
-      <div class="search-bar">
-        <input type="text" id="search-input" placeholder="🔍 Search games...">
-        <select id="sort-select">
-          <option value="default">Default</option>
-          <option value="name">Name A-Z</option>
-          <option value="rating">Rating</option>
-          <option value="newest">Newest</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- All Tab -->
-    <div class="tab-content active" id="tab-all">
-      <div class="data-grid">
-        <div class="grid-header">
-          <div>No.</div>
-          <div>Cover</div>
-          <div>Title</div>
-          <div>Genre</div>
-          <div>Status</div>
-          <div style="text-align:right">Menu</div>
+      <div class="hero-stats">
+        <div class="stat-block-large">
+          <div class="stat-number" id="stat-games">0<span style="font-size:3rem;color:rgba(0,0,0,0.4)"> / 365</span></div>
+          <div class="stat-label">Games Total</div>
         </div>
-        <div id="games-list"></div>
-      </div>
-    </div>
-
-    <!-- Wishlist Tab -->
-    <div class="tab-content" id="tab-wishlist">
-      <div class="data-grid">
-        <div class="grid-header">
-          <div>No.</div>
-          <div>Cover</div>
-          <div>Title</div>
-          <div>Genre</div>
-          <div>Status</div>
-          <div style="text-align:right">Menu</div>
-        </div>
-        <div id="wishlist-list"></div>
-      </div>
-    </div>
-
-    <!-- Playing Tab -->
-    <div class="tab-content" id="tab-playing">
-      <div class="data-grid">
-        <div class="grid-header">
-          <div>No.</div>
-          <div>Cover</div>
-          <div>Title</div>
-          <div>Genre</div>
-          <div>Status</div>
-          <div style="text-align:right">Menu</div>
-        </div>
-        <div id="playing-list"></div>
-      </div>
-    </div>
-
-    <!-- Completed Tab -->
-    <div class="tab-content" id="tab-completed">
-      <div class="data-grid">
-        <div class="grid-header">
-          <div>No.</div>
-          <div>Cover</div>
-          <div>Title</div>
-          <div>Genre</div>
-          <div>Status</div>
-          <div style="text-align:right">Menu</div>
-        </div>
-        <div id="completed-list"></div>
-      </div>
-    </div>
-
-    <!-- Stats Tab -->
-    <div class="tab-content" id="tab-stats">
-      <div class="stats-page">
-        <div class="stats-card">
-          <div class="stat-num" id="stat-ratings">0</div>
-          <div class="stat-label">Total Ratings</div>
-        </div>
-        <div class="stats-card">
-          <div class="stat-num" id="stat-comments">0</div>
-          <div class="stat-label">Comments</div>
-        </div>
-        <div class="stats-card">
-          <div class="stat-num" id="stat-added-this-year">0</div>
-          <div class="stat-label">Added This Year</div>
+        <div class="hero-details">
+          <div class="detail-col">
+            <span class="detail-label">Current Focus</span>
+            <p>评分 &middot; 留言 &middot; 推荐</p>
+          </div>
+          <div class="detail-col">
+            <span class="detail-label">This Year</span>
+            <p id="stat-year">0 games played</p>
+          </div>
         </div>
       </div>
-    </div>
-  </main>
+
+      <div class="hero-title-vertical">BACKLOG</div>
+    </header>
+
+    <main class="list-section">
+      <div class="list-header-bar">
+        <div class="tabs">
+          <div class="tab active" data-tab="library">Library</div>
+          <div class="tab" data-tab="wishlist">Wishlist</div>
+          <div class="tab" data-tab="stats">Stats</div>
+        </div>
+        <div class="list-actions">
+          <div class="barcode"></div>
+          <button class="btn" id="add-game-btn">+ Add Game</button>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="🔍 Search games...">
+          <select id="sort-select">
+            <option value="default">Default</option>
+            <option value="name">Name A-Z</option>
+            <option value="rating">Rating</option>
+            <option value="newest">Newest</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tab-content active" id="tab-library">
+        <div class="data-grid">
+          <div class="grid-header">
+            <div>No.</div>
+            <div>Cover</div>
+            <div>Title</div>
+            <div>Genre</div>
+            <div>Status</div>
+            <div style="text-align:right">Menu</div>
+          </div>
+          <div id="games-list"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-wishlist">
+        <div class="empty-hint">愿望单开发中...</div>
+      </div>
+
+      <div class="tab-content" id="tab-stats">
+        <div class="stats-page">
+          <div class="stats-card">
+            <div class="stat-num" id="stat-ratings">0</div>
+            <div class="stat-label">Total Ratings</div>
+          </div>
+          <div class="stats-card">
+            <div class="stat-num" id="stat-comments">0</div>
+            <div class="stat-label">Comments</div>
+          </div>
+          <div class="stats-card">
+            <div class="stat-num" id="stat-added-this-year">0</div>
+            <div class="stat-label">Added This Year</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- News Section -->
+  <div id="hero-news" class="hero-content">
+    <main class="news-section">
+      <div class="news-header">
+        <h2>📰 伊朗局势</h2>
+        <p>实时热点追踪</p>
+      </div>
+      <div id="iran-news-list" class="news-list">
+        <div class="loading">加载中...</div>
+      </div>
+    </main>
+  </div>
 
   <!-- Add Game Modal -->
   <div id="add-modal" class="modal" style="display:none;">
@@ -172,16 +139,13 @@
       </div>
       <div class="form-group">
         <select id="game-status">
-          <option value="wishlist">想玩</option>
-          <option value="playing">在玩</option>
-          <option value="completed">已玩</option>
+          <option value="backlog">Backlog</option>
+          <option value="playing">Playing</option>
+          <option value="completed">Completed</option>
         </select>
       </div>
       <div class="form-group">
         <input type="text" id="game-tags" placeholder="Tags (comma separated)" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <input type="text" id="game-source" placeholder="Recommended by / Source (e.g. Friend, YouTube)" autocomplete="off">
       </div>
       <div class="modal-actions">
         <button class="btn" id="confirm-add">Add Game</button>
@@ -192,15 +156,8 @@
 
   <!-- Game Detail Modal -->
   <div id="detail-modal" class="modal" style="display:none;">
-    <div class="modal-content detail-content" id="detail-content">
-    </div>
+    <div class="modal-content detail-content" id="detail-content"></div>
   </div>
-
-  <!-- Nav for News (hidden on desktop) -->
-  <nav class="mobile-nav">
-    <a href="#" class="nav-link active" data-page="library">Library</a>
-    <a href="#" class="nav-link" data-page="news">News</a>
-  </nav>
 
   <script type="module" src="/src/main.js"></script>
 </body>

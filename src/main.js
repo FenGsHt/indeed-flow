@@ -29,6 +29,20 @@ function initUserName() {
   }
 }
 
+// Hero Tabs (Library / News)
+document.querySelectorAll('.hero-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.hero-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.hero-content').forEach(c => c.classList.remove('active'));
+    
+    tab.classList.add('active');
+    const hero = tab.dataset.hero;
+    document.getElementById(`hero-${hero}`).classList.add('active');
+    
+    if (hero === 'news') loadIranNews();
+  });
+});
+
 // Tab 切换
 let currentStatusFilter = ''; // 状态筛选
 
@@ -214,6 +228,31 @@ function updateHeroStats(games) {
   });
   
   document.getElementById('stat-year').textContent = `${games.filter(g => g.status === 'completed').length} completed this year`;
+}
+
+// 加载伊朗新闻
+async function loadIranNews() {
+  const list = document.getElementById('iran-news-list');
+  if (!list) return;
+  
+  try {
+    const res = await fetch('/data/news.json');
+    const data = await res.json();
+    
+    if (data.iran && data.iran.length > 0) {
+      list.innerHTML = data.iran.map(item => `
+        <div class="news-item">
+          <h3>${item.title}</h3>
+          <p>${item.summary || ''}</p>
+          ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = '<div class="empty-hint">暂无新闻</div>';
+    }
+  } catch (e) {
+    list.innerHTML = '<div class="empty-hint">加载失败</div>';
+  }
 }
 
 // 加载Stats页面
