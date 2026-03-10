@@ -3,174 +3,296 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INDEED - Game Backlog</title>
+  <title>INDEED</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #fff;
+    }
+    
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero-subtitle {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 3rem;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      background: rgba(255,255,255,0.1);
+      padding: 0.5rem;
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .tab {
+      padding: 1rem 3rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 50px;
+      transition: all 0.3s;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+    }
+    
+    .tab.active {
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+    }
+    
+    .tab:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .tab-content {
+      display: none;
+      width: 100%;
+      max-width: 1200px;
+      padding: 2rem;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    /* 游戏列表样式 */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .game-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .game-card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .game-cover {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+    }
+    
+    .game-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    
+    .game-meta {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.25rem;
+    }
+    
+    /* 新闻列表样式 */
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .news-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .news-item:hover {
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .news-source {
+      font-size: 0.7rem;
+      color: #00d4ff;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    
+    .news-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+    }
+    
+    .empty-hint {
+      text-align: center;
+      padding: 3rem;
+      color: rgba(255,255,255,0.5);
+    }
+  </style>
 </head>
 <body>
-  <!-- Hero Tabs -->
-  <div class="hero-tabs">
-    <span class="hero-tab active" data-hero="library">🎮 游戏</span>
-    <span class="hero-tab" data-hero="news">📰 新闻</span>
-    <button id="theme-toggle" class="theme-btn" title="切换夜间模式">🌙</button>
-  </div>
-
-  <!-- Library Section -->
-  <div id="hero-library" class="hero-content active">
-    <header class="hero-section">
-      <div class="featured-game" id="featured-game">
-        <div class="featured-image-wrapper" id="featured-image">
-          <div class="featured-placeholder">🎮</div>
-        </div>
-        <div class="featured-meta">
-          <div class="featured-title" id="featured-title">选择游戏</div>
-          <div class="featured-time" id="featured-time">0 HRS</div>
-        </div>
+  <div class="hero">
+    <h1 class="hero-title">INDEED</h1>
+    <p class="hero-subtitle">发现 · 评分 · 推荐</p>
+    
+    <div class="tabs">
+      <button class="tab active" data-tab="game">🎮 游戏</button>
+      <button class="tab" data-tab="news">📰 新闻</button>
+    </div>
+    
+    <!-- 游戏专区 -->
+    <div class="tab-content active" id="tab-game">
+      <h2 class="section-title">🎮 游戏库</h2>
+      <div id="games-list" class="games-grid">
+        <div class="empty-hint">加载中...</div>
       </div>
-
-      <div class="hero-stats">
-        <div class="stat-block-large">
-          <div class="stat-number" id="stat-games">0<span style="font-size:3rem;color:rgba(0,0,0,0.4)"> / 365</span></div>
-          <div class="stat-label">Games Total</div>
-        </div>
-        <div class="hero-details">
-          <div class="detail-col">
-            <span class="detail-label">Current Focus</span>
-            <p>评分 &middot; 留言 &middot; 推荐</p>
-          </div>
-          <div class="detail-col">
-            <span class="detail-label">This Year</span>
-            <p id="stat-year">0 games played</p>
-          </div>
+    </div>
+    
+    <!-- 新闻专区 -->
+    <div class="tab-content" id="tab-news">
+      <div class="tabs" style="margin-bottom:1.5rem;background:transparent;padding:0;">
+        <button class="tab active" data-news="hot">🔥 热点</button>
+        <button class="tab" data-news="iran">🇮🇷 伊朗</button>
+      </div>
+      
+      <div id="news-hot" class="news-content">
+        <div id="hot-list" class="news-list">
+          <div class="empty-hint">加载中...</div>
         </div>
       </div>
-
-      <div class="hero-title-vertical">BACKLOG</div>
-    </header>
-
-    <main class="list-section">
-      <div class="list-header-bar">
-        <div class="tabs">
-          <div class="tab active" data-tab="library">Library</div>
-          <div class="tab" data-tab="wishlist">Wishlist</div>
-          <div class="tab" data-tab="stats">Stats</div>
+      <div id="news-iran" class="news-content" style="display:none;">
+        <div id="iran-list" class="news-list">
+          <div class="empty-hint">加载中...</div>
         </div>
-        <div class="list-actions">
-          <div class="barcode"></div>
-          <button class="btn" id="add-game-btn">+ Add Game</button>
-        </div>
-        <div class="search-bar">
-          <input type="text" id="search-input" placeholder="🔍 Search games...">
-          <select id="sort-select">
-            <option value="default">Default</option>
-            <option value="name">Name A-Z</option>
-            <option value="rating">Rating</option>
-            <option value="newest">Newest</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="tab-content active" id="tab-library">
-        <div class="data-grid">
-          <div class="grid-header">
-            <div>No.</div>
-            <div>Cover</div>
-            <div>Title</div>
-            <div>Genre</div>
-            <div>Status</div>
-            <div style="text-align:right">Menu</div>
-          </div>
-          <div id="games-list"></div>
-        </div>
-      </div>
-
-      <div class="tab-content" id="tab-wishlist">
-        <div class="empty-hint">愿望单开发中...</div>
-      </div>
-
-      <div class="tab-content" id="tab-stats">
-        <div class="stats-page">
-          <div class="stats-card">
-            <div class="stat-num" id="stat-ratings">0</div>
-            <div class="stat-label">Total Ratings</div>
-          </div>
-          <div class="stats-card">
-            <div class="stat-num" id="stat-comments">0</div>
-            <div class="stat-label">Comments</div>
-          </div>
-          <div class="stats-card">
-            <div class="stat-num" id="stat-added-this-year">0</div>
-            <div class="stat-label">Added This Year</div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- News Section -->
-  <div id="hero-news" class="hero-content">
-    <main class="news-section">
-      <div class="news-header">
-        <h2>📰 伊朗局势</h2>
-        <p>实时热点追踪</p>
-      </div>
-      <div class="news-tabs">
-        <span class="news-tab active" data-news="iran">伊朗新闻</span>
-        <span class="news-tab" data-news="bookmarks">⭐ 我的收藏</span>
-      </div>
-      <div class="news-content active" id="news-iran">
-        <div id="iran-news-list" class="news-list">
-          <div class="loading">加载中...</div>
-        </div>
-      </div>
-      <div class="news-content" id="news-bookmarks">
-        <div id="bookmarks-list" class="news-list">
-          <div class="loading">加载中...</div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Add Game Modal -->
-  <div id="add-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <h3>Add New Game</h3>
-      <div class="form-group">
-        <input type="text" id="game-name" placeholder="Game Name *" autocomplete="off">
-        <button id="search-steam-btn" class="btn-small">🔍 Steam</button>
-        <div id="steam-results" class="steam-results"></div>
-      </div>
-      <div class="form-group">
-        <input type="text" id="game-image" placeholder="Image URL (optional)" autocomplete="off">
-        <div id="image-preview" class="image-preview"></div>
-      </div>
-      <div class="form-group">
-        <input type="text" id="game-user" placeholder="Your Name" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <select id="game-status">
-          <option value="backlog">Backlog</option>
-          <option value="playing">Playing</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <input type="text" id="game-tags" placeholder="Tags (comma separated)" autocomplete="off">
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="confirm-add">Add Game</button>
-        <button class="btn btn-secondary" onclick="closeModal('add-modal')">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Game Detail Modal -->
-  <div id="detail-modal" class="modal" style="display:none;">
-    <div class="modal-content detail-content" id="detail-content"></div>
-  </div>
-
-  <script type="module" src="/src/main.js"></script>
+  <script>
+    const API_BASE = 'http://150.158.110.168:5001';
+    
+    // Tab切换
+    document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+    
+    // 新闻Tab切换
+    document.querySelectorAll('.tab[data-news]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab[data-news]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('news-hot').style.display = tab.dataset.news === 'hot' ? 'block' : 'none';
+        document.getElementById('news-iran').style.display = tab.dataset.news === 'iran' ? 'block' : 'none';
+      });
+    });
+    
+    // 加载游戏
+    async function loadGames() {
+      const list = document.getElementById('games-list');
+      try {
+        const res = await fetch(API_BASE + '/api/games');
+        const games = await res.json();
+        if (games.length === 0) {
+          list.innerHTML = '<div class="empty-hint">暂无游戏，去添加一个吧！</div>';
+          return;
+        }
+        list.innerHTML = games.slice(0, 12).map(g => `
+          <div class="game-card">
+            <div class="game-cover" style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}"></div>
+            <div class="game-name">${g.name}</div>
+            <div class="game-meta">${g.created_by || 'Anonymous'}</div>
+          </div>
+        `).join('');
+      } catch {
+        list.innerHTML = '<div class="empty-hint">加载失败</div>';
+      }
+    }
+    
+    // 加载热点
+    async function loadHot() {
+      const list = document.getElementById('hot-list');
+      try {
+        const res = await fetch('/data/news.json');
+        const data = await res.json();
+        const all = [...(data.tieba||[]), ...(data.weibo||[]), ...(data.bilibili||[])].slice(0,15);
+        list.innerHTML = all.map(n => `
+          <div class="news-item">
+            <div class="news-source">热点</div>
+            <div class="news-title">${typeof n === 'string' ? n : n.title}</div>
+          </div>
+        `).join('') || '<div class="empty-hint">暂无热点</div>';
+      } catch {
+        list.innerHTML = '<div class="empty-hint">加载失败</div>';
+      }
+    }
+    
+    // 加载伊朗
+    async function loadIran() {
+      const list = document.getElementById('iran-list');
+      try {
+        const res = await fetch('/data/news.json');
+        const data = await res.json();
+        const news = data.iran || [];
+        list.innerHTML = news.map(n => `
+          <div class="news-item">
+            <div class="news-source">伊朗</div>
+            <div class="news-title">${n.title}</div>
+          </div>
+        `).join('') || '<div class="empty-hint">暂无新闻</div>';
+      } catch {
+        list.innerHTML = '<div class="empty-hint">加载失败</div>';
+      }
+    }
+    
+    loadGames();
+    loadHot();
+    loadIran();
+  </script>
 </body>
 </html>
