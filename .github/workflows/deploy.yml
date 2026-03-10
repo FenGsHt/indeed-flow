@@ -63,9 +63,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd ${{ secrets.SERVER_PATH }}
-            pkill -f "python3.*app.py" || true
-            sleep 1
-            bash -c 'nohup python3 app.py > flask.log 2>&1 & disown'
+            sudo systemctl restart flask-app
             sleep 2
-            pgrep -f "python3.*app.py" && echo "OK" || cat flask.log
+            sudo systemctl is-active flask-app && echo "Flask started successfully" || (echo "Flask failed to start:" && sudo journalctl -u flask-app -n 20)
