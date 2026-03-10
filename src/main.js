@@ -274,21 +274,35 @@ document.getElementById('confirm-add').addEventListener('click', async () => {
   }
   
   try {
-    await fetch(`${API_BASE}/api/games`, {
+    const res = await fetch(`${API_BASE}/api/games`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, image, user})
     });
-  } catch {
+    
+    if (!res.ok) {
+      const err = await res.json();
+      alert('添加失败: ' + (err.error || '未知错误'));
+      return;
+    }
+    
+    const data = await res.json();
+    if (!data.success) {
+      alert('添加失败: ' + (data.error || '未知错误'));
+      return;
+    }
+    
+    // 成功后才清空和刷新
+    document.getElementById('game-name').value = '';
+    document.getElementById('game-image').value = '';
+    document.getElementById('game-user').value = '';
+    
+    closeModal('add-modal');
+    loadGames();
+  } catch (e) {
     alert('后端服务未运行，添加功能暂时不可用');
+    console.error('Add game error:', e);
   }
-  
-  // 清空输入
-  document.getElementById('game-name').value = '';
-  document.getElementById('game-image').value = '';
-  
-  closeModal('add-modal');
-  loadGames();
 });
 
 // 关闭弹窗
