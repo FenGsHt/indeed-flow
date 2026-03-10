@@ -1,5 +1,4 @@
 name: Build and Deploy
-
 on:
   push:
     branches: [main]
@@ -10,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +36,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -46,23 +44,38 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Deploy to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "dist/*"
-          target: ${{ secrets.SERVER_PATH }}
-          strip_components: 1
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Start Flask backend
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Deploy files with retry
+        uses: nick-fields/retry@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            sudo systemctl restart flask-app
-            sleep 2
-            sudo systemctl is-active flask-app && echo "Flask started successfully" || (echo "Flask failed to start:" && sudo journalctl -u flask-app -n 20)
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r dist/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}
+
+      - name: Start Flask backend with retry
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
+
+      - name: Notify success
+        if: success()
+        run: curl "https://api.day.app/${{ secrets.BARK_KEY }}/部署成功/indeed-flow 构建部署完成"
+
+      - name: Notify failure
+        if: failure()
+        run: curl "https://api.day.app/${{ secrets.BARK_KEY }}/部署失败/indeed-flow 构建或部署异常"
