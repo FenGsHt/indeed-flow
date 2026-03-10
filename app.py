@@ -9,7 +9,7 @@ import json
 from flask import Flask, render_template, jsonify, request
 from pathlib import Path
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
 
 # 数据目录
 DATA_DIR = Path(__file__).parent / "data"
