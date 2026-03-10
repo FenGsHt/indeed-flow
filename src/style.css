@@ -839,3 +839,24 @@ main {
   padding: 4px 10px;
   font-size: 0.8rem;
 }
+
+.intro-btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.intro-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.intro-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}

@@ -416,39 +416,35 @@ async function loadHotNews() {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
       const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
     
     // 微博
     document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
     
     // B站
     document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
     
     // 抖音
     document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li class="hot-item"><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><div class="hot-tooltip">${summary || title}</div></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
     
     // 小红书
     document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => {
       const title = typeof item === 'string' ? item : (item.title || '');
       const url = typeof item === 'object' ? item.url : '';
-      const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
+      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
     }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
     
     // 公共热点
@@ -502,3 +498,33 @@ window.rateGame = rateGame;
 window.addComment = addComment;
 window.deleteGame = deleteGame;
 window.closeModal = closeModal;
+window.getIntro = getIntro;
+
+// 获取热点简介
+async function getIntro(title, btn) {
+  btn.textContent = '...';
+  btn.disabled = true;
+  
+  try {
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.baidu.com/s?wd=' + title)}`);
+    const text = await res.text();
+    // 简单提取搜索结果摘要
+    const match = text.match(/>([^<]{20,80})</);
+    const intro = match ? match[1] : '未能获取简介';
+    
+    const li = btn.parentElement;
+    let summaryEl = li.querySelector('.hot-summary');
+    if (!summaryEl) {
+      summaryEl = document.createElement('p');
+      summaryEl.className = 'hot-summary';
+      li.appendChild(summaryEl);
+    }
+    summaryEl.textContent = intro;
+    summaryEl.style.display = 'block';
+    btn.textContent = '简介';
+    btn.disabled = false;
+  } catch {
+    btn.textContent = '失败';
+    btn.disabled = false;
+  }
+}

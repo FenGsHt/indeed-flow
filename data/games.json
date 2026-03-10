@@ -168,5 +168,29 @@
     "created_by": "西瓜",
     "comments": [],
     "ratings": {}
+  },
+  {
+    "id": "d10f1e96",
+    "name": "测试游戏",
+    "image": "http://example.com/image.jpg",
+    "created_by": "匿名",
+    "comments": [],
+    "ratings": {}
+  },
+  {
+    "id": "71b38dd0",
+    "name": "CORS测试",
+    "image": "",
+    "created_by": "匿名",
+    "comments": [],
+    "ratings": {}
+  },
+  {
+    "id": "78ed6e10",
+    "name": "测试游戏",
+    "image": "http://example.com/image.jpg",
+    "created_by": "匿名",
+    "comments": [],
+    "ratings": {}
   }
 ]
