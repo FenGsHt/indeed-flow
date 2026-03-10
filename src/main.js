@@ -157,7 +157,7 @@ function renderGames() {
         <div class="cell-cover" style="${g.image ? `background-image:url('${g.image}')` : 'background:linear-gradient(135deg,#FF3366,#FF9933)'}" onerror="this.style.background='linear-gradient(135deg,#FF3366,#FF9933)'"></div>
         <div class="cell-title">
           <span class="game-title">${g.name}</span>
-          <span class="game-platform">${g.created_by || 'Anonymous'}</span>
+          <span class="game-platform">${g.created_by || 'Anonymous'}${g.source ? ' · ' + g.source : ''}</span>
         </div>
         <div class="cell-tags">${tagsHtml}</div>
         <div class="cell-status ${statusClass}">
@@ -249,7 +249,7 @@ async function showDetail(id) {
   
   document.getElementById('detail-content').innerHTML = `
     <h2>${game.name}</h2>
-    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'} · ${game.created_at?.slice(0,10) || '-'}</p>
+    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'}${game.source ? ' · Source: ' + game.source : ''} · ${game.created_at?.slice(0,10) || '-'}</p>
     ${game.image ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
     
     <div class="change-image-section">
@@ -412,6 +412,7 @@ async function addGame() {
   const userInput = document.getElementById('game-user').value || getUserName() || 'Anonymous';
   const status = document.getElementById('game-status').value;
   const tags = document.getElementById('game-tags').value.split(',').map(t => t.trim()).filter(t => t);
+  const source = document.getElementById('game-source').value;
   
   // 保存用户名
   setUserName(userInput);
@@ -425,12 +426,13 @@ async function addGame() {
     await fetch(`${API_BASE}/api/games`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, image, user: userInput, status, tags})
+      body: JSON.stringify({name, image, user: userInput, status, tags, source})
     });
     
     document.getElementById('game-name').value = '';
     document.getElementById('game-image').value = '';
     document.getElementById('game-tags').value = '';
+    document.getElementById('game-source').value = '';
     document.getElementById('steam-results').innerHTML = '';
     
     closeModal('add-modal');

@@ -53,6 +53,8 @@ def init_db():
     cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)")
     # 添加 status 列（如果不存在）
     cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'")
+    # 添加 source 列（如果不存在）- 推荐来源
+    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS source VARCHAR(255)")
     conn.commit()
     conn.close()
 
@@ -329,6 +331,7 @@ def add_game():
     
     password = data.get('password', '')
     status = data.get('status', 'wishlist')  # 默认 wishlist
+    source = data.get('source', '')  # 推荐来源
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
@@ -336,6 +339,7 @@ def add_game():
         'created_by': data.get('user', '匿名'),
         'password': password,
         'status': status,
+        'source': source,
         'ratings': {},
         'comments': []
     }
@@ -343,8 +347,8 @@ def add_game():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        'INSERT INTO games (id, name, image, created_by, password, status, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
-        (game['id'], game['name'], game['image'], game['created_by'], game['password'], game['status'],
+        'INSERT INTO games (id, name, image, created_by, password, status, source, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+        (game['id'], game['name'], game['image'], game['created_by'], game['password'], game['status'], game['source'],
          json.dumps(game['ratings']), json.dumps(game['comments']))
     )
     conn.commit()

@@ -10,8 +10,16 @@
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-  <!-- Hero Section -->
+  <!-- Hero Section with Tabs -->
   <header class="hero-section">
+    <div class="hero-tabs">
+      <span class="hero-tab active" data-hero="library">📚 Library</span>
+      <span class="hero-tab" data-hero="news">📰 News</span>
+    </div>
+  </header>
+
+  <!-- Content Sections -->
+  <div id="library-section">
     <div class="featured-game" id="featured-game">
       <div class="featured-image-wrapper" id="featured-image">
         <div class="featured-placeholder">🎮</div>
@@ -171,6 +179,9 @@
       </div>
       <div class="form-group">
         <input type="text" id="game-tags" placeholder="Tags (comma separated)" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <input type="text" id="game-source" placeholder="Recommended by / Source (e.g. Friend, YouTube)" autocomplete="off">
       </div>
       <div class="modal-actions">
         <button class="btn" id="confirm-add">Add Game</button>
