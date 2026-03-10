@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 """
-待玩游戏后端 API
+待玩游戏后端 API - Blueprint 版本
 """
 
 import json
 import uuid
-from datetime import datetime
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-import pymysql
-
-app = Flask(__name__)
-CORS(app)
+import re
 import urllib.request
 import urllib.parse
+from datetime import datetime
+from flask import Blueprint, jsonify, request
+import pymysql
 
-app = Flask(__name__)
+games_bp = Blueprint('games', __name__)
 
-# 数据库配置
 DB_CONFIG = {
     'host': '150.158.110.168',
     'port': 3306,
@@ -35,51 +31,54 @@ def get_db():
 def init_db():
     """初始化数据库表"""
     conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS games (
-            id VARCHAR(36) PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            image VARCHAR(512),
-            created_by VARCHAR(100),
-            password VARCHAR(100),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            ratings JSON,
-            comments JSON,
-            status VARCHAR(20) DEFAULT 'wishlist'
-        )
-    ''')
-    # 添加 password 列（如果不存在）
-    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)")
-    # 添加 status 列（如果不存在）
-    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'")
-    # 添加 source 列（如果不存在）- 推荐来源
-    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS source VARCHAR(255)")
-    # 添加 bookmarked 列（如果不存在）- 收藏的新闻
-    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS bookmarked JSON")
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS games (
+                id VARCHAR(36) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL DEFAULT '',
+                image VARCHAR(512),
+                created_by VARCHAR(100),
+                password VARCHAR(100),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ratings JSON,
+                comments JSON,
+                status VARCHAR(20) DEFAULT 'wishlist',
+                source VARCHAR(255),
+                bookmarked JSON
+            )
+        ''')
+        for sql in [
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS source VARCHAR(255)",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS bookmarked JSON",
+        ]:
+            cursor.execute(sql)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ============ 收藏功能 ============
 
-@app.route('/api/bookmarks', methods=['GET'])
+@games_bp.route('/api/bookmarks', methods=['GET'])
 def get_bookmarks():
-    """获取收藏列表"""
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
-    row = cursor.fetchone()
-    conn.close()
-    
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+        row = cursor.fetchone()
+    finally:
+        conn.close()
+
     if row and row.get('bookmarked'):
         return jsonify(json.loads(row['bookmarked']))
     return jsonify([])
 
 
-@app.route('/api/bookmarks', methods=['POST'])
+@games_bp.route('/api/bookmarks', methods=['POST'])
 def add_bookmark():
-    """收藏新闻"""
     data = request.json
     news_item = {
         'id': data.get('id'),
@@ -89,70 +88,74 @@ def add_bookmark():
         'source': data.get('source'),
         'bookmarked_at': datetime.now().isoformat()
     }
-    
+
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
-    row = cursor.fetchone()
-    
-    bookmarks = []
-    if row and row.get('bookmarked'):
-        bookmarks = json.loads(row['bookmarked'])
-    
-    # 检查是否已收藏
-    if any(b.get('id') == news_item['id'] for b in bookmarks):
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+        row = cursor.fetchone()
+
+        bookmarks = []
+        if row and row.get('bookmarked'):
+            bookmarks = json.loads(row['bookmarked'])
+
+        if any(b.get('id') == news_item['id'] for b in bookmarks):
+            return jsonify({'success': False, 'error': 'Already bookmarked'})
+
+        bookmarks.append(news_item)
+        # name='' 满足 NOT NULL 约束
+        cursor.execute(
+            'INSERT INTO games (id, name, bookmarked) VALUES ("bookmarks", "", %s) '
+            'ON DUPLICATE KEY UPDATE bookmarked = %s',
+            (json.dumps(bookmarks), json.dumps(bookmarks))
+        )
+        conn.commit()
+    finally:
         conn.close()
-        return jsonify({'success': False, 'error': 'Already bookmarked'})
-    
-    bookmarks.append(news_item)
-    
-    cursor.execute(
-        'INSERT INTO games (id, bookmarked) VALUES ("bookmarks", %s) ON DUPLICATE KEY UPDATE bookmarked = %s',
-        (json.dumps(bookmarks), json.dumps(bookmarks))
-    )
-    conn.commit()
-    conn.close()
-    
+
     return jsonify({'success': True, 'bookmarks': bookmarks})
 
 
-@app.route('/api/bookmarks/<news_id>', methods=['DELETE'])
+@games_bp.route('/api/bookmarks/<news_id>', methods=['DELETE'])
 def remove_bookmark(news_id):
-    """取消收藏"""
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
-    row = cursor.fetchone()
-    
-    if not row or not row.get('bookmarked'):
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute('SELECT bookmarked FROM games WHERE id = "bookmarks"')
+        row = cursor.fetchone()
+
+        if not row or not row.get('bookmarked'):
+            return jsonify({'success': True, 'bookmarks': []})
+
+        bookmarks = json.loads(row['bookmarked'])
+        bookmarks = [b for b in bookmarks if b.get('id') != news_id]
+
+        cursor.execute(
+            'INSERT INTO games (id, name, bookmarked) VALUES ("bookmarks", "", %s) '
+            'ON DUPLICATE KEY UPDATE bookmarked = %s',
+            (json.dumps(bookmarks), json.dumps(bookmarks))
+        )
+        conn.commit()
+    finally:
         conn.close()
-        return jsonify({'success': True, 'bookmarks': []})
-    
-    bookmarks = json.loads(row['bookmarked'])
-    bookmarks = [b for b in bookmarks if b.get('id') != news_id]
-    
-    cursor.execute(
-        'INSERT INTO games (id, bookmarked) VALUES ("bookmarks", %s) ON DUPLICATE KEY UPDATE bookmarked = %s',
-        (json.dumps(bookmarks), json.dumps(bookmarks))
-    )
-    conn.commit()
-    conn.close()
-    
+
     return jsonify({'success': True, 'bookmarks': bookmarks})
 
 
 # ============ 游戏图片搜索 ============
 
-@app.route('/api/search-image', methods=['GET'])
+@games_bp.route('/api/search-image', methods=['GET'])
 def search_game_image():
-    """搜索游戏图片 - 使用 RAWG API"""
     query = request.args.get('q', '')
     if not query:
         return jsonify({'image': None})
-    
+
     try:
-        # 使用 RAWG 免费 API
-        url = f"https://api.rawg.io/api/games?key=5d1eb2a07cda4e899f6020e3d7465b1c&search={urllib.parse.quote(query)}&page_size=1"
+        url = (
+            f"https://api.rawg.io/api/games"
+            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"&search={urllib.parse.quote(query)}&page_size=1"
+        )
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
             if data.get('results'):
@@ -164,70 +167,64 @@ def search_game_image():
                 })
     except Exception as e:
         print(f"Image search error: {e}")
-    
+
     return jsonify({'image': None})
 
 
-@app.route('/api/search-steam', methods=['GET'])
+@games_bp.route('/api/search-steam', methods=['GET'])
 def search_steam_image():
-    """搜索 Steam 游戏图片 - 后端处理避免跨域"""
     query = request.args.get('q', '')
     if not query:
         return jsonify({'items': []})
-    
+
     try:
-        # Steam 商店搜索 API - 后端请求避免跨域
-        url = f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(query)}&l=schinese&cc=CN"
+        url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(query)}&l=schinese&cc=CN"
+        )
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
             items = []
             for item in data.get('items', [])[:5]:
-                # 构建 Steam 头图 URL
                 app_id = item.get('id')
                 final_price = item.get('price', {}).get('final', 0) // 100 if item.get('price') else 0
-                thumb_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg" if app_id else ''
-                
+                header_url = (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                    if app_id else ''
+                )
                 items.append({
                     'id': app_id,
                     'name': item.get('name', ''),
                     'thumb': item.get('thumb', ''),
-                    'header': thumb_url,
+                    'header': header_url,
                     'price': final_price
                 })
             return jsonify({'items': items})
     except Exception as e:
         print(f"Steam search error: {e}")
-    
+
     return jsonify({'items': []})
 
 
-@app.route('/api/steam-game/<app_id>', methods=['GET'])
+@games_bp.route('/api/steam-game/<app_id>', methods=['GET'])
 def get_steam_game_details(app_id):
-    """获取 Steam 游戏详情和截图"""
     try:
-        # Steam API 获取游戏详情
         url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
-            
             if str(app_id) in data and data[str(app_id)].get('success'):
                 game_data = data[str(app_id)].get('data', {})
-                
-                # 头图
-                header_url = game_data.get('header_image', '')
-                if not header_url and app_id:
-                    header_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
-                
-                # 截图
+                header_url = game_data.get('header_image', '') or (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                )
                 screenshots = game_data.get('screenshots', [])
                 preview_urls = [
-                    s.get('path_thumbnail') or s.get('path_full') 
-                    for s in screenshots[:3] 
+                    s.get('path_thumbnail') or s.get('path_full')
+                    for s in screenshots[:3]
                     if s.get('path_thumbnail') or s.get('path_full')
                 ]
-                
                 return jsonify({
                     'headerUrl': header_url,
                     'previewUrls': preview_urls,
@@ -236,80 +233,69 @@ def get_steam_game_details(app_id):
                 })
     except Exception as e:
         print(f"Steam game details error: {e}")
-    
-    # 备用：返回 CDN 头图
+
     return jsonify({
         'headerUrl': f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg",
         'previewUrls': []
     })
 
 
-@app.route('/api/games/<game_id>/image', methods=['PUT'])
+@games_bp.route('/api/games/<game_id>/image', methods=['PUT'])
 def update_game_image(game_id):
-    """更新游戏封面图片"""
     data = request.json
     new_image = data.get('image', '')
-    
     conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('UPDATE games SET image = %s WHERE id = %s', (new_image, game_id))
-    conn.commit()
-    conn.close()
-    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE games SET image = %s WHERE id = %s', (new_image, game_id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({'success': True})
 
 
-@app.route('/api/steam-images', methods=['GET'])
+@games_bp.route('/api/steam-images', methods=['GET'])
 def get_steam_images():
-    """完整流程：从 Steam 获取游戏图片"""
     game_name = request.args.get('q', '')
     if not game_name:
         return jsonify({'headerUrl': '', 'previewUrls': []})
-    
-    import re
-    
-    # 1. 搜索游戏获取 AppID
+
     try:
-        search_url = f"https://store.steampowered.com/search/?term={urllib.parse.quote(game_name)}"
-        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        search_url = (
+            f"https://store.steampowered.com/search/"
+            f"?term={urllib.parse.quote(game_name)}"
+        )
+        req = urllib.request.Request(
+            search_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        )
         with urllib.request.urlopen(req, timeout=8) as response:
             html = response.read().decode('utf-8', errors='ignore')
-            
-            # 提取 data-ds-appid
             match = re.search(r'data-ds-appid="(\d+)"', html)
             if match:
                 app_id = match.group(1)
             else:
-                alt_match = re.search(r'href="https://store\.steampowered\.com/app/(\d+)', html)
-                if alt_match:
-                    app_id = alt_match.group(1)
-                else:
-                    app_id = None
-        
+                alt = re.search(r'href="https://store\.steampowered\.com/app/(\d+)', html)
+                app_id = alt.group(1) if alt else None
+
         if not app_id:
-            # 备用方法
-            return get_fallback_steam_image(game_name)
-        
-        # 2. 获取游戏详情
+            return _fallback_steam_image(game_name)
+
         details_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
         req = urllib.request.Request(details_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode())
-            
             if str(app_id) in data and data[str(app_id)].get('success'):
                 game_data = data[str(app_id)].get('data', {})
-                
-                header_url = game_data.get('header_image', '')
-                if not header_url:
-                    header_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
-                
+                header_url = game_data.get('header_image', '') or (
+                    f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                )
                 screenshots = game_data.get('screenshots', [])
                 preview_urls = [
                     s.get('path_thumbnail') or s.get('path_full')
                     for s in screenshots[:3]
                     if s.get('path_thumbnail') or s.get('path_full')
                 ]
-                
                 return jsonify({
                     'headerUrl': header_url,
                     'previewUrls': preview_urls,
@@ -318,242 +304,222 @@ def get_steam_images():
                 })
     except Exception as e:
         print(f"Steam images error: {e}")
-    
-    # 3. 备用方法
-    return get_fallback_steam_image(game_name)
+
+    return _fallback_steam_image(game_name)
 
 
-def get_fallback_steam_image(game_name):
-    """备用方法：直接构建封面图 URL"""
-    import re
+def _fallback_steam_image(game_name):
     try:
-        search_url = f"https://store.steampowered.com/search/?term={urllib.parse.quote(game_name)}"
+        search_url = (
+            f"https://store.steampowered.com/search/"
+            f"?term={urllib.parse.quote(game_name)}"
+        )
         req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=8) as response:
             html = response.read().decode('utf-8', errors='ignore')
             match = re.search(r'href="https://store\.steampowered\.com/app/(\d+)"', html)
             if match:
                 app_id = match.group(1)
-                fallback_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
-                return jsonify({'headerUrl': fallback_url, 'previewUrls': [], 'appId': app_id})
-    except:
+                return jsonify({
+                    'headerUrl': f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg",
+                    'previewUrls': [],
+                    'appId': app_id
+                })
+    except Exception:
         pass
-    
     return jsonify({'headerUrl': '', 'previewUrls': []})
 
 
 # ============ 游戏新闻获取 ============
 
-@app.route('/api/game-news', methods=['GET'])
+@games_bp.route('/api/game-news', methods=['GET'])
 def get_game_news():
-    """获取游戏新闻 - 使用 RAWD API"""
     query = request.args.get('game', '')
     if not query:
         return jsonify({'news': []})
-    
+
     try:
-        # 搜索相关游戏新闻
-        url = f"https://api.rawg.io/api/games?key=5d1eb2a07cda4e899f6020e3d7465b1c&search={urllib.parse.quote(query)}&page_size=3"
+        url = (
+            f"https://api.rawg.io/api/games"
+            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"&search={urllib.parse.quote(query)}&page_size=3"
+        )
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
-            news = []
-            for game in data.get('results', [])[:3]:
-                news.append({
+            news = [
+                {
                     'title': game.get('name'),
                     'image': game.get('background_image'),
                     'released': game.get('released'),
                     'rating': game.get('rating')
-                })
+                }
+                for game in data.get('results', [])[:3]
+            ]
             return jsonify({'news': news})
     except Exception as e:
         print(f"News search error: {e}")
-    
+
     return jsonify({'news': []})
 
 
 # ============ 游戏 CRUD ============
 
-@app.route('/api/games', methods=['GET'])
+@games_bp.route('/api/games', methods=['GET'])
 def get_games():
-    """获取游戏列表"""
-    # 支持 status 筛选参数
     status_filter = request.args.get('status', '')
-    
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    
-    if status_filter:
-        cursor.execute('SELECT * FROM games WHERE status = %s ORDER BY created_at DESC', (status_filter,))
-    else:
-        cursor.execute('SELECT * FROM games ORDER BY created_at DESC')
-    
-    games = cursor.fetchall()
-    conn.close()
-    
-    # 处理 JSON 字段
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        if status_filter:
+            cursor.execute(
+                'SELECT * FROM games WHERE id != "bookmarks" AND status = %s ORDER BY created_at DESC',
+                (status_filter,)
+            )
+        else:
+            cursor.execute('SELECT * FROM games WHERE id != "bookmarks" ORDER BY created_at DESC')
+        games = cursor.fetchall()
+    finally:
+        conn.close()
+
     for game in games:
         game['ratings'] = json.loads(game['ratings']) if game['ratings'] else {}
         game['comments'] = json.loads(game['comments']) if game['comments'] else []
-        # 计算平均分
         ratings = game['ratings']
         game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
         game['rating_count'] = len(ratings)
-        # 确保 status 字段有值
         game['status'] = game.get('status') or 'wishlist'
-    
-    # 按评分排序
+
     games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
     return jsonify(games)
 
 
-@app.route('/api/games', methods=['POST'])
+@games_bp.route('/api/games', methods=['POST'])
 def add_game():
-    """添加游戏"""
     data = request.json
-    
-    password = data.get('password', '')
-    status = data.get('status', 'wishlist')  # 默认 wishlist
-    source = data.get('source', '')  # 推荐来源
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
         'image': data.get('image', ''),
         'created_by': data.get('user', '匿名'),
-        'password': password,
-        'status': status,
-        'source': source,
+        'password': data.get('password', ''),
+        'status': data.get('status', 'wishlist'),
+        'source': data.get('source', ''),
         'ratings': {},
         'comments': []
     }
-    
     conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        'INSERT INTO games (id, name, image, created_by, password, status, source, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
-        (game['id'], game['name'], game['image'], game['created_by'], game['password'], game['status'], game['source'],
-         json.dumps(game['ratings']), json.dumps(game['comments']))
-    )
-    conn.commit()
-    conn.close()
-    
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO games '
+            '(id, name, image, created_by, password, status, source, ratings, comments) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+            (
+                game['id'], game['name'], game['image'], game['created_by'],
+                game['password'], game['status'], game['source'],
+                json.dumps(game['ratings']), json.dumps(game['comments'])
+            )
+        )
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({'success': True, 'game': game})
 
 
-@app.route('/api/games/<game_id>/rate', methods=['POST'])
+@games_bp.route('/api/games/<game_id>/rate', methods=['POST'])
 def rate_game(game_id):
-    """评分"""
     data = request.json
     user = data.get('user', '匿名')
     score = data.get('score', 3)
-    
+
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT ratings FROM games WHERE id = %s', (game_id,))
-    row = cursor.fetchone()
-    
-    if not row:
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute('SELECT ratings FROM games WHERE id = %s', (game_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({'success': False, 'error': '游戏不存在'}), 404
+
+        ratings = json.loads(row['ratings']) if row['ratings'] else {}
+
+        if user in ratings:
+            return jsonify({'success': False, 'error': '你已经评过分了', 'your_rating': ratings[user]}), 400
+
+        ratings[user] = score
+        cursor.execute('UPDATE games SET ratings = %s WHERE id = %s', (json.dumps(ratings), game_id))
+        conn.commit()
+    finally:
         conn.close()
-        return jsonify({'success': False, 'error': '游戏不存在'}), 404
-    
-    ratings = json.loads(row['ratings']) if row['ratings'] else {}
-    
-    # 评分去重：检查用户是否已评分，防止刷分
-    if user in ratings:
-        return jsonify({'success': False, 'error': '你已经评过分了', 'your_rating': ratings[user]}), 400
-    
-    ratings[user] = score
-    
-    cursor.execute('UPDATE games SET ratings = %s WHERE id = %s', (json.dumps(ratings), game_id))
-    conn.commit()
-    conn.close()
-    
+
     avg = sum(ratings.values()) / len(ratings)
     return jsonify({'success': True, 'avg_rating': avg, 'rating_count': len(ratings)})
 
 
-@app.route('/api/games/<game_id>/comment', methods=['POST'])
+@games_bp.route('/api/games/<game_id>/comment', methods=['POST'])
 def comment_game(game_id):
-    """留言"""
     data = request.json
-    user = data.get('user', '匿名')
-    text = data.get('text', '')
-    
     conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT comments FROM games WHERE id = %s', (game_id,))
-    row = cursor.fetchone()
-    
-    if not row:
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute('SELECT comments FROM games WHERE id = %s', (game_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({'success': False, 'error': '游戏不存在'}), 404
+
+        comments = json.loads(row['comments']) if row['comments'] else []
+        comments.append({
+            'user': data.get('user', '匿名'),
+            'text': data.get('text', ''),
+            'timestamp': datetime.now().isoformat()
+        })
+        cursor.execute('UPDATE games SET comments = %s WHERE id = %s', (json.dumps(comments), game_id))
+        conn.commit()
+    finally:
         conn.close()
-        return jsonify({'success': False, 'error': '游戏不存在'}), 404
-    
-    comments = json.loads(row['comments']) if row['comments'] else []
-    comments.append({
-        'user': user,
-        'text': text,
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    cursor.execute('UPDATE games SET comments = %s WHERE id = %s', (json.dumps(comments), game_id))
-    conn.commit()
-    conn.close()
-    
     return jsonify({'success': True})
 
 
-@app.route('/api/games/<game_id>/status', methods=['PUT'])
+@games_bp.route('/api/games/<game_id>/status', methods=['PUT'])
 def update_game_status(game_id):
-    """更新游戏状态"""
     data = request.json
     new_status = data.get('status', 'wishlist')
-    
-    # 验证状态值
     valid_statuses = ['wishlist', 'playing', 'completed']
     if new_status not in valid_statuses:
         return jsonify({'success': False, 'error': '无效的状态值'}), 400
-    
+
     conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('UPDATE games SET status = %s WHERE id = %s', (new_status, game_id))
-    conn.commit()
-    conn.close()
-    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE games SET status = %s WHERE id = %s', (new_status, game_id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({'success': True, 'status': new_status})
 
 
-@app.route('/api/games/<game_id>', methods=['DELETE'])
+@games_bp.route('/api/games/<game_id>', methods=['DELETE'])
 def delete_game(game_id):
-    """删除游戏 - 需要密码验证"""
     password = request.args.get('password', '')
-    
     conn = get_db()
-    cursor = conn.cursor()
-    
-    # 检查游戏是否有密码保护
-    cursor.execute('SELECT password FROM games WHERE id = %s', (game_id,))
-    row = cursor.fetchone()
-    
-    if not row:
-        return jsonify({'success': False, 'error': '游戏不存在'}), 404
-    
-    stored_password = row[0] if row else None
-    
-    # 如果有密码，必须验证
-    if stored_password:
-        if not password:
-            return jsonify({'success': False, 'error': '需要密码'}), 401
-        if password != stored_password:
-            return jsonify({'success': False, 'error': '密码错误'}), 403
-    
-    cursor.execute('DELETE FROM games WHERE id = %s', (game_id,))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT password FROM games WHERE id = %s', (game_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({'success': False, 'error': '游戏不存在'}), 404
+
+        stored_password = row[0]
+        if stored_password:
+            if not password:
+                return jsonify({'success': False, 'error': '需要密码'}), 401
+            if password != stored_password:
+                return jsonify({'success': False, 'error': '密码错误'}), 403
+
+        cursor.execute('DELETE FROM games WHERE id = %s', (game_id,))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({'success': True})
-
-
-if __name__ == '__main__':
-    print("🚀 初始化数据库...")
-    init_db()
-    print("✅ 数据库就绪")
-    print("🌐 启动服务: http://0.0.0.0:9000")
-    app.run(host='0.0.0.0', port=9000, debug=True)
