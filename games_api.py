@@ -172,6 +172,11 @@ def rate_game(game_id):
         return jsonify({'success': False, 'error': '游戏不存在'}), 404
     
     ratings = json.loads(row['ratings']) if row['ratings'] else {}
+    
+    # 评分去重：检查用户是否已评分，防止刷分
+    if user in ratings:
+        return jsonify({'success': False, 'error': '你已经评过分了', 'your_rating': ratings[user]}), 400
+    
     ratings[user] = score
     
     cursor.execute('UPDATE games SET ratings = %s WHERE id = %s', (json.dumps(ratings), game_id))

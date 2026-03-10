@@ -2,14 +2,17 @@
 """
 OpenClaw 控制台 Web 服务
 轻量级 Flask 应用
+CORS enabled
 """
 
 import os
 import json
 from flask import Flask, render_template, jsonify, request, send_file
+from flask_cors import CORS
 from pathlib import Path
 
 app = Flask(__name__, template_folder='.')
+CORS(app)
 
 # 数据目录
 DATA_DIR = Path(__file__).parent / "data"
