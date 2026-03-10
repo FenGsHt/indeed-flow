@@ -64,7 +64,17 @@ jobs:
             scp -i ~/.ssh/id_rsa -r dist/* \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}
 
-      - name: Start Flask backend with retry
+      - name: Deploy backend files
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa app.py games_api.py \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/
+
+      - name: Restart Flask backend
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -73,7 +83,7 @@ jobs:
           command: |
             ssh -i ~/.ssh/id_rsa \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow && git pull && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
+              "sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
       - name: Notify success
         if: success()
