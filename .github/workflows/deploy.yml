@@ -46,24 +46,20 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Deploy to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy to server with retry
+        uses: nick-fields/retry@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "dist/*"
-          target: ${{ secrets.SERVER_PATH }}
-          strip_components: 1
-          command_timeout: 10m
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            scp -o StrictHostKeyChecking=no -o ConnectTimeout=10 dist/* ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}
 
-      - name: Start Flask backend
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Start Flask backend with retry
+        uses: nick-fields/retry@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            sudo systemctl restart flask-app
-            sleep 2
-            sudo systemctl is-active flask-app && echo "Flask started successfully" || (echo "Flask failed to start:" && sudo journalctl -u flask-app -n 20)
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 5
+          command: |
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
