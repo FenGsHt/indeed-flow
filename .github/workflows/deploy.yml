@@ -66,12 +66,6 @@ jobs:
             cd ${{ secrets.SERVER_PATH }}
             pkill -f "python3.*app.py" || true
             sleep 1
-            nohup python3 app.py > flask.log 2>&1 &
-            disown $!
+            bash -c 'nohup python3 app.py > flask.log 2>&1 & disown'
             sleep 2
-            if pgrep -f "python3.*app.py"; then
-              echo "Flask started successfully"
-            else
-              echo "Flask failed to start:"
-              cat flask.log
-            fi
+            pgrep -f "python3.*app.py" && echo "OK" || cat flask.log
