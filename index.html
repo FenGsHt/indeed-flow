@@ -119,6 +119,26 @@
       background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
       border-radius: 12px;
       margin-bottom: 0.75rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .steam-btn {
+      background: rgba(0,0,0,0.6);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    .steam-btn:hover {
+      background: rgba(0,0,0,0.8);
+      transform: scale(1.1);
     }
     
     .game-name {
@@ -256,7 +276,9 @@
         }
         list.innerHTML = games.slice(0, 12).map(g => `
           <div class="game-card">
-            <div class="game-cover" style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}"></div>
+            <div class="game-cover" style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}" data-game="${g.name}">
+              <button class="steam-btn" onclick="searchSteamImage('${g.name}', this)">🔍</button>
+            </div>
             <div class="game-name">${g.name}</div>
             <div class="game-meta">${g.created_by || 'Anonymous'}</div>
           </div>
@@ -321,6 +343,26 @@
         }).join('') || '<div class="empty-hint">暂无新闻</div>';
       } catch(e) {
         list.innerHTML = '<div class="empty-hint">加载失败</div>';
+      }
+    }
+    
+    // 搜索Steam图片
+    async function searchSteamImage(gameName, btn) {
+      btn.textContent = '...';
+      try {
+        const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
+        const data = await res.json();
+        if (data.headerUrl) {
+          btn.parentElement.style.backgroundImage = 'url(' + data.headerUrl + ')';
+          btn.parentElement.style.backgroundSize = 'cover';
+          btn.style.display = 'none';
+        } else {
+          btn.textContent = '❌';
+          setTimeout(() => btn.textContent = '🔍', 2000);
+        }
+      } catch(e) {
+        btn.textContent = '❌';
+        setTimeout(() => btn.textContent = '🔍', 2000);
       }
     }
     
