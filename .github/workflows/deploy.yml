@@ -64,15 +64,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ${{ secrets.SERVER_PATH }}
-            # Kill existing Flask process if any
             pkill -f "python3.*app.py" || true
-            # Start Flask in background
+            sleep 1
             nohup python3 app.py > flask.log 2>&1 &
+            disown $!
             sleep 2
-            # Check if running
             if pgrep -f "python3.*app.py"; then
               echo "Flask started successfully"
             else
-              echo "Flask failed to start, check log:"
+              echo "Flask failed to start:"
               cat flask.log
             fi
