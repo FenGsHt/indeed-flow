@@ -72,12 +72,16 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
               "sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
-      - name: Notify success
+      - name: Notify QQ on success
         if: success()
         run: |
-          curl "https://api.day.app/${{ secrets.BARK_KEY }}/部署成功/indeed-flow%20构建部署完成"
+          curl -X POST "http://150.158.110.168:18789/hooks/github" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "success", "message": "✅ 部署成功！indeed-flow 已上线"}'
 
-      - name: Notify failure
+      - name: Notify QQ on failure
         if: failure()
         run: |
-          curl "https://api.day.app/${{ secrets.BARK_KEY }}/部署失败/indeed-flow%20构建异常"
+          curl -X POST "http://150.158.110.168:18789/hooks/github" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "failure", "message": "❌ 部署失败！请检查 Actions"}'
