@@ -38,8 +38,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    max-attempts: 3
-    retry-on: [ubuntu-latest, macos-latest]
     
     steps:
       - name: Download artifact
@@ -58,8 +56,6 @@ jobs:
           target: ${{ secrets.SERVER_PATH }}
           strip_components: 1
           command_timeout: 10m
-        timeout: 9m
-        retries: 3
 
       - name: Start Flask backend
         uses: appleboy/ssh-action@v1.0.0
@@ -71,5 +67,3 @@ jobs:
             sudo systemctl restart flask-app
             sleep 2
             sudo systemctl is-active flask-app && echo "Flask started successfully" || (echo "Flask failed to start:" && sudo journalctl -u flask-app -n 20)
-        timeout: 5m
-        retries: 3
