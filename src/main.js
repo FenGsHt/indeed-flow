@@ -162,12 +162,31 @@ async function showDetail(id) {
     </div>
     
     <div class="detail-actions">
+      <button onclick="changeGameImage('${id}')" class="btn-secondary">🖼️ 更换封面</button>
       <button onclick="deleteGame('${id}')" class="btn-danger">删除</button>
       <button onclick="closeModal('detail-modal')" class="btn-secondary">关闭</button>
     </div>
   `;
   
   document.getElementById('detail-modal').style.display = 'flex';
+}
+
+// 更换游戏封面
+async function changeGameImage(id) {
+  const newImage = prompt('请输入新的图片URL:');
+  if (!newImage) return;
+  
+  try {
+    await fetch(`${API_BASE}/api/games/${id}/image`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({image: newImage})
+    });
+    showDetail(id);
+    loadGames();
+  } catch (e) {
+    alert('更新失败，请稍后重试');
+  }
 }
 
 // 评分
@@ -316,7 +335,7 @@ document.querySelectorAll('.modal').forEach(modal => {
 
 // ============== Steam 图片搜索 ==============
 
-// Steam搜索按钮
+// Steam搜索按钮 - 改为调用后端接口避免跨域
 document.getElementById('search-steam-btn')?.addEventListener('click', async () => {
   const name = document.getElementById('game-name').value.trim();
   if (!name) {
@@ -328,13 +347,13 @@ document.getElementById('search-steam-btn')?.addEventListener('click', async () 
   resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
   
   try {
-    // Steam 商店搜索API
-    const res = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&l=schinese&cc=CN`);
+    // 改为调用后端接口，由后端请求 Steam API 避免跨域
+    const res = await fetch(`${API_BASE}/api/search-steam?q=${encodeURIComponent(name)}`);
     const data = await res.json();
     
     if (data.items && data.items.length > 0) {
-      resultsDiv.innerHTML = data.items.slice(0, 5).map(item => `
-        <div class="steam-item" onclick="selectSteamImage('${item.price?.final?.final?.replace(/[^0-9]/g, '') ? 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + item.id + '/header.jpg' : ''}', '${item.name}')">
+      resultsDiv.innerHTML = data.items.map(item => `
+        <div class="steam-item" onclick="selectSteamImage('${item.header}', '${item.name}')">
           <img src="${item.thumb}" onerror="this.style.display='none'">
           <span>${item.name}</span>
         </div>
@@ -343,6 +362,7 @@ document.getElementById('search-steam-btn')?.addEventListener('click', async () 
       resultsDiv.innerHTML = '<div class="empty-hint">未找到相关游戏</div>';
     }
   } catch (e) {
+    console.error('Steam search error:', e);
     resultsDiv.innerHTML = '<div class="error-state">搜索失败，请手动输入图片URL</div>';
   }
 });
@@ -499,6 +519,7 @@ window.addComment = addComment;
 window.deleteGame = deleteGame;
 window.closeModal = closeModal;
 window.getIntro = getIntro;
+window.changeGameImage = changeGameImage;
 
 // 获取热点简介
 async function getIntro(title, btn) {

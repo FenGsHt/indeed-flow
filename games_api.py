@@ -74,6 +74,55 @@ def search_game_image():
     return jsonify({'image': None})
 
 
+@app.route('/api/search-steam', methods=['GET'])
+def search_steam_image():
+    """搜索 Steam 游戏图片 - 后端处理避免跨域"""
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'items': []})
+    
+    try:
+        # Steam 商店搜索 API - 后端请求避免跨域
+        url = f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(query)}&l=schinese&cc=CN"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            items = []
+            for item in data.get('items', [])[:5]:
+                # 构建 Steam 头图 URL
+                app_id = item.get('id')
+                final_price = item.get('price', {}).get('final', 0) // 100 if item.get('price') else 0
+                thumb_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg" if app_id else ''
+                
+                items.append({
+                    'id': app_id,
+                    'name': item.get('name', ''),
+                    'thumb': item.get('thumb', ''),
+                    'header': thumb_url,
+                    'price': final_price
+                })
+            return jsonify({'items': items})
+    except Exception as e:
+        print(f"Steam search error: {e}")
+    
+    return jsonify({'items': []})
+
+
+@app.route('/api/games/<game_id>/image', methods=['PUT'])
+def update_game_image(game_id):
+    """更新游戏封面图片"""
+    data = request.json
+    new_image = data.get('image', '')
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE games SET image = %s WHERE id = %s', (new_image, game_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+
 # ============ 游戏新闻获取 ============
 
 @app.route('/api/game-news', methods=['GET'])
