@@ -5,6 +5,30 @@ const API_BASE = 'http://150.158.110.168:5001';
 let currentGames = [];
 let currentTab = 'library';
 
+// 用户身份系统 - localStorage
+const USER_KEY = 'indeed_user_name';
+
+function getUserName() {
+  return localStorage.getItem(USER_KEY) || '';
+}
+
+function setUserName(name) {
+  if (name.trim()) {
+    localStorage.setItem(USER_KEY, name.trim());
+  }
+}
+
+function initUserName() {
+  const savedName = getUserName();
+  if (savedName) {
+    // 自动填充到用户输入框
+    const userInputs = document.querySelectorAll('#game-user, #comment-user');
+    userInputs.forEach(input => {
+      if (input) input.value = savedName;
+    });
+  }
+}
+
 // Tab 切换
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -44,25 +68,56 @@ function calcAvgRating(ratings) {
   return sum / Object.keys(ratings).length;
 }
 
-// 加载游戏列表（表格布局）
-async function loadGames() {
-  const games = await getGames();
-  currentGames = games;
+// 搜索过滤
+let searchTerm = '';
+let sortType = 'default';
+
+document.getElementById('search-input')?.addEventListener('input', (e) => {
+  searchTerm = e.target.value.toLowerCase();
+  renderGames();
+});
+
+document.getElementById('sort-select')?.addEventListener('change', (e) => {
+  sortType = e.target.value;
+  renderGames();
+});
+
+// 渲染游戏（带搜索和排序）
+function renderGames() {
+  let games = [...currentGames];
   
-  // 更新统计
-  updateHeroStats(games);
+  // 搜索过滤
+  if (searchTerm) {
+    games = games.filter(g => 
+      g.name?.toLowerCase().includes(searchTerm) || 
+      g.tags?.some(t => t.toLowerCase().includes(searchTerm))
+    );
+  }
+  
+  // 排序
+  switch(sortType) {
+    case 'name':
+      games.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'rating':
+      games.sort((a, b) => calcAvgRating(b.ratings) - calcAvgRating(a.ratings));
+      break;
+    case 'newest':
+      games.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      break;
+    default:
+      // 默认：playing > backlog > completed
+      const statusOrder = { playing: 0, backlog: 1, completed: 2 };
+      games.sort((a, b) => statusOrder[a.status || 'backlog'] - statusOrder[b.status || 'backlog']);
+  }
   
   const list = document.getElementById('games-list');
   if (!list) return;
   
   if (games.length === 0) {
-    list.innerHTML = '<div class="empty-hint">No games yet. Click "Add Game" to start.</div>';
+    list.innerHTML = '<div class="empty-hint">No games found</div>';
     return;
   }
-  
-  // 按状态排序：playing > backlog > completed
-  const statusOrder = { playing: 0, backlog: 1, completed: 2 };
-  games.sort((a, b) => statusOrder[a.status || 'backlog'] - statusOrder[b.status || 'backlog']);
   
   list.innerHTML = games.map((g, i) => {
     const avg = calcAvgRating(g.ratings);
@@ -147,6 +202,11 @@ async function showDetail(id) {
     <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'} · ${game.created_at?.slice(0,10) || '-'}</p>
     ${game.image ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
     
+    <div class="change-image-section">
+      <input type="text" id="new-image-url" placeholder="New image URL" value="${game.image || ''}">
+      <button class="btn" onclick="changeImage('${game.id}')">Change Cover</button>
+    </div>
+    
     <div class="rating-section">
       <h3>Rating: ${avg > 0 ? '⭐ ' + avg.toFixed(1) : 'No ratings'}</h3>
       <div class="rate-buttons">
@@ -226,6 +286,23 @@ async function deleteGame(id) {
     loadGames();
   } catch {
     alert('Delete failed. Please try again.');
+  }
+}
+
+// 更换封面
+async function changeImage(id) {
+  const newUrl = document.getElementById('new-image-url').value;
+  
+  try {
+    await fetch(`${API_BASE}/api/games/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({image: newUrl})
+    });
+    showDetail(id);
+    loadGames();
+  } catch {
+    alert('Failed to change image. Please try again.');
   }
 }
 
@@ -329,6 +406,8 @@ window.deleteGame = deleteGame;
 window.showDetail = showDetail;
 window.closeModal = closeModal;
 window.selectSteamGame = selectSteamGame;
+window.changeImage = changeImage;
 
 // 初始化
 loadGames();
+initUserName();

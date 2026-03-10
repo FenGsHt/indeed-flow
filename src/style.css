@@ -489,3 +489,88 @@ body {
   
   .modal-content { padding: 1rem; }
 }
+/* Search Bar */
+.search-bar {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font-stack);
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: var(--brand-purple);
+}
+
+.search-bar select {
+  padding: 0.75rem 1rem;
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font-stack);
+  background: white;
+  cursor: pointer;
+}
+
+/* Steam Results */
+.steam-results {
+  margin-top: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.steam-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  border: 1px solid var(--brand-gray);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.25rem;
+}
+
+.steam-item:hover {
+  background: var(--brand-gray);
+}
+
+.steam-item img {
+  width: 40px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.steam-item span {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Change Image in Detail */
+.change-image-section {
+  margin: 1rem 0;
+}
+
+.change-image-section input {
+  width: 70%;
+  padding: 8px;
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+}
+
+.change-image-section button {
+  padding: 8px 12px;
+  background: var(--brand-gray);
+  border: none;
+  cursor: pointer;
+}
