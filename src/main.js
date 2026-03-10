@@ -213,6 +213,7 @@ async function showDetail(id) {
     <div class="change-image-section">
       <input type="text" id="new-image-url" placeholder="New image URL" value="${game.image || ''}">
       <button class="btn" onclick="changeImage('${game.id}')">Change Cover</button>
+      <button class="btn" onclick="fetchSteamImage('${game.id}', '${game.name.replace(/'/g, "\\'")}')">🔍 Steam</button>
     </div>
     
     <div class="rating-section">
@@ -314,6 +315,30 @@ async function changeImage(id) {
     loadGames();
   } catch {
     alert('Failed to change image. Please try again.');
+  }
+}
+
+// 从Steam获取图片
+async function fetchSteamImage(id, gameName) {
+  try {
+    const res = await fetch(`${API_BASE}/api/steam-images?q=${encodeURIComponent(gameName)}`);
+    const data = await res.json();
+    
+    if (data.headerUrl) {
+      document.getElementById('new-image-url').value = data.headerUrl;
+      // 自动保存
+      await fetch(`${API_BASE}/api/games/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({image: data.headerUrl})
+      });
+      showDetail(id);
+      loadGames();
+    } else {
+      alert('No Steam image found for this game');
+    }
+  } catch (e) {
+    alert('Failed to fetch Steam image: ' + e.message);
   }
 }
 

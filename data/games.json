@@ -1,40 +1,5 @@
 [
   {
-    "id": "26010a43",
-    "name": "艾尔登法环",
-    "image": "https://example.com/elden.jpg",
-    "created_at": "2026-03-08T03:31:37.434716",
-    "created_by": "阿烽",
-    "comments": [],
-    "ratings": {
-      "阿烽": 5,
-      "FolkSong": 4
-    }
-  },
-  {
-    "id": "275e6255",
-    "name": "双人成行",
-    "image": "",
-    "created_at": "2026-03-08T03:31:41.982110",
-    "created_by": "FolkSong",
-    "comments": [],
-    "ratings": {
-      "阿烽": 4
-    }
-  },
-  {
-    "id": "8a6ef9e1",
-    "name": "黑神话：悟空",
-    "image": "",
-    "created_at": "2026-03-08T03:31:42.019161",
-    "created_by": "西瓜",
-    "comments": [],
-    "ratings": {
-      "西瓜": 5,
-      "FolkSong": 5
-    }
-  },
-  {
     "id": "4ded2f47",
     "name": "战地6",
     "image": "",
