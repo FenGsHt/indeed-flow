@@ -72,6 +72,14 @@ function calcAvgRating(ratings) {
 let searchTerm = '';
 let sortType = 'default';
 
+// 加载游戏列表
+async function loadGames() {
+  const games = await getGames();
+  currentGames = games;
+  updateHeroStats(games);
+  renderGames();
+}
+
 document.getElementById('search-input')?.addEventListener('input', (e) => {
   searchTerm = e.target.value.toLowerCase();
   renderGames();
