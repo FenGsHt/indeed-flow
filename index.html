@@ -3,227 +3,411 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INDEED</title>
+  <title>INDEED - 游戏库</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
       color: #fff;
+      overflow-x: hidden;
     }
     
-    .hero {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+    /* 背景动画 */
+    .bg-effect {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    
+    .bg-effect::before {
+      content: '';
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
+      animation: bgMove 20s ease-in-out infinite;
+    }
+    
+    @keyframes bgMove {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-5%, -5%) rotate(5deg); }
+    }
+    
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
       padding: 2rem;
     }
     
-    .hero-title {
-      font-size: clamp(3rem, 10vw, 6rem);
+    /* 头部 */
+    .header {
+      text-align: center;
+      padding: 2rem 0 3rem;
+    }
+    
+    .logo {
+      font-size: clamp(2.5rem, 8vw, 4rem);
       font-weight: 900;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e);
+      letter-spacing: 0.15em;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
+      background-size: 300% 100%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: logoShine 3s ease-in-out infinite;
+      margin-bottom: 0.5rem;
     }
     
-    .hero-subtitle {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.6);
-      margin-bottom: 3rem;
+    @keyframes logoShine {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
     
-    .tabs {
+    .slogan {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.3em;
+    }
+    
+    /* Tab导航 */
+    .nav-tabs {
       display: flex;
-      gap: 1rem;
-      background: rgba(255,255,255,0.1);
-      padding: 0.5rem;
-      border-radius: 50px;
-      backdrop-filter: blur(10px);
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
     
-    .tab {
-      padding: 1rem 3rem;
-      font-size: 1.2rem;
-      font-weight: 700;
+    .nav-tab {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      border-radius: 50px;
-      transition: all 0.3s;
       border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.6);
+      border-radius: 50px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     
-    .tab.active {
+    .nav-tab:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+    
+    .nav-tab.active {
       background: linear-gradient(90deg, #00d4ff, #7b2ff7);
       color: #fff;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+      box-shadow: 0 4px 20px rgba(0,212,255,0.3);
     }
     
-    .tab:hover:not(.active) {
-      background: rgba(255,255,255,0.1);
+    .nav-tab .icon {
+      font-size: 1.2rem;
     }
     
+    /* 内容区 */
     .tab-content {
       display: none;
-      width: 100%;
-      max-width: 1200px;
-      padding: 2rem;
+      animation: fadeIn 0.4s ease;
     }
     
     .tab-content.active {
       display: block;
     }
     
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 新闻子Tab */
+    .sub-tabs {
+      display: flex;
+      gap: 0.5rem;
       margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid rgba(255,255,255,0.2);
+      padding: 0.3rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50px;
+      width: fit-content;
     }
     
-    /* 游戏列表样式 */
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.5rem;
-    }
-    
-    .game-card {
-      background: rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 1rem;
+    .sub-tab {
+      padding: 0.5rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 500;
       cursor: pointer;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      border-radius: 50px;
       transition: all 0.3s;
     }
     
-    .game-card:hover {
-      transform: translateY(-4px);
+    .sub-tab.active {
       background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+    
+    /* 游戏网格 */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+    
+    .game-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .game-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      border-color: rgba(0,212,255,0.3);
     }
     
     .game-cover {
       width: 100%;
-      height: 120px;
-      background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
-      border-radius: 12px;
-      margin-bottom: 0.75rem;
+      height: 140px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     
+    .game-cover.has-image {
+      background: none;
+    }
+    
+    .cover-placeholder {
+      font-size: 3rem;
+      opacity: 0.5;
+    }
+    
     .steam-btn {
-      background: rgba(0,0,0,0.6);
-      border: none;
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      border: none;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.9rem;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .steam-btn:hover {
-      background: rgba(0,0,0,0.8);
+      background: #171a21;
       transform: scale(1.1);
+    }
+    
+    .steam-btn.success {
+      background: #4caf50;
+    }
+    
+    .game-info {
+      padding: 1rem;
     }
     
     .game-name {
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .game-meta {
       font-size: 0.75rem;
-      color: rgba(255,255,255,0.5);
-      margin-top: 0.25rem;
+      color: rgba(255,255,255,0.4);
     }
     
-    /* 新闻列表样式 */
+    /* 新闻列表 */
     .news-list {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.75rem;
     }
     
     .news-item {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
       border-radius: 12px;
       padding: 1.25rem;
       cursor: pointer;
       transition: all 0.3s;
+      border: 1px solid transparent;
     }
     
     .news-item:hover {
-      background: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.1);
+      transform: translateX(4px);
+    }
+    
+    .news-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
     }
     
     .news-source {
       font-size: 0.7rem;
-      color: #00d4ff;
-      text-transform: uppercase;
       font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    
+    .news-source.tieba { background: #00aaff; color: #fff; }
+    .news-source.douyin { background: #000; color: #fff; }
+    .news-source.weibo { background: #ff0000; color: #fff; }
+    .news-source.bilibili { background: #00aaff; color: #fff; }
+    .news-source.iran { background: #ff6b6b; color: #fff; }
+    
+    .news-time {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
     }
     
     .news-title {
       font-size: 1rem;
-      font-weight: 600;
-      margin: 0.5rem 0;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .news-summary {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+    
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: rgba(255,255,255,0.4);
+    }
+    
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    .empty-text {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
     }
     
     .empty-hint {
-      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.3);
+    }
+    
+    /* 加载动画 */
+    .loading {
+      display: flex;
+      justify-content: center;
       padding: 3rem;
-      color: rgba(255,255,255,0.5);
+    }
+    
+    .loading::after {
+      content: '';
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+      .container { padding: 1rem; }
+      .nav-tab { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
+      .games-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .game-cover { height: 100px; }
     }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <h1 class="hero-title">INDEED</h1>
-    <p class="hero-subtitle">发现 · 评分 · 推荐</p>
+  <div class="bg-effect"></div>
+  
+  <div class="container">
+    <header class="header">
+      <h1 class="logo">INDEED</h1>
+      <p class="slogan">发现 · 评分 · 推荐</p>
+    </header>
     
-    <div class="tabs">
-      <button class="tab active" data-tab="game">🎮 游戏</button>
-      <button class="tab" data-tab="news">📰 新闻</button>
+    <!-- 主导航 -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="game">
+        <span class="icon">🎮</span> 游戏库
+      </button>
+      <button class="nav-tab" data-tab="news">
+        <span class="icon">📰</span> 新闻
+      </button>
     </div>
     
-    <!-- 游戏专区 -->
-    <div class="tab-content active" id="tab-game">
-      <h2 class="section-title">🎮 游戏库</h2>
+    <!-- 游戏内容 -->
+    <div id="tab-game" class="tab-content active">
       <div id="games-list" class="games-grid">
-        <div class="empty-hint">加载中...</div>
+        <div class="loading"></div>
       </div>
     </div>
     
-    <!-- 新闻专区 -->
-    <div class="tab-content" id="tab-news">
-      <div class="tabs" style="margin-bottom:1.5rem;background:transparent;padding:0;">
-        <button class="tab active" data-news="hot">🔥 热点</button>
-        <button class="tab" data-news="iran">🇮🇷 伊朗</button>
+    <!-- 新闻内容 -->
+    <div id="tab-news" class="tab-content">
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-news="hot">🔥 热点</button>
+        <button class="sub-tab" data-news="iran">🇮🇷 伊朗</button>
       </div>
       
       <div id="news-hot" class="news-content">
         <div id="hot-list" class="news-list">
-          <div class="empty-hint">加载中...</div>
+          <div class="loading"></div>
         </div>
       </div>
+      
       <div id="news-iran" class="news-content" style="display:none;">
         <div id="iran-list" class="news-list">
-          <div class="empty-hint">加载中...</div>
+          <div class="loading"></div>
         </div>
       </div>
     </div>
@@ -233,26 +417,26 @@
     const API_BASE = 'http://150.158.110.168:5001';
     
     // Tab切换
-    document.querySelectorAll('.tab[data-tab]').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
       });
     });
     
-    // 新闻Tab切换
-    document.querySelectorAll('.tab[data-news]').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab[data-news]').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('news-hot').style.display = tab.dataset.news === 'hot' ? 'block' : 'none';
-        document.getElementById('news-iran').style.display = tab.dataset.news === 'iran' ? 'block' : 'none';
+    // 新闻子Tab
+    document.querySelectorAll('.sub-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('news-hot').style.display = this.dataset.news === 'hot' ? 'block' : 'none';
+        document.getElementById('news-iran').style.display = this.dataset.news === 'iran' ? 'block' : 'none';
       });
     });
     
-    // 加载游戏（带本地后备）
+    // 加载游戏
     async function loadGames() {
       const list = document.getElementById('games-list');
       try {
@@ -260,9 +444,8 @@
         try {
           const res = await fetch(API_BASE + '/api/games');
           if (res.ok) games = await res.json();
-        } catch(e) { console.log('API失败，用本地数据'); }
+        } catch(e) { console.log('API fail'); }
         
-        // 后备：本地数据
         if (games.length === 0) {
           try {
             const res = await fetch('/data/games.json');
@@ -271,49 +454,101 @@
         }
         
         if (games.length === 0) {
-          list.innerHTML = '<div class="empty-hint">暂无游戏，去添加一个吧！</div>';
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🎮</div>
+              <div class="empty-text">暂无游戏</div>
+              <div class="empty-hint">点击添加你的第一个游戏</div>
+            </div>`;
           return;
         }
-        list.innerHTML = games.slice(0, 12).map(g => `
-          <div class="game-card">
-            <div class="game-cover" style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}" data-game="${g.name}">
-              <button class="steam-btn" onclick="searchSteamImage('${g.name}', this)">🔍</button>
+        
+        list.innerHTML = games.slice(0, 12).map((g, i) => `
+          <div class="game-card" style="animation-delay: ${i*0.05}s">
+            <div class="game-cover ${g.image ? 'has-image' : ''}" 
+                 style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}">
+              ${!g.image ? '<div class="cover-placeholder">🎮</div>' : ''}
+              <button class="steam-btn" onclick="searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="搜索Steam图片">🔍</button>
             </div>
-            <div class="game-name">${g.name}</div>
-            <div class="game-meta">${g.created_by || 'Anonymous'}</div>
+            <div class="game-info">
+              <div class="game-name">${g.name}</div>
+              <div class="game-meta">${g.created_by || 'Anonymous'}</div>
+            </div>
           </div>
         `).join('');
       } catch {
-        list.innerHTML = '<div class="empty-hint">加载失败</div>';
+        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
     }
     
-    // 加载热点（贴吧+抖音+微博+B站）
+    // 搜索Steam图片
+    async function searchSteam(gameName, btn) {
+      btn.textContent = '⏳';
+      try {
+        const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
+        const data = await res.json();
+        if (data.headerUrl) {
+          btn.parentElement.style.backgroundImage = 'url(' + data.headerUrl + ')';
+          btn.parentElement.style.backgroundSize = 'cover';
+          btn.classList.add('success');
+          btn.textContent = '✓';
+          btn.onclick = null;
+        } else {
+          btn.textContent = '❌';
+          setTimeout(() => btn.textContent = '🔍', 2000);
+        }
+      } catch {
+        btn.textContent = '❌';
+        setTimeout(() => btn.textContent = '🔍', 2000);
+      }
+    }
+    
+    // 加载热点
     async function loadHot() {
       const list = document.getElementById('hot-list');
       try {
         const res = await fetch('/data/news.json');
         const data = await res.json();
-        // 贴吧、抖音、微博、B站热点
-        const all = [
-          ...(data.tieba||[]).map(i => ({...i, source: '贴吧'})),
-          ...(data.douyin||[]).map(i => ({...i, source: '抖音'})),
-          ...(data.weibo||[]).map(i => ({...i, source: '微博'})),
-          ...(data.bilibili||[]).map(i => ({...i, source: 'B站'}))
-        ].filter(n => n.title && n.title !== '获取失败').slice(0,20);
         
-        list.innerHTML = all.map(n => `
-          <div class="news-item" onclick="window.open('${n.url||'#'}','_blank')">
-            <div class="news-source" style="color:${n.source==='贴吧'?'#00aaff':n.source==='抖音'?'#000':n.source==='微博'?'#ff0000':n.source==='B站'?'#00aaff':'#fff'}">${n.source}</div>
+        const sources = [
+          {key: 'tieba', name: '贴吧', class: 'tieba'},
+          {key: 'douyin', name: '抖音', class: 'douyin'},
+          {key: 'weibo', name: '微博', class: 'weibo'},
+          {key: 'bilibili', name: 'B站', class: 'bilibili'}
+        ];
+        
+        let all = [];
+        sources.forEach(s => {
+          if (data[s.key]) {
+            data[s.key].forEach(item => {
+              if (item.title && item.title !== '获取失败') {
+                all.push({...item, source: s.name, sourceClass: s.class});
+              }
+            });
+          }
+        });
+        
+        all = all.slice(0, 20);
+        
+        if (all.length === 0) {
+          list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无热点</div></div>`;
+          return;
+        }
+        
+        list.innerHTML = all.map((n, i) => `
+          <div class="news-item" style="animation-delay: ${i*0.03}s">
+            <div class="news-header">
+              <span class="news-source ${n.sourceClass}">${n.source}</span>
+            </div>
             <div class="news-title">${n.title}</div>
           </div>
-        `).join('') || '<div class="empty-hint">暂无热点，稍后再试</div>';
+        `).join('');
       } catch(e) {
-        list.innerHTML = '<div class="empty-hint">加载失败: ' + e.message + '</div>';
+        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
     }
     
-    // 加载伊朗（翻译成中文）
+    // 加载伊朗
     async function loadIran() {
       const list = document.getElementById('iran-list');
       try {
@@ -321,48 +556,34 @@
         const data = await res.json();
         const news = data.iran || [];
         
-        // 翻译映射
         const translations = {
-          "Who is Mojtaba Khamenei, Iran's new supreme leader?": "伊朗新最高领袖是谁？莫伊巴塔·哈梅内伊",
-          "'Night turned into day': Iranians tell of strikes on oil depots": "'夜晚变白昼'：伊朗人讲述石油设施遭袭击",
-          "'Mind boggles' at doubts over legality of war, Israeli president says": "以色列总统：对战争合法性质疑令人震惊",
-          "Iran war": "伊朗战争",
-          "US Iran attack": "美国伊朗袭击"
+          "Who is Mojtaba Khamenei, Iran's new supreme leader?": "伊朗新最高领袖是谁？",
+          "'Night turned into day': Iranians tell of strikes on oil depots": "伊朗人讲述石油设施遭袭",
+          "'Mind boggles' at doubts over legality of war": "对战争合法性质疑",
+          "Israel and Iran": "以色列和伊朗",
+          "US Iran attacks": "美国伊朗袭击"
         };
         
-        list.innerHTML = news.map(n => {
+        if (news.length === 0) {
+          list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无新闻</div></div>`;
+          return;
+        }
+        
+        list.innerHTML = news.map((n, i) => {
           const title = translations[n.title] || n.title;
-          const summary = n.summary ? (translations[n.summary.substring(0,50)] || n.summary) : '';
           return `
-            <div class="news-item">
-              <div class="news-source" style="color:#ff6b6b">🇮🇷 伊朗</div>
+            <div class="news-item" style="animation-delay: ${i*0.03}s">
+              <div class="news-header">
+                <span class="news-source iran">🇮🇷 伊朗</span>
+                <span class="news-time">${n.time || ''}</span>
+              </div>
               <div class="news-title">${title}</div>
-              ${summary ? `<div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.5rem">${summary}</div>` : ''}
+              ${n.summary ? `<div class="news-summary">${n.summary.substring(0,100)}...</div>` : ''}
             </div>
           `;
-        }).join('') || '<div class="empty-hint">暂无新闻</div>';
-      } catch(e) {
-        list.innerHTML = '<div class="empty-hint">加载失败</div>';
-      }
-    }
-    
-    // 搜索Steam图片
-    async function searchSteamImage(gameName, btn) {
-      btn.textContent = '...';
-      try {
-        const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
-        const data = await res.json();
-        if (data.headerUrl) {
-          btn.parentElement.style.backgroundImage = 'url(' + data.headerUrl + ')';
-          btn.parentElement.style.backgroundSize = 'cover';
-          btn.style.display = 'none';
-        } else {
-          btn.textContent = '❌';
-          setTimeout(() => btn.textContent = '🔍', 2000);
-        }
-      } catch(e) {
-        btn.textContent = '❌';
-        setTimeout(() => btn.textContent = '🔍', 2000);
+        }).join('');
+      } catch {
+        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
     }
     
