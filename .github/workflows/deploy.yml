@@ -73,7 +73,7 @@ jobs:
           command: |
             ssh -i ~/.ssh/id_rsa \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "cd /home/node/.openclaw/workspace-work-agent/indeed-flow && git pull && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
+              "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow && git pull && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
       - name: Notify success
         if: success()
