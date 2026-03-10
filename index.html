@@ -232,12 +232,24 @@
       });
     });
     
-    // 加载游戏
+    // 加载游戏（带本地后备）
     async function loadGames() {
       const list = document.getElementById('games-list');
       try {
-        const res = await fetch(API_BASE + '/api/games');
-        const games = await res.json();
+        let games = [];
+        try {
+          const res = await fetch(API_BASE + '/api/games');
+          if (res.ok) games = await res.json();
+        } catch(e) { console.log('API失败，用本地数据'); }
+        
+        // 后备：本地数据
+        if (games.length === 0) {
+          try {
+            const res = await fetch('/data/games.json');
+            games = await res.json();
+          } catch {}
+        }
+        
         if (games.length === 0) {
           list.innerHTML = '<div class="empty-hint">暂无游戏，去添加一个吧！</div>';
           return;
@@ -254,38 +266,60 @@
       }
     }
     
-    // 加载热点
+    // 加载热点（贴吧+抖音+微博+B站）
     async function loadHot() {
       const list = document.getElementById('hot-list');
       try {
         const res = await fetch('/data/news.json');
         const data = await res.json();
-        const all = [...(data.tieba||[]), ...(data.weibo||[]), ...(data.bilibili||[])].slice(0,15);
+        // 贴吧、抖音、微博、B站热点
+        const all = [
+          ...(data.tieba||[]).map(i => ({...i, source: '贴吧'})),
+          ...(data.douyin||[]).map(i => ({...i, source: '抖音'})),
+          ...(data.weibo||[]).map(i => ({...i, source: '微博'})),
+          ...(data.bilibili||[]).map(i => ({...i, source: 'B站'}))
+        ].filter(n => n.title && n.title !== '获取失败').slice(0,20);
+        
         list.innerHTML = all.map(n => `
-          <div class="news-item">
-            <div class="news-source">热点</div>
-            <div class="news-title">${typeof n === 'string' ? n : n.title}</div>
+          <div class="news-item" onclick="window.open('${n.url||'#'}','_blank')">
+            <div class="news-source" style="color:${n.source==='贴吧'?'#00aaff':n.source==='抖音'?'#000':n.source==='微博'?'#ff0000':n.source==='B站'?'#00aaff':'#fff'}">${n.source}</div>
+            <div class="news-title">${n.title}</div>
           </div>
-        `).join('') || '<div class="empty-hint">暂无热点</div>';
-      } catch {
-        list.innerHTML = '<div class="empty-hint">加载失败</div>';
+        `).join('') || '<div class="empty-hint">暂无热点，稍后再试</div>';
+      } catch(e) {
+        list.innerHTML = '<div class="empty-hint">加载失败: ' + e.message + '</div>';
       }
     }
     
-    // 加载伊朗
+    // 加载伊朗（翻译成中文）
     async function loadIran() {
       const list = document.getElementById('iran-list');
       try {
         const res = await fetch('/data/news.json');
         const data = await res.json();
         const news = data.iran || [];
-        list.innerHTML = news.map(n => `
-          <div class="news-item">
-            <div class="news-source">伊朗</div>
-            <div class="news-title">${n.title}</div>
-          </div>
-        `).join('') || '<div class="empty-hint">暂无新闻</div>';
-      } catch {
+        
+        // 翻译映射
+        const translations = {
+          "Who is Mojtaba Khamenei, Iran's new supreme leader?": "伊朗新最高领袖是谁？莫伊巴塔·哈梅内伊",
+          "'Night turned into day': Iranians tell of strikes on oil depots": "'夜晚变白昼'：伊朗人讲述石油设施遭袭击",
+          "'Mind boggles' at doubts over legality of war, Israeli president says": "以色列总统：对战争合法性质疑令人震惊",
+          "Iran war": "伊朗战争",
+          "US Iran attack": "美国伊朗袭击"
+        };
+        
+        list.innerHTML = news.map(n => {
+          const title = translations[n.title] || n.title;
+          const summary = n.summary ? (translations[n.summary.substring(0,50)] || n.summary) : '';
+          return `
+            <div class="news-item">
+              <div class="news-source" style="color:#ff6b6b">🇮🇷 伊朗</div>
+              <div class="news-title">${title}</div>
+              ${summary ? `<div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:0.5rem">${summary}</div>` : ''}
+            </div>
+          `;
+        }).join('') || '<div class="empty-hint">暂无新闻</div>';
+      } catch(e) {
         list.innerHTML = '<div class="empty-hint">加载失败</div>';
       }
     }
