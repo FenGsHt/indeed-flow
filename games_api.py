@@ -45,11 +45,14 @@ def init_db():
             password VARCHAR(100),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             ratings JSON,
-            comments JSON
+            comments JSON,
+            status VARCHAR(20) DEFAULT 'wishlist'
         )
     ''')
     # 添加 password 列（如果不存在）
     cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)")
+    # 添加 status 列（如果不存在）
+    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'")
     conn.commit()
     conn.close()
 
@@ -289,9 +292,17 @@ def get_game_news():
 @app.route('/api/games', methods=['GET'])
 def get_games():
     """获取游戏列表"""
+    # 支持 status 筛选参数
+    status_filter = request.args.get('status', '')
+    
     conn = get_db()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute('SELECT * FROM games ORDER BY created_at DESC')
+    
+    if status_filter:
+        cursor.execute('SELECT * FROM games WHERE status = %s ORDER BY created_at DESC', (status_filter,))
+    else:
+        cursor.execute('SELECT * FROM games ORDER BY created_at DESC')
+    
     games = cursor.fetchall()
     conn.close()
     
@@ -303,6 +314,8 @@ def get_games():
         ratings = game['ratings']
         game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
         game['rating_count'] = len(ratings)
+        # 确保 status 字段有值
+        game['status'] = game.get('status') or 'wishlist'
     
     # 按评分排序
     games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
@@ -315,12 +328,14 @@ def add_game():
     data = request.json
     
     password = data.get('password', '')
+    status = data.get('status', 'wishlist')  # 默认 wishlist
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
         'image': data.get('image', ''),
         'created_by': data.get('user', '匿名'),
         'password': password,
+        'status': status,
         'ratings': {},
         'comments': []
     }
@@ -328,8 +343,8 @@ def add_game():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        'INSERT INTO games (id, name, image, created_by, password, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)',
-        (game['id'], game['name'], game['image'], game['created_by'], game['password'],
+        'INSERT INTO games (id, name, image, created_by, password, status, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
+        (game['id'], game['name'], game['image'], game['created_by'], game['password'], game['status'],
          json.dumps(game['ratings']), json.dumps(game['comments']))
     )
     conn.commit()
@@ -398,6 +413,26 @@ def comment_game(game_id):
     conn.close()
     
     return jsonify({'success': True})
+
+
+@app.route('/api/games/<game_id>/status', methods=['PUT'])
+def update_game_status(game_id):
+    """更新游戏状态"""
+    data = request.json
+    new_status = data.get('status', 'wishlist')
+    
+    # 验证状态值
+    valid_statuses = ['wishlist', 'playing', 'completed']
+    if new_status not in valid_statuses:
+        return jsonify({'success': False, 'error': '无效的状态值'}), 400
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE games SET status = %s WHERE id = %s', (new_status, game_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'status': new_status})
 
 
 @app.route('/api/games/<game_id>', methods=['DELETE'])

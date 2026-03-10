@@ -46,8 +46,10 @@
   <main class="list-section">
     <div class="list-header-bar">
       <div class="tabs">
-        <div class="tab active" data-tab="library">Library</div>
-        <div class="tab" data-tab="wishlist">Wishlist</div>
+        <div class="tab active" data-tab="all">全部</div>
+        <div class="tab" data-tab="wishlist">想玩</div>
+        <div class="tab" data-tab="playing">在玩</div>
+        <div class="tab" data-tab="completed">已玩</div>
         <div class="tab" data-tab="stats">Stats</div>
       </div>
       <div class="list-actions">
@@ -65,8 +67,8 @@
       </div>
     </div>
 
-    <!-- Library Tab -->
-    <div class="tab-content active" id="tab-library">
+    <!-- All Tab -->
+    <div class="tab-content active" id="tab-all">
       <div class="data-grid">
         <div class="grid-header">
           <div>No.</div>
@@ -82,7 +84,47 @@
 
     <!-- Wishlist Tab -->
     <div class="tab-content" id="tab-wishlist">
-      <div class="empty-hint">愿望单开发中...</div>
+      <div class="data-grid">
+        <div class="grid-header">
+          <div>No.</div>
+          <div>Cover</div>
+          <div>Title</div>
+          <div>Genre</div>
+          <div>Status</div>
+          <div style="text-align:right">Menu</div>
+        </div>
+        <div id="wishlist-list"></div>
+      </div>
+    </div>
+
+    <!-- Playing Tab -->
+    <div class="tab-content" id="tab-playing">
+      <div class="data-grid">
+        <div class="grid-header">
+          <div>No.</div>
+          <div>Cover</div>
+          <div>Title</div>
+          <div>Genre</div>
+          <div>Status</div>
+          <div style="text-align:right">Menu</div>
+        </div>
+        <div id="playing-list"></div>
+      </div>
+    </div>
+
+    <!-- Completed Tab -->
+    <div class="tab-content" id="tab-completed">
+      <div class="data-grid">
+        <div class="grid-header">
+          <div>No.</div>
+          <div>Cover</div>
+          <div>Title</div>
+          <div>Genre</div>
+          <div>Status</div>
+          <div style="text-align:right">Menu</div>
+        </div>
+        <div id="completed-list"></div>
+      </div>
     </div>
 
     <!-- Stats Tab -->
@@ -122,9 +164,9 @@
       </div>
       <div class="form-group">
         <select id="game-status">
-          <option value="backlog">Backlog</option>
-          <option value="playing">Playing</option>
-          <option value="completed">Completed</option>
+          <option value="wishlist">想玩</option>
+          <option value="playing">在玩</option>
+          <option value="completed">已玩</option>
         </select>
       </div>
       <div class="form-group">

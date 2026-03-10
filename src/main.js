@@ -30,6 +30,8 @@ function initUserName() {
 }
 
 // Tab 切换
+let currentStatusFilter = ''; // 状态筛选
+
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -39,15 +41,25 @@ document.querySelectorAll('.tab').forEach(tab => {
     currentTab = tab.dataset.tab;
     document.getElementById(`tab-${currentTab}`).classList.add('active');
     
-    if (currentTab === 'library') loadGames();
+    // 设置状态筛选
+    if (currentTab === 'all') {
+      currentStatusFilter = '';
+    } else if (currentTab === 'wishlist' || currentTab === 'playing' || currentTab === 'completed') {
+      currentStatusFilter = currentTab;
+    }
+    
+    if (currentTab === 'all' || currentTab === 'wishlist' || currentTab === 'playing' || currentTab === 'completed') {
+      loadGames();
+    }
     if (currentTab === 'stats') loadStats();
   });
 });
 
 // 从 API 获取游戏列表
-async function getGames() {
+async function getGames(status = '') {
   try {
-    const res = await fetch(`${API_BASE}/api/games`);
+    const url = status ? `${API_BASE}/api/games?status=${status}` : `${API_BASE}/api/games`;
+    const res = await fetch(url);
     if (res.ok) return await res.json();
   } catch (e) {
     console.log('API不可用');
@@ -74,7 +86,7 @@ let sortType = 'default';
 
 // 加载游戏列表
 async function loadGames() {
-  const games = await getGames();
+  const games = await getGames(currentStatusFilter);
   currentGames = games;
   updateHeroStats(games);
   renderGames();
@@ -114,9 +126,9 @@ function renderGames() {
       games.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       break;
     default:
-      // 默认：playing > backlog > completed
-      const statusOrder = { playing: 0, backlog: 1, completed: 2 };
-      games.sort((a, b) => statusOrder[a.status || 'backlog'] - statusOrder[b.status || 'backlog']);
+      // 默认：playing > wishlist > completed
+      const statusOrder = { playing: 0, wishlist: 1, completed: 2 };
+      games.sort((a, b) => statusOrder[a.status || 'wishlist'] - statusOrder[b.status || 'wishlist']);
   }
   
   const list = document.getElementById('games-list');
@@ -130,9 +142,10 @@ function renderGames() {
   list.innerHTML = games.map((g, i) => {
     const avg = calcAvgRating(g.ratings);
     const statusClass = g.status === 'playing' ? 'status-playing' : 
-                       g.status === 'completed' ? 'status-completed' : '';
-    const statusText = g.status === 'playing' ? 'Playing' : 
-                      g.status === 'completed' ? 'Completed' : 'Backlog';
+                       g.status === 'completed' ? 'status-completed' : 
+                       g.status === 'wishlist' ? 'status-wishlist' : '';
+    const statusText = g.status === 'playing' ? '在玩' : 
+                      g.status === 'completed' ? '已玩' : '想玩';
     
     // 生成标签
     const tags = g.tags || ['Game'];
@@ -155,16 +168,38 @@ function renderGames() {
     `;
   }).join('');
   
-  // 更新Featured Game（第一个playing的游戏，或第一个游戏）
-  const playing = games.find(g => g.status === 'playing');
-  const featured = playing || games[0];
+  // 更新Featured Game（根据当前tab显示对应状态的游戏）
+  let featured;
+  if (currentTab === 'playing') {
+    featured = games.find(g => g.status === 'playing') || games[0];
+  } else if (currentTab === 'wishlist') {
+    featured = games.find(g => g.status === 'wishlist') || games[0];
+  } else if (currentTab === 'completed') {
+    featured = games.find(g => g.status === 'completed') || games[0];
+  } else {
+    // all tab - 显示playing或第一个
+    featured = games.find(g => g.status === 'playing') || games[0];
+  }
+  
+  // 如果没有游戏，显示默认
+  if (!featured && games.length > 0) {
+    featured = games[0];
+  }
+  
   if (featured) {
+    const tabLabel = currentTab === 'all' ? '全部' : currentTab === 'wishlist' ? '想玩' : currentTab === 'playing' ? '在玩' : currentTab === 'completed' ? '已玩' : currentTab;
     document.getElementById('featured-title').textContent = featured.name;
-    document.getElementById('featured-time').textContent = `${Object.keys(featured.ratings || {}).length} ratings`;
+    document.getElementById('featured-time').textContent = `${tabLabel} · ${Object.keys(featured.ratings || {}).length} ratings`;
     const imgWrapper = document.getElementById('featured-image');
     if (featured.image) {
       imgWrapper.innerHTML = `<img src="${featured.image}" onerror="this.parentElement.innerHTML='<div class=\\'featured-placeholder\\'>🎮</div>'">`;
+    } else {
+      imgWrapper.innerHTML = '<div class="featured-placeholder">🎮</div>';
     }
+  } else {
+    document.getElementById('featured-title').textContent = '暂无游戏';
+    document.getElementById('featured-time').textContent = '0 ratings';
+    document.getElementById('featured-image').innerHTML = '<div class="featured-placeholder">🎮</div>';
   }
 }
 
@@ -204,6 +239,13 @@ async function showDetail(id) {
   
   const avg = calcAvgRating(game.ratings);
   const comments = game.comments || [];
+  const currentStatus = game.status || 'wishlist';
+  
+  const statusOptions = [
+    {value: 'wishlist', label: '想玩'},
+    {value: 'playing', label: '在玩'},
+    {value: 'completed', label: '已玩'}
+  ].map(opt => `<option value="${opt.value}" ${opt.value === currentStatus ? 'selected' : ''}>${opt.label}</option>`).join('');
   
   document.getElementById('detail-content').innerHTML = `
     <h2>${game.name}</h2>
@@ -214,6 +256,13 @@ async function showDetail(id) {
       <input type="text" id="new-image-url" placeholder="New image URL" value="${game.image || ''}">
       <button class="btn" onclick="changeImage('${game.id}')">Change Cover</button>
       <button class="btn" onclick="fetchSteamImage('${game.id}', '${game.name.replace(/'/g, "\\'")}')">🔍 Steam</button>
+    </div>
+    
+    <div class="status-section">
+      <h3>Status</h3>
+      <select id="detail-status" onchange="updateGameStatus('${game.id}', this.value)">
+        ${statusOptions}
+      </select>
     </div>
     
     <div class="rating-section">
@@ -246,6 +295,20 @@ async function showDetail(id) {
   `;
   
   document.getElementById('detail-modal').style.display = 'flex';
+}
+
+// 更新游戏状态
+async function updateGameStatus(id, newStatus) {
+  try {
+    await fetch(`${API_BASE}/api/games/${id}/status`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status: newStatus})
+    });
+    loadGames();
+  } catch {
+    alert('Failed to update status. Please try again.');
+  }
 }
 
 // 评分
@@ -446,6 +509,8 @@ window.showDetail = showDetail;
 window.closeModal = closeModal;
 window.selectSteamGame = selectSteamGame;
 window.changeImage = changeImage;
+window.fetchSteamImage = fetchSteamImage;
+window.updateGameStatus = updateGameStatus;
 
 // 初始化
 loadGames();
