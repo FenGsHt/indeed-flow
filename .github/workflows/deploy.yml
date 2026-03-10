@@ -55,3 +55,24 @@ jobs:
           source: "dist/*"
           target: ${{ secrets.SERVER_PATH }}
           strip_components: 1
+
+      - name: Start Flask backend
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ${{ secrets.SERVER_PATH }}
+            # Kill existing Flask process if any
+            pkill -f "python3.*app.py" || true
+            # Start Flask in background
+            nohup python3 app.py > flask.log 2>&1 &
+            sleep 2
+            # Check if running
+            if pgrep -f "python3.*app.py"; then
+              echo "Flask started successfully"
+            else
+              echo "Flask failed to start, check log:"
+              cat flask.log
+            fi
