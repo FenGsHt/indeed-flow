@@ -165,6 +165,89 @@ def update_game_image(game_id):
     return jsonify({'success': True})
 
 
+@app.route('/api/steam-images', methods=['GET'])
+def get_steam_images():
+    """完整流程：从 Steam 获取游戏图片"""
+    game_name = request.args.get('q', '')
+    if not game_name:
+        return jsonify({'headerUrl': '', 'previewUrls': []})
+    
+    import re
+    
+    # 1. 搜索游戏获取 AppID
+    try:
+        search_url = f"https://store.steampowered.com/search/?term={urllib.parse.quote(game_name)}"
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        with urllib.request.urlopen(req, timeout=8) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+            
+            # 提取 data-ds-appid
+            match = re.search(r'data-ds-appid="(\d+)"', html)
+            if match:
+                app_id = match.group(1)
+            else:
+                alt_match = re.search(r'href="https://store\.steampowered\.com/app/(\d+)', html)
+                if alt_match:
+                    app_id = alt_match.group(1)
+                else:
+                    app_id = None
+        
+        if not app_id:
+            # 备用方法
+            return get_fallback_steam_image(game_name)
+        
+        # 2. 获取游戏详情
+        details_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
+        req = urllib.request.Request(details_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode())
+            
+            if str(app_id) in data and data[str(app_id)].get('success'):
+                game_data = data[str(app_id)].get('data', {})
+                
+                header_url = game_data.get('header_image', '')
+                if not header_url:
+                    header_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                
+                screenshots = game_data.get('screenshots', [])
+                preview_urls = [
+                    s.get('path_thumbnail') or s.get('path_full')
+                    for s in screenshots[:3]
+                    if s.get('path_thumbnail') or s.get('path_full')
+                ]
+                
+                return jsonify({
+                    'headerUrl': header_url,
+                    'previewUrls': preview_urls,
+                    'appId': app_id,
+                    'name': game_data.get('name', '')
+                })
+    except Exception as e:
+        print(f"Steam images error: {e}")
+    
+    # 3. 备用方法
+    return get_fallback_steam_image(game_name)
+
+
+def get_fallback_steam_image(game_name):
+    """备用方法：直接构建封面图 URL"""
+    import re
+    try:
+        search_url = f"https://store.steampowered.com/search/?term={urllib.parse.quote(game_name)}"
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+            match = re.search(r'data-ds-appid="(\d+)"', html)
+            if match:
+                app_id = match.group(1)
+                fallback_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                return jsonify({'headerUrl': fallback_url, 'previewUrls': [], 'appId': app_id})
+    except:
+        pass
+    
+    return jsonify({'headerUrl': '', 'previewUrls': []})
+
+
 # ============ 游戏新闻获取 ============
 
 @app.route('/api/game-news', methods=['GET'])
