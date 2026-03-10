@@ -1,31 +1,32 @@
 // API 基础 URL
-const API_BASE = 'http://150.158.110.168:5001'; // API 后端地址
+const API_BASE = 'http://150.158.110.168:5001';
 
-// 夜间模式切换
-const themeToggle = document.getElementById('theme-toggle');
-if (themeToggle) {
-  // 读取保存的主题
-  const isDark = localStorage.getItem('theme') === 'dark';
-  if (isDark) document.body.classList.add('dark-mode');
-  
-  themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const dark = document.body.classList.contains('dark-mode');
-    themeToggle.textContent = dark ? '☀️' : '🌙';
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+// 当前选中的游戏
+let currentGames = [];
+let currentTab = 'library';
+
+// Tab 切换
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    document.getElementById(`tab-${currentTab}`).classList.add('active');
+    
+    if (currentTab === 'library') loadGames();
+    if (currentTab === 'stats') loadStats();
   });
-  
-  // 初始化图标
-  if (isDark) themeToggle.textContent = '☀️';
-}
+});
 
-// 从 API 获取游戏列表，失败则用本地静态数据
+// 从 API 获取游戏列表
 async function getGames() {
   try {
     const res = await fetch(`${API_BASE}/api/games`);
     if (res.ok) return await res.json();
   } catch (e) {
-    console.log('API不可用，使用本地数据');
+    console.log('API不可用');
   }
   // 后备：本地静态数据
   try {
@@ -43,87 +44,93 @@ function calcAvgRating(ratings) {
   return sum / Object.keys(ratings).length;
 }
 
-// 页面切换
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const page = e.target.dataset.page;
-    
-    // 更新导航
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    e.target.classList.add('active');
-    
-    // 切换页面
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(`${page}-page`).classList.add('active');
-    
-    if (page === 'games') loadGames();
-    if (page === 'news') loadNewsTabs();
-  });
-});
-
-// 搜索和排序事件
-document.getElementById('search-games')?.addEventListener('input', loadGames);
-document.getElementById('sort-games')?.addEventListener('change', loadGames);
-
-// 加载游戏列表
+// 加载游戏列表（表格布局）
 async function loadGames() {
-  let games = await getGames();
+  const games = await getGames();
+  currentGames = games;
   
-  // 搜索过滤
-  const search = document.getElementById('search-games')?.value?.toLowerCase() || '';
-  if (search) games = games.filter(g => g.name.toLowerCase().includes(search));
-  
-  // 排序
-  const sort = document.getElementById('sort-games')?.value || 'time';
-  if (sort === 'rating') games.sort((a,b) => (b.avg_rating||0) - (a.avg_rating||0));
-  else if (sort === 'name') games.sort((a,b) => a.name.localeCompare(b.name, 'zh'));
-  else games.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-  
-  document.getElementById('total-games').textContent = games.length;
+  // 更新统计
+  updateHeroStats(games);
   
   const list = document.getElementById('games-list');
+  if (!list) return;
   
   if (games.length === 0) {
-    list.innerHTML = '<p class="empty-hint">暂无游戏，点击添加</p>';
+    list.innerHTML = '<div class="empty-hint">No games yet. Click "Add Game" to start.</div>';
     return;
   }
   
-  list.innerHTML = games.map((g, i) => `
-    <div class="game-card" data-id="${g.id}">
-      <div class="game-rank">${i + 1}</div>
-      ${g.image && g.image.startsWith('http') ? 
-        `<img src="${g.image}" alt="${g.name}" onerror="this.style.display='none'">` : 
-        `<div class="game-placeholder">${g.name[0]}</div>`}
-      <div class="game-info">
-        <h3>${g.name}</h3>
-        <div class="game-meta">
-          <span class="rating">${g.avg_rating > 0 ? '⭐ ' + g.avg_rating.toFixed(1) : '暂无评分'}</span>
-          <span class="stats">${Object.keys(g.ratings || {}).length}评 · ${(g.comments || []).length}言</span>
+  // 按状态排序：playing > backlog > completed
+  const statusOrder = { playing: 0, backlog: 1, completed: 2 };
+  games.sort((a, b) => statusOrder[a.status || 'backlog'] - statusOrder[b.status || 'backlog']);
+  
+  list.innerHTML = games.map((g, i) => {
+    const avg = calcAvgRating(g.ratings);
+    const statusClass = g.status === 'playing' ? 'status-playing' : 
+                       g.status === 'completed' ? 'status-completed' : '';
+    const statusText = g.status === 'playing' ? 'Playing' : 
+                      g.status === 'completed' ? 'Completed' : 'Backlog';
+    
+    // 生成标签
+    const tags = g.tags || ['Game'];
+    const tagsHtml = tags.map(t => `<span class="tag">${t}</span>`).join('');
+    
+    return `
+      <div class="grid-row ${statusClass}" data-id="${g.id}" onclick="showDetail('${g.id}')">
+        <div class="cell-index">${String(i + 1).padStart(2, '0')}</div>
+        <div class="cell-cover" style="${g.image ? `background-image:url('${g.image}')` : 'background:linear-gradient(135deg,#FF3366,#FF9933)'}" onerror="this.style.background='linear-gradient(135deg,#FF3366,#FF9933)'"></div>
+        <div class="cell-title">
+          <span class="game-title">${g.name}</span>
+          <span class="game-platform">${g.created_by || 'Anonymous'}</span>
         </div>
+        <div class="cell-tags">${tagsHtml}</div>
+        <div class="cell-status ${statusClass}">
+          <span class="status-indicator"></span>${statusText}
+        </div>
+        <div class="cell-action">↗</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
-  // 添加点击事件
-  document.querySelectorAll('.game-card').forEach(card => {
-    card.addEventListener('click', () => showDetail(card.dataset.id));
-  });
-  
-  // 更新首页统计
-  loadStats(games);
+  // 更新Featured Game（第一个playing的游戏，或第一个游戏）
+  const playing = games.find(g => g.status === 'playing');
+  const featured = playing || games[0];
+  if (featured) {
+    document.getElementById('featured-title').textContent = featured.name;
+    document.getElementById('featured-time').textContent = `${Object.keys(featured.ratings || {}).length} ratings`;
+    const imgWrapper = document.getElementById('featured-image');
+    if (featured.image) {
+      imgWrapper.innerHTML = `<img src="${featured.image}" onerror="this.parentElement.innerHTML='<div class=\\'featured-placeholder\\'>🎮</div>'">`;
+    }
+  }
 }
 
-// 加载首页统计
-function loadStats(games) {
+// 更新Hero统计
+function updateHeroStats(games) {
+  document.getElementById('stat-games').innerHTML = `${games.length}<span style="font-size:3rem;color:rgba(0,0,0,0.4)"> / 365</span>`;
+  
   let totalRatings = 0, totalComments = 0;
   games.forEach(g => {
     totalRatings += Object.keys(g.ratings || {}).length;
     totalComments += (g.comments || []).length;
   });
-  document.getElementById('stat-games').textContent = games.length;
+  
+  document.getElementById('stat-year').textContent = `${games.filter(g => g.status === 'completed').length} completed this year`;
+}
+
+// 加载Stats页面
+async function loadStats() {
+  const games = await getGames();
+  
+  let totalRatings = 0, totalComments = 0;
+  games.forEach(g => {
+    totalRatings += Object.keys(g.ratings || {}).length;
+    totalComments += (g.comments || []).length;
+  });
+  
   document.getElementById('stat-ratings').textContent = totalRatings;
   document.getElementById('stat-comments').textContent = totalComments;
+  document.getElementById('stat-added-this-year').textContent = games.length;
 }
 
 // 显示游戏详情
@@ -132,66 +139,49 @@ async function showDetail(id) {
   const game = games.find(g => g.id === id);
   if (!game) return;
   
-  const avg = game.avg_rating || 0;
+  const avg = calcAvgRating(game.ratings);
+  const comments = game.comments || [];
   
   document.getElementById('detail-content').innerHTML = `
     <h2>${game.name}</h2>
-    <p class="added-by">添加者: ${game.created_by} · ${game.created_at?.slice(0,10) || '-'}</p>
-    ${game.image && game.image.startsWith('http') ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
+    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'} · ${game.created_at?.slice(0,10) || '-'}</p>
+    ${game.image ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
     
     <div class="rating-section">
-      <h3>评分: ${avg > 0 ? '⭐ ' + avg.toFixed(1) : '暂无'}</h3>
+      <h3>Rating: ${avg > 0 ? '⭐ ' + avg.toFixed(1) : 'No ratings'}</h3>
       <div class="rate-buttons">
-        ${[1,2,3,4,5].map(n => `<button onclick="rateGame('${id}', ${n})" class="rate-btn">${n}⭐</button>`).join('')}
+        ${[1,2,3,4,5].map(n => `<button class="rate-btn" onclick="rateGame('${id}', ${n})">${n}⭐</button>`).join('')}
       </div>
-      <input type="text" id="rater-name" placeholder="你的名字">
     </div>
     
     <div class="comments-section">
-      <h3>💬 留言 (${(game.comments || []).length})</h3>
-      <div class="comments-list">
-        ${(game.comments || []).length ? game.comments.map(c => `
-          <div class="comment"><strong>${c.user}</strong>: ${c.text} <span class="time">${c.timestamp?.slice(0,10) || ''}</span></div>
-        `).join('') : '<p class="hint">暂无留言</p>'}
-      </div>
-      <div class="add-comment">
-        <input type="text" id="comment-user" placeholder="名字" style="width:80px;">
-        <input type="text" id="comment-text" placeholder="留言...">
-        <button onclick="addComment('${id}')" class="btn-small">发送</button>
+      <h3>Comments (${comments.length})</h3>
+      ${comments.length > 0 ? comments.map(c => `
+        <div class="comment">
+          <div class="comment-user">${c.user}</div>
+          <div class="comment-text">${c.text}</div>
+        </div>
+      `).join('') : '<p style="color:var(--text-muted)">No comments yet</p>'}
+      
+      <div style="margin-top:1rem;">
+        <input type="text" id="comment-user" placeholder="Your name" style="width:100%;padding:8px;margin-bottom:0.5rem;border:var(--border-thin);border-radius:var(--radius-sm);">
+        <input type="text" id="comment-text" placeholder="Add a comment..." style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
+        <button class="btn" style="margin-top:0.5rem;" onclick="addComment('${id}')">Post Comment</button>
       </div>
     </div>
     
     <div class="detail-actions">
-      <button onclick="changeGameImage('${id}')" class="btn-secondary">🖼️ 更换封面</button>
-      <button onclick="deleteGame('${id}')" class="btn-danger">删除</button>
-      <button onclick="closeModal('detail-modal')" class="btn-secondary">关闭</button>
+      <button class="btn btn-danger" onclick="deleteGame('${id}')">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
     </div>
   `;
   
   document.getElementById('detail-modal').style.display = 'flex';
 }
 
-// 更换游戏封面
-async function changeGameImage(id) {
-  const newImage = prompt('请输入新的图片URL:');
-  if (!newImage) return;
-  
-  try {
-    await fetch(`${API_BASE}/api/games/${id}/image`, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({image: newImage})
-    });
-    showDetail(id);
-    loadGames();
-  } catch (e) {
-    alert('更新失败，请稍后重试');
-  }
-}
-
 // 评分
 async function rateGame(id, score) {
-  const user = document.getElementById('rater-name').value || '匿名';
+  const user = document.getElementById('rater-name')?.value || 'Anonymous';
   
   try {
     await fetch(`${API_BASE}/api/games/${id}/rate`, {
@@ -202,14 +192,15 @@ async function rateGame(id, score) {
     showDetail(id);
     loadGames();
   } catch {
-    alert('评分功能需要后端服务，请稍后重试');
+    alert('Rating failed. Please try again.');
   }
 }
 
-// 留言
+// 添加评论
 async function addComment(id) {
-  const user = document.getElementById('comment-user').value || '匿名';
-  const text = document.getElementById('comment-text').value;
+  const user = document.getElementById('comment-user')?.value || 'Anonymous';
+  const text = document.getElementById('comment-text')?.value;
+  
   if (!text) return;
   
   try {
@@ -219,22 +210,95 @@ async function addComment(id) {
       body: JSON.stringify({user, text})
     });
     showDetail(id);
+    loadGames();
   } catch {
-    alert('留言功能需要后端服务，请稍后重试');
+    alert('Comment failed. Please try again.');
   }
 }
 
 // 删除游戏
 async function deleteGame(id) {
-  if (!confirm('确定删除？')) return;
+  if (!confirm('Delete this game?')) return;
   
   try {
     await fetch(`${API_BASE}/api/games/${id}`, {method: 'DELETE'});
+    closeModal('detail-modal');
+    loadGames();
   } catch {
-    alert('删除功能需要后端服务，请稍后重试');
+    alert('Delete failed. Please try again.');
   }
-  closeModal('detail-modal');
-  loadGames();
+}
+
+// 添加游戏
+async function addGame() {
+  const name = document.getElementById('game-name').value;
+  const image = document.getElementById('game-image').value;
+  const user = document.getElementById('game-user').value || 'Anonymous';
+  const status = document.getElementById('game-status').value;
+  const tags = document.getElementById('game-tags').value.split(',').map(t => t.trim()).filter(t => t);
+  
+  if (!name) {
+    alert('Please enter game name');
+    return;
+  }
+  
+  try {
+    await fetch(`${API_BASE}/api/games`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, image, user, status, tags})
+    });
+    
+    document.getElementById('game-name').value = '';
+    document.getElementById('game-image').value = '';
+    document.getElementById('game-tags').value = '';
+    document.getElementById('steam-results').innerHTML = '';
+    
+    closeModal('add-modal');
+    loadGames();
+  } catch {
+    alert('Add failed. Please try again.');
+  }
+}
+
+// Steam搜索
+async function searchSteam() {
+  const name = document.getElementById('game-name').value.trim();
+  if (!name) return;
+  
+  const btn = document.getElementById('search-steam-btn');
+  btn.textContent = '...';
+  
+  try {
+    const res = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&l=english&cc=US`);
+    const data = await res.json();
+    
+    const resultsDiv = document.getElementById('steam-results');
+    if (data.items && data.items.length > 0) {
+      resultsDiv.innerHTML = data.items.slice(0, 5).map(item => `
+        <div class="steam-item" onclick="selectSteamGame('${item.id}', '${item.name.replace(/'/g, "\\'")}')">
+          <img src="${item.thumb}" onerror="this.style.display='none'">
+          <span>${item.name}</span>
+        </div>
+      `).join('');
+    } else {
+      resultsDiv.innerHTML = '<div style="color:var(--text-muted)">No results found</div>';
+    }
+  } catch {
+    document.getElementById('steam-results').innerHTML = '<div style="color:var(--text-muted)">Search failed</div>';
+  }
+  
+  btn.textContent = '🔍 Steam';
+}
+
+function selectSteamGame(id, name) {
+  document.getElementById('game-name').value = name;
+  document.getElementById('game-image').value = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`;
+  document.getElementById('steam-results').innerHTML = '';
+  
+  // 预览图片
+  const preview = document.getElementById('image-preview');
+  preview.innerHTML = `<img src="https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg" onerror="this.parentElement.innerHTML=''">`;
 }
 
 // 弹窗控制
@@ -242,310 +306,29 @@ function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-// 添加游戏按钮
-document.getElementById('add-game-btn').addEventListener('click', () => {
-  document.getElementById('add-modal').style.display = 'flex';
-});
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+}
 
-document.getElementById('cancel-add').addEventListener('click', () => {
-  closeModal('add-modal');
-});
+// 事件绑定
+document.getElementById('add-game-btn')?.addEventListener('click', () => openModal('add-modal'));
+document.getElementById('confirm-add')?.addEventListener('click', addGame);
+document.getElementById('search-steam-btn')?.addEventListener('click', searchSteam);
 
-// 自动搜索游戏图片
-let searchTimeout;
-document.getElementById('game-name').addEventListener('input', (e) => {
-  clearTimeout(searchTimeout);
-  const name = e.target.value.trim();
-  const preview = document.getElementById('image-preview');
-  
-  if (name.length < 2) {
-    preview.style.display = 'none';
-    return;
-  }
-  
-  // 防抖搜索
-  searchTimeout = setTimeout(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/search-image?q=${encodeURIComponent(name)}`);
-      const data = await res.json();
-      if (data.image) {
-        document.getElementById('game-image').value = data.image;
-        preview.innerHTML = `<img src="${data.image}" alt="${data.name}">`;
-        preview.style.display = 'block';
-      } else {
-        preview.style.display = 'none';
-      }
-    } catch (e) {
-      console.error('Search error:', e);
-    }
-  }, 500);
-});
-
-// 添加游戏
-document.getElementById('confirm-add').addEventListener('click', async () => {
-  const name = document.getElementById('game-name').value;
-  const image = document.getElementById('game-image').value;
-  const user = document.getElementById('game-user').value || '匿名';
-  
-  if (!name) {
-    alert('请输入游戏名称');
-    return;
-  }
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/games`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, image, user})
-    });
-    
-    if (!res.ok) {
-      const err = await res.json();
-      alert('添加失败: ' + (err.error || '未知错误'));
-      return;
-    }
-    
-    const data = await res.json();
-    if (!data.success) {
-      alert('添加失败: ' + (data.error || '未知错误'));
-      return;
-    }
-    
-    // 成功后才清空和刷新
-    document.getElementById('game-name').value = '';
-    document.getElementById('game-image').value = '';
-    document.getElementById('game-user').value = '';
-    
-    closeModal('add-modal');
-    loadGames();
-  } catch (e) {
-    alert('后端服务未运行，添加功能暂时不可用');
-    console.error('Add game error:', e);
-  }
-});
-
-// 关闭弹窗
+// 点击弹窗外部关闭
 document.querySelectorAll('.modal').forEach(modal => {
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-    }
+    if (e.target === modal) closeModal(modal.id);
   });
-});
-
-// ============== Steam 图片搜索 ==============
-
-// Steam搜索按钮 - 改为调用后端接口避免跨域
-document.getElementById('search-steam-btn')?.addEventListener('click', async () => {
-  const name = document.getElementById('game-name').value.trim();
-  if (!name) {
-    alert('请先输入游戏名称');
-    return;
-  }
-  
-  const resultsDiv = document.getElementById('steam-results');
-  resultsDiv.innerHTML = '<div class="loading">搜索中...</div>';
-  
-  try {
-    // 改为调用后端接口，由后端请求 Steam API 避免跨域
-    const res = await fetch(`${API_BASE}/api/search-steam?q=${encodeURIComponent(name)}`);
-    const data = await res.json();
-    
-    if (data.items && data.items.length > 0) {
-      resultsDiv.innerHTML = data.items.map(item => `
-        <div class="steam-item" onclick="selectSteamImage('${item.header}', '${item.name}')">
-          <img src="${item.thumb}" onerror="this.style.display='none'">
-          <span>${item.name}</span>
-        </div>
-      `).join('');
-    } else {
-      resultsDiv.innerHTML = '<div class="empty-hint">未找到相关游戏</div>';
-    }
-  } catch (e) {
-    console.error('Steam search error:', e);
-    resultsDiv.innerHTML = '<div class="error-state">搜索失败，请手动输入图片URL</div>';
-  }
-});
-
-function selectSteamImage(url, name) {
-  document.getElementById('game-image').value = url;
-  document.getElementById('steam-results').innerHTML = '';
-  document.getElementById('image-preview').innerHTML = url ? `<img src="${url}" onerror="this.parentElement.innerHTML=''">` : '';
-}
-
-// ============== 新闻专区 ==============
-
-// 加载新闻Tab配置
-async function loadNewsTabs() {
-  try {
-    const res = await fetch('/data/config.json');
-    const config = await res.json();
-    const tabsContainer = document.querySelector('.news-tabs');
-    if (tabsContainer && config.newsTabs) {
-      tabsContainer.innerHTML = config.newsTabs.map(t => 
-        `<button class="news-tab ${t.id === 'hot' ? 'active' : ''}" data-tab="${t.id}">${t.name}</button>`
-      ).join('');
-      
-      // 重新绑定事件
-      initNewsTabs();
-    }
-  } catch (e) {
-    console.log('使用默认新闻Tab');
-  }
-}
-
-function initNewsTabs() {
-  document.querySelectorAll('.news-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.news-tab-content').forEach(c => c.classList.remove('active'));
-      
-      e.target.classList.add('active');
-      document.getElementById(`${e.target.dataset.tab}-tab`).classList.add('active');
-      
-      if (e.target.dataset.tab === 'hot') loadHotNews();
-      if (e.target.dataset.tab === 'iran') loadIranNews();
-    });
-  });
-}
-
-// 新闻 Tab 切换（已废弃，用initNewsTabs）
-document.querySelectorAll('.news-tab').forEach(tab => {
-  tab.addEventListener('click', (e) => {
-    document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.news-tab-content').forEach(c => c.classList.remove('active'));
-    
-    e.target.classList.add('active');
-    document.getElementById(`${e.target.dataset.tab}-tab`).classList.add('active');
-    
-    if (e.target.dataset.tab === 'hot') {
-      loadHotNews();
-    } else {
-      loadIranNews();
-    }
-  });
-});
-
-async function loadHotNews() {
-  try {
-    const res = await fetch('/data/news.json');
-    const data = await res.json();
-    
-    // 贴吧
-    document.getElementById('tieba-hot').innerHTML = data.tieba?.map((item, i) => {
-      const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      const summary = typeof item === 'object' ? (item.summary || '') : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button><p class="hot-summary">${summary}</p></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
-    }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
-    
-    // 微博
-    document.getElementById('weibo-hot').innerHTML = data.weibo?.map((item, i) => {
-      const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
-    }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
-    
-    // B站
-    document.getElementById('bilibili-hot').innerHTML = data.bilibili?.map((item, i) => {
-      const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
-    }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
-    
-    // 抖音
-    document.getElementById('douyin-hot').innerHTML = data.douyin?.map((item, i) => {
-      const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
-    }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
-    
-    // 小红书
-    document.getElementById('xiaohongshu-hot').innerHTML = data.xiaohongshu?.map((item, i) => {
-      const title = typeof item === 'string' ? item : (item.title || '');
-      const url = typeof item === 'object' ? item.url : '';
-      return url ? `<li><span class="rank">${i+1}</span><a href="${url}" target="_blank">${title}</a><button class="intro-btn" onclick="getIntro('${title}', this)">简介</button></li>` : `<li><span class="rank">${i+1}</span>${title}</li>`;
-    }).join('') || '<li class="error-state">加载失败 <button onclick="loadHotNews()">重试</button></li>';
-    
-    // 公共热点
-    const publicHot = document.getElementById('public-hot');
-    if (data.public && data.public.length > 0) {
-      publicHot.innerHTML = '<h3>🌐 公共热点</h3><ul>' + 
-        data.public.map(item => 
-          `<li>${item.topic}<span class="platforms">${item.platforms.join(', ')}</span></li>`
-        ).join('') + '</ul>';
-    } else {
-      publicHot.innerHTML = '<h3>🌐 公共热点</h3><p class="hint">暂无公共热点</p>';
-    }
-  } catch (e) {
-    console.error('加载热点失败:', e);
-  }
-}
-
-async function loadIranNews() {
-  try {
-    const res = await fetch('/data/news.json');
-    const data = await res.json();
-    
-    const container = document.getElementById('iran-news');
-    if (data.iran && data.iran.length > 0) {
-      container.innerHTML = data.iran.map((item, idx) => `
-        <div class="iran-item" data-idx="${idx}">
-          <h4>${item.title}</h4>
-          <div class="meta">
-            <span class="source">${item.source}</span> | <span>${item.time}</span>
-          </div>
-          <p class="summary">${item.summary}</p>
-          <a href="${item.url}" target="_blank" class="news-link">查看详情 →</a>
-        </div>
-      `).join('');
-    } else {
-      container.innerHTML = '<p class="hint">暂无新闻</p>';
-    }
-  } catch (e) {
-    console.error('加载伊朗新闻失败:', e);
-  }
-}
-
-// 页面切换时加载新闻
-const originalNavHandler = document.querySelector('.nav-link[data-page="news"]');
-document.querySelector('.nav-link[data-page="news"]').addEventListener('click', () => {
-  loadHotNews();
 });
 
 // 全局函数
 window.rateGame = rateGame;
 window.addComment = addComment;
 window.deleteGame = deleteGame;
+window.showDetail = showDetail;
 window.closeModal = closeModal;
-window.getIntro = getIntro;
-window.changeGameImage = changeGameImage;
+window.selectSteamGame = selectSteamGame;
 
-// 获取热点简介
-async function getIntro(title, btn) {
-  btn.textContent = '...';
-  btn.disabled = true;
-  
-  try {
-    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.baidu.com/s?wd=' + title)}`);
-    const text = await res.text();
-    // 简单提取搜索结果摘要
-    const match = text.match(/>([^<]{20,80})</);
-    const intro = match ? match[1] : '未能获取简介';
-    
-    const li = btn.parentElement;
-    let summaryEl = li.querySelector('.hot-summary');
-    if (!summaryEl) {
-      summaryEl = document.createElement('p');
-      summaryEl.className = 'hot-summary';
-      li.appendChild(summaryEl);
-    }
-    summaryEl.textContent = intro;
-    summaryEl.style.display = 'block';
-    btn.textContent = '简介';
-    btn.disabled = false;
-  } catch {
-    btn.textContent = '失败';
-    btn.disabled = false;
-  }
-}
+// 初始化
+loadGames();

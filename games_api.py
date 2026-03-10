@@ -38,11 +38,14 @@ def init_db():
             name VARCHAR(255) NOT NULL,
             image VARCHAR(512),
             created_by VARCHAR(100),
+            password VARCHAR(100),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             ratings JSON,
             comments JSON
         )
     ''')
+    # 添加 password 列（如果不存在）
+    cursor.execute("ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)")
     conn.commit()
     conn.close()
 
@@ -307,11 +310,13 @@ def add_game():
     """添加游戏"""
     data = request.json
     
+    password = data.get('password', '')
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
         'image': data.get('image', ''),
         'created_by': data.get('user', '匿名'),
+        'password': password,
         'ratings': {},
         'comments': []
     }
@@ -319,8 +324,8 @@ def add_game():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        'INSERT INTO games (id, name, image, created_by, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s)',
-        (game['id'], game['name'], game['image'], game['created_by'], 
+        'INSERT INTO games (id, name, image, created_by, password, ratings, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+        (game['id'], game['name'], game['image'], game['created_by'], game['password'],
          json.dumps(game['ratings']), json.dumps(game['comments']))
     )
     conn.commit()
@@ -393,9 +398,28 @@ def comment_game(game_id):
 
 @app.route('/api/games/<game_id>', methods=['DELETE'])
 def delete_game(game_id):
-    """删除游戏"""
+    """删除游戏 - 需要密码验证"""
+    password = request.args.get('password', '')
+    
     conn = get_db()
     cursor = conn.cursor()
+    
+    # 检查游戏是否有密码保护
+    cursor.execute('SELECT password FROM games WHERE id = %s', (game_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({'success': False, 'error': '游戏不存在'}), 404
+    
+    stored_password = row[0] if row else None
+    
+    # 如果有密码，必须验证
+    if stored_password:
+        if not password:
+            return jsonify({'success': False, 'error': '需要密码'}), 401
+        if password != stored_password:
+            return jsonify({'success': False, 'error': '密码错误'}), 403
+    
     cursor.execute('DELETE FROM games WHERE id = %s', (game_id,))
     conn.commit()
     conn.close()

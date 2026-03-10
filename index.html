@@ -3,151 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INDEED - 待玩游戏</title>
-  <link rel="stylesheet" href="/src/style.css">
+  <title>INDEED - Game Backlog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-  <div id="app">
-    <header class="header">
-      <h1 class="logo">INDEED</h1>
-      <nav class="main-nav">
-        <a href="#" class="nav-link active" data-page="home">首页</a>
-        <a href="#" class="nav-link" data-page="games">待玩游戏</a>
-        <a href="#" class="nav-link" data-page="news">新闻专区</a>
-        <button id="theme-toggle" class="theme-btn" title="切换夜间模式">🌙</button>
-      </nav>
-    </header>
-    
-    <!-- 首页 -->
-    <main id="home-page" class="page active">
-      <div class="hero">
-        <p class="hero-text">发现 &middot; 评分 &middot; 推荐</p>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-num" id="stat-games">0</span>
-            <span class="stat-label">游戏总数</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="stat-ratings">0</span>
-            <span class="stat-label">评分次数</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="stat-comments">0</span>
-            <span class="stat-label">留言总数</span>
-          </div>
+  <!-- Hero Section -->
+  <header class="hero-section">
+    <div class="featured-game" id="featured-game">
+      <div class="featured-image-wrapper" id="featured-image">
+        <div class="featured-placeholder">🎮</div>
+      </div>
+      <div class="featured-meta">
+        <div class="featured-title" id="featured-title">选择游戏</div>
+        <div class="featured-time" id="featured-time">0 HRS</div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-block-large">
+        <div class="stat-number" id="stat-games">0<span style="font-size:3rem;color:rgba(0,0,0,0.4)"> / 365</span></div>
+        <div class="stat-label">Games Total</div>
+      </div>
+      <div class="hero-details">
+        <div class="detail-col">
+          <span class="detail-label">Current Focus</span>
+          <p>评分 &middot; 留言 &middot; 推荐</p>
+        </div>
+        <div class="detail-col">
+          <span class="detail-label">This Year</span>
+          <p id="stat-year">0 games played</p>
         </div>
       </div>
-    </main>
-    
-    <!-- 游戏列表页 -->
-    <main id="games-page" class="page">
-      <div class="page-header">
-        <h2>待玩游戏</h2>
-        <p class="page-desc">点击游戏进行评分和留言</p>
+    </div>
+
+    <div class="hero-title-vertical">BACKLOG</div>
+  </header>
+
+  <!-- List Section -->
+  <main class="list-section">
+    <div class="list-header-bar">
+      <div class="tabs">
+        <div class="tab active" data-tab="library">Library</div>
+        <div class="tab" data-tab="wishlist">Wishlist</div>
+        <div class="tab" data-tab="stats">Stats</div>
       </div>
-      
-      <div class="toolbar">
-        <input type="text" id="search-games" class="search-input" placeholder="🔍 搜索游戏...">
-        <select id="sort-games" class="sort-select">
-          <option value="time">按添加时间</option>
-          <option value="rating">按评分</option>
-          <option value="name">按名称</option>
-        </select>
-        <button id="add-game-btn" class="btn btn-primary">
-          <span class="btn-icon">+</span> 添加游戏
-        </button>
-        <span class="games-count">共 <span id="total-games">0</span> 款</span>
+      <div class="list-actions">
+        <div class="barcode"></div>
+        <button class="btn" id="add-game-btn">+ Add Game</button>
       </div>
-      
-      <div id="games-list" class="games-grid"></div>
-    </main>
-    
-    <!-- 新闻专区页 -->
-    <main id="news-page" class="page">
-      <div class="page-header">
-        <h2>📰 新闻专区</h2>
+    </div>
+
+    <!-- Library Tab -->
+    <div class="tab-content active" id="tab-library">
+      <div class="data-grid">
+        <div class="grid-header">
+          <div>No.</div>
+          <div>Cover</div>
+          <div>Title</div>
+          <div>Genre</div>
+          <div>Status</div>
+          <div style="text-align:right">Menu</div>
+        </div>
+        <div id="games-list"></div>
       </div>
-      
-      <div class="news-tabs">
-        <button class="news-tab active" data-tab="hot">🔥 热点专区</button>
-        <button class="news-tab" data-tab="iran">⚔️ 伊朗战争</button>
-      </div>
-      
-      <!-- 热点专区 -->
-      <div id="hot-tab" class="news-tab-content active">
-        <div class="public-hot" id="public-hot">
-          <h3>🌐 公共热点</h3>
-          <div class="loading">加载中...</div>
+    </div>
+
+    <!-- Wishlist Tab -->
+    <div class="tab-content" id="tab-wishlist">
+      <div class="empty-hint">愿望单开发中...</div>
+    </div>
+
+    <!-- Stats Tab -->
+    <div class="tab-content" id="tab-stats">
+      <div class="stats-page">
+        <div class="stats-card">
+          <div class="stat-num" id="stat-ratings">0</div>
+          <div class="stat-label">Total Ratings</div>
         </div>
-        
-        <div class="hot-platform">
-          <h3>📌 贴吧热点</h3>
-          <ul class="hot-list" id="tieba-hot"></ul>
+        <div class="stats-card">
+          <div class="stat-num" id="stat-comments">0</div>
+          <div class="stat-label">Comments</div>
         </div>
-        
-        <div class="hot-platform">
-          <h3>📌 微博热搜</h3>
-          <ul class="hot-list" id="weibo-hot"></ul>
-        </div>
-        
-        <div class="hot-platform">
-          <h3>📌 B站热点</h3>
-          <ul class="hot-list" id="bilibili-hot"></ul>
-        </div>
-        
-        <div class="hot-platform">
-          <h3>📌 抖音热点</h3>
-          <ul class="hot-list" id="douyin-hot"></ul>
-        </div>
-        
-        <div class="hot-platform">
-          <h3>📌 小红书热点</h3>
-          <ul class="hot-list" id="xiaohongshu-hot"></ul>
+        <div class="stats-card">
+          <div class="stat-num" id="stat-added-this-year">0</div>
+          <div class="stat-label">Added This Year</div>
         </div>
       </div>
-      
-      <!-- 伊朗战争专区 -->
-      <div id="iran-tab" class="news-tab-content">
-        <div class="iran-news" id="iran-news">
-          <div class="loading">加载中...</div>
-        </div>
-      </div>
-    </main>
-  </div>
-  
-  <!-- 添加游戏弹窗 -->
+    </div>
+  </main>
+
+  <!-- Add Game Modal -->
   <div id="add-modal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h3>添加新游戏</h3>
+      <h3>Add New Game</h3>
       <div class="form-group">
-        <input type="text" id="game-name" placeholder="游戏名称 *" autocomplete="off">
-        <button id="search-steam-btn" class="btn btn-small" style="margin-top:4px;">🔍 从Steam搜索图片</button>
+        <input type="text" id="game-name" placeholder="Game Name *" autocomplete="off">
+        <button id="search-steam-btn" class="btn-small">🔍 Steam</button>
         <div id="steam-results" class="steam-results"></div>
       </div>
       <div class="form-group">
-        <input type="text" id="game-image" placeholder="图片URL (可选)" autocomplete="off">
+        <input type="text" id="game-image" placeholder="Image URL (optional)" autocomplete="off">
+        <div id="image-preview" class="image-preview"></div>
       </div>
       <div class="form-group">
-        <input type="text" id="game-user" placeholder="你的名字" autocomplete="off">
+        <input type="text" id="game-user" placeholder="Your Name" autocomplete="off">
       </div>
-      <div id="image-preview" class="image-preview"></div>
+      <div class="form-group">
+        <select id="game-status">
+          <option value="backlog">Backlog</option>
+          <option value="playing">Playing</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <input type="text" id="game-tags" placeholder="Tags (comma separated)" autocomplete="off">
+      </div>
       <div class="modal-actions">
-        <button id="confirm-add" class="btn btn-primary">确认</button>
-        <button id="cancel-add" class="btn btn-secondary">取消</button>
+        <button class="btn" id="confirm-add">Add Game</button>
+        <button class="btn btn-secondary" onclick="closeModal('add-modal')">Cancel</button>
       </div>
     </div>
   </div>
-  
-  <!-- 游戏详情弹窗 -->
+
+  <!-- Game Detail Modal -->
   <div id="detail-modal" class="modal" style="display:none;">
-    <div class="modal-content game-detail">
-      <div id="detail-content"></div>
+    <div class="modal-content detail-content" id="detail-content">
     </div>
   </div>
-  
-  <script type="module" src="/src/main.js"></script>
+
+  <!-- Nav for News (hidden on desktop) -->
+  <nav class="mobile-nav">
+    <a href="#" class="nav-link active" data-page="library">Library</a>
+    <a href="#" class="nav-link" data-page="news">News</a>
+  </nav>
+
+  <script src="/src/main.js"></script>
 </body>
 </html>
