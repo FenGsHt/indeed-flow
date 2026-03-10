@@ -83,7 +83,7 @@ jobs:
           command: |
             ssh -i ~/.ssh/id_rsa \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
+              "pip install pymysql flask-cors --break-system-packages && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
       - name: Notify success
         if: success()
