@@ -258,8 +258,11 @@ async function rateGame(id, score) {
 
 // 添加评论
 async function addComment(id) {
-  const user = document.getElementById('comment-user')?.value || 'Anonymous';
+  const userInput = document.getElementById('comment-user')?.value || getUserName() || 'Anonymous';
   const text = document.getElementById('comment-text')?.value;
+  
+  // 保存用户名
+  setUserName(userInput);
   
   if (!text) return;
   
@@ -267,7 +270,7 @@ async function addComment(id) {
     await fetch(`${API_BASE}/api/games/${id}/comment`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({user, text})
+      body: JSON.stringify({user: userInput, text})
     });
     showDetail(id);
     loadGames();
@@ -310,9 +313,12 @@ async function changeImage(id) {
 async function addGame() {
   const name = document.getElementById('game-name').value;
   const image = document.getElementById('game-image').value;
-  const user = document.getElementById('game-user').value || 'Anonymous';
+  const userInput = document.getElementById('game-user').value || getUserName() || 'Anonymous';
   const status = document.getElementById('game-status').value;
   const tags = document.getElementById('game-tags').value.split(',').map(t => t.trim()).filter(t => t);
+  
+  // 保存用户名
+  setUserName(userInput);
   
   if (!name) {
     alert('Please enter game name');
@@ -323,7 +329,7 @@ async function addGame() {
     await fetch(`${API_BASE}/api/games`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, image, user, status, tags})
+      body: JSON.stringify({name, image, user: userInput, status, tags})
     });
     
     document.getElementById('game-name').value = '';
