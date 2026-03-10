@@ -8,18 +8,26 @@ import uuid
 import re
 import urllib.request
 import urllib.parse
+import os
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 import pymysql
 
+# 加载 .env 文件（如果存在）
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 games_bp = Blueprint('games', __name__)
 
 DB_CONFIG = {
-    'host': '150.158.110.168',
-    'port': 3306,
-    'user': 'feng-bot',
-    'password': 'dak2dcCHCczb2wKW',
-    'database': 'feng-bot',
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', '3306')),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'database': os.getenv('DB_NAME', 'indeed_flow'),
     'charset': 'utf8mb4'
 }
 
