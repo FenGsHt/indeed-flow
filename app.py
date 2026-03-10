@@ -6,7 +6,7 @@ OpenClaw 控制台 Web 服务
 
 import os
 import json
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 from pathlib import Path
 
 app = Flask(__name__, template_folder='.')
@@ -38,27 +38,27 @@ def save_json(filepath, data):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return send_file('index.html')
 
 
 @app.route("/console")
 def console():
-    return render_template("console.html")
+    return send_file('index.html')
 
 
 @app.route("/skill")
 def skill_page():
-    return render_template("skill.html")
+    return send_file('index.html')
 
 
 @app.route("/games")
 def games_page():
-    return render_template("games.html")
+    return send_file('index.html')
 
 
 @app.route("/news")
 def news_page():
-    return render_template("news.html")
+    return send_file('index.html')
 
 
 # ============== API: 技能管理 ==============
