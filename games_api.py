@@ -237,7 +237,7 @@ def get_fallback_steam_image(game_name):
         req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=8) as response:
             html = response.read().decode('utf-8', errors='ignore')
-            match = re.search(r'data-ds-appid="(\d+)"', html)
+            match = re.search(r'href="https://store\.steampowered\.com/app/(\d+)"', html)
             if match:
                 app_id = match.group(1)
                 fallback_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg"
