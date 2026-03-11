@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     body {
       font-family: 'Inter', 'Noto Sans SC', sans-serif;
       min-height: 100vh;
@@ -17,7 +17,7 @@
       color: #fff;
       overflow-x: hidden;
     }
-    
+
     /* 背景动画 */
     .bg-effect {
       position: fixed;
@@ -26,7 +26,7 @@
       overflow: hidden;
       z-index: 0;
     }
-    
+
     .bg-effect::before {
       content: '';
       position: absolute;
@@ -39,12 +39,12 @@
                   radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
       animation: bgMove 20s ease-in-out infinite;
     }
-    
+
     @keyframes bgMove {
       0%, 100% { transform: translate(0, 0) rotate(0deg); }
       50% { transform: translate(-5%, -5%) rotate(5deg); }
     }
-    
+
     .container {
       position: relative;
       z-index: 1;
@@ -52,13 +52,13 @@
       margin: 0 auto;
       padding: 2rem;
     }
-    
+
     /* 头部 */
     .header {
       text-align: center;
       padding: 2rem 0 3rem;
     }
-    
+
     .logo {
       font-size: clamp(2.5rem, 8vw, 4rem);
       font-weight: 900;
@@ -71,18 +71,18 @@
       animation: logoShine 3s ease-in-out infinite;
       margin-bottom: 0.5rem;
     }
-    
+
     @keyframes logoShine {
       0%, 100% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
     }
-    
+
     .slogan {
       font-size: 0.9rem;
       color: rgba(255,255,255,0.5);
       letter-spacing: 0.3em;
     }
-    
+
     /* Tab导航 */
     .nav-tabs {
       display: flex;
@@ -91,7 +91,7 @@
       margin-bottom: 2rem;
       flex-wrap: wrap;
     }
-    
+
     .nav-tab {
       padding: 0.8rem 2rem;
       font-size: 1rem;
@@ -106,37 +106,37 @@
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     .nav-tab:hover {
       background: rgba(255,255,255,0.1);
       transform: translateY(-2px);
     }
-    
+
     .nav-tab.active {
       background: linear-gradient(90deg, #00d4ff, #7b2ff7);
       color: #fff;
       box-shadow: 0 4px 20px rgba(0,212,255,0.3);
     }
-    
+
     .nav-tab .icon {
       font-size: 1.2rem;
     }
-    
+
     /* 内容区 */
     .tab-content {
       display: none;
       animation: fadeIn 0.4s ease;
     }
-    
+
     .tab-content.active {
       display: block;
     }
-    
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
+
     /* 新闻子Tab */
     .sub-tabs {
       display: flex;
@@ -147,7 +147,7 @@
       border-radius: 50px;
       width: fit-content;
     }
-    
+
     .sub-tab {
       padding: 0.5rem 1.2rem;
       font-size: 0.85rem;
@@ -159,19 +159,38 @@
       border-radius: 50px;
       transition: all 0.3s;
     }
-    
+
     .sub-tab.active {
       background: rgba(255,255,255,0.15);
       color: #fff;
     }
-    
+
+    .btn-ai-summary {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, rgba(123,47,247,0.3), rgba(0,212,255,0.3));
+      color: #fff;
+      border-radius: 50px;
+      transition: all 0.3s;
+      border: 1px solid rgba(123,47,247,0.5);
+    }
+
+    .btn-ai-summary:hover {
+      background: linear-gradient(135deg, rgba(123,47,247,0.5), rgba(0,212,255,0.5));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(123,47,247,0.3);
+    }
+
     /* 游戏网格 */
     .games-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 1.25rem;
     }
-    
+
     .game-card {
       background: rgba(255,255,255,0.05);
       border-radius: 16px;
@@ -180,14 +199,14 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid rgba(255,255,255,0.05);
     }
-    
+
     .game-card:hover {
       transform: translateY(-8px) scale(1.02);
       background: rgba(255,255,255,0.1);
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       border-color: rgba(0,212,255,0.3);
     }
-    
+
     .game-cover {
       width: 100%;
       height: 140px;
@@ -197,16 +216,16 @@
       align-items: center;
       justify-content: center;
     }
-    
+
     .game-cover.has-image {
       background: none;
     }
-    
+
     .cover-placeholder {
       font-size: 3rem;
       opacity: 0.5;
     }
-    
+
     .steam-btn {
       position: absolute;
       bottom: 8px;
@@ -224,16 +243,16 @@
       align-items: center;
       justify-content: center;
     }
-    
+
     .steam-btn:hover {
       background: #171a21;
       transform: scale(1.1);
     }
-    
+
     .steam-btn.success {
       background: #4caf50;
     }
-    
+
     .status-badge {
       position: absolute;
       top: 8px;
@@ -241,11 +260,11 @@
       font-size: 1.2rem;
       text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
-    
+
     .game-info {
       padding: 1rem;
     }
-    
+
     .game-name {
       font-weight: 700;
       font-size: 0.95rem;
@@ -254,19 +273,19 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    
+
     .game-meta {
       font-size: 0.75rem;
       color: rgba(255,255,255,0.4);
     }
-    
+
     /* 新闻列表 */
     .news-list {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
-    
+
     .news-item {
       background: rgba(255,255,255,0.05);
       border-radius: 12px;
@@ -275,20 +294,20 @@
       transition: all 0.3s;
       border: 1px solid transparent;
     }
-    
+
     .news-item:hover {
       background: rgba(255,255,255,0.1);
       border-color: rgba(255,255,255,0.1);
       transform: translateX(4px);
     }
-    
+
     .news-header {
       display: flex;
       align-items: center;
       gap: 0.75rem;
       margin-bottom: 0.5rem;
     }
-    
+
     .news-source {
       font-size: 0.7rem;
       font-weight: 700;
@@ -296,54 +315,54 @@
       border-radius: 20px;
       text-transform: uppercase;
     }
-    
+
     .news-source.tieba { background: #00aaff; color: #fff; }
     .news-source.douyin { background: #000; color: #fff; }
     .news-source.weibo { background: #ff0000; color: #fff; }
     .news-source.bilibili { background: #00aaff; color: #fff; }
     .news-source.iran { background: #ff6b6b; color: #fff; }
-    
+
     .news-time {
       font-size: 0.7rem;
       color: rgba(255,255,255,0.4);
     }
-    
+
     .news-title {
       font-size: 1rem;
       font-weight: 500;
       line-height: 1.4;
     }
-    
+
     .news-summary {
       font-size: 0.8rem;
       color: rgba(255,255,255,0.5);
       margin-top: 0.5rem;
       line-height: 1.5;
     }
-    
+
     /* 空状态 */
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
       color: rgba(255,255,255,0.4);
     }
-    
+
     .empty-icon {
       font-size: 4rem;
       margin-bottom: 1rem;
       opacity: 0.5;
     }
-    
+
     .empty-text {
       font-size: 1.1rem;
       margin-bottom: 0.5rem;
     }
-    
+
     .empty-hint {
       font-size: 0.85rem;
       color: rgba(255,255,255,0.3);
     }
-    
+
     /* 添加游戏按钮 */
     .add-game-btn {
       position: fixed;
@@ -361,12 +380,12 @@
       transition: all 0.3s;
       z-index: 100;
     }
-    
+
     .add-game-btn:hover {
       transform: scale(1.1);
       box-shadow: 0 6px 30px rgba(0,212,255,0.5);
     }
-    
+
     /* 弹窗 */
     .modal {
       position: fixed;
@@ -378,9 +397,9 @@
       z-index: 1000;
       backdrop-filter: blur(5px);
     }
-    
+
     .modal.show { display: flex; }
-    
+
     .modal-content {
       background: #1a1a3e;
       border-radius: 20px;
@@ -389,24 +408,24 @@
       max-width: 400px;
       border: 1px solid rgba(255,255,255,0.1);
     }
-    
+
     .modal-title {
       font-size: 1.3rem;
       font-weight: 700;
       margin-bottom: 1.5rem;
     }
-    
+
     .form-group {
       margin-bottom: 1rem;
     }
-    
+
     .form-group label {
       display: block;
       font-size: 0.8rem;
       color: rgba(255,255,255,0.6);
       margin-bottom: 0.4rem;
     }
-    
+
     .form-group input, .form-group select {
       width: 100%;
       padding: 0.8rem;
@@ -416,18 +435,18 @@
       color: #fff;
       font-size: 0.95rem;
     }
-    
+
     .form-group input:focus {
       outline: none;
       border-color: #00d4ff;
     }
-    
+
     .modal-actions {
       display: flex;
       gap: 0.8rem;
       margin-top: 1.5rem;
     }
-    
+
     .btn {
       flex: 1;
       padding: 0.8rem;
@@ -438,31 +457,41 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    
+
     .btn-primary {
       background: linear-gradient(135deg, #00d4ff, #7b2ff7);
       color: #fff;
     }
-    
+
     .btn-secondary {
       background: rgba(255,255,255,0.1);
       color: #fff;
     }
-    
+
     .btn-danger {
       background: #ff4757;
       color: #fff;
     }
-    
+
+    .btn-steam {
+      background: linear-gradient(135deg, #1b2838, #2a475e);
+      color: #fff;
+      border: 1px solid #66c0f4;
+    }
+
+    .btn-steam:hover {
+      background: linear-gradient(135deg, #2a475e, #66c0f4);
+    }
+
     .btn:active { transform: scale(0.95); }
-    
+
     /* 加载动画 */
     .loading {
       display: flex;
       justify-content: center;
       padding: 3rem;
     }
-    
+
     .loading::after {
       content: '';
       width: 40px;
@@ -472,11 +501,11 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    
+
     /* 移动端适配 */
     @media (max-width: 600px) {
       .container { padding: 1rem; }
@@ -488,7 +517,7 @@
 </head>
 <body>
   <div class="bg-effect"></div>
-  
+
   <!-- 添加游戏弹窗 -->
   <div id="add-modal" class="modal">
     <div class="modal-content">
@@ -519,7 +548,10 @@
       </div>
       <div class="form-group">
         <label>游戏图片（可选）</label>
-        <input type="file" id="game-image-file" accept="image/*" onchange="previewImage(this)">
+        <div style="display:flex;gap:0.5rem;align-items:flex-start;">
+          <input type="text" id="game-image-url" placeholder="输入图片URL或从Steam搜图" style="flex:1;" oninput="previewImageFromUrl(this.value)">
+          <button type="button" class="btn btn-steam" onclick="searchSteamForGame()" style="padding:0.5rem 1rem;font-size:0.85rem;white-space:nowrap;">🔍 Steam搜图</button>
+        </div>
         <div id="image-preview" style="margin-top:0.5rem;max-width:100%;max-height:150px;overflow:hidden;border-radius:8px;display:none;"></div>
       </div>
       <div class="modal-actions">
@@ -560,13 +592,26 @@
       </div>
     </div>
   </div>
-  
+
+  <!-- AI 简介弹窗 -->
+  <div id="ai-summary-modal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-title">🤖 AI 热点总结</div>
+      <div id="ai-summary-content" style="padding:1rem;line-height:1.8;color:rgba(255,255,255,0.9);">
+        <div class="loading"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('ai-summary-modal')">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <header class="header">
       <h1 class="logo">INDEED</h1>
       <p class="slogan">发现 · 评分 · 推荐</p>
     </header>
-    
+
     <!-- 主导航 -->
     <div class="nav-tabs">
       <button class="nav-tab active" data-tab="game">
@@ -576,7 +621,7 @@
         <span class="icon">📰</span> 新闻
       </button>
     </div>
-    
+
     <!-- 游戏内容 -->
     <div id="tab-game" class="tab-content active">
       <div id="games-list" class="games-grid">
@@ -584,20 +629,23 @@
       </div>
       <button class="add-game-btn" onclick="openAddModal()">+</button>
     </div>
-    
+
     <!-- 新闻内容 -->
     <div id="tab-news" class="tab-content">
-      <div class="sub-tabs">
-        <button class="sub-tab active" data-news="hot">🔥 热点</button>
-        <button class="sub-tab" data-news="iran">🇮🇷 伊朗</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-news="hot">🔥 热点</button>
+          <button class="sub-tab" data-news="iran">🇮🇷 伊朗</button>
+        </div>
+        <button class="btn-ai-summary" onclick="showAISummary()">🤖 AI 简介</button>
       </div>
-      
+
       <div id="news-hot" class="news-content">
         <div id="hot-list" class="news-list">
           <div class="loading"></div>
         </div>
       </div>
-      
+
       <div id="news-iran" class="news-content" style="display:none;">
         <div id="iran-list" class="news-list">
           <div class="loading"></div>
@@ -608,7 +656,7 @@
 
   <script>
     const API_BASE = 'http://150.158.110.168:5001';
-    
+
     // Tab切换
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', function() {
@@ -618,7 +666,7 @@
         document.getElementById('tab-' + this.dataset.tab).classList.add('active');
       });
     });
-    
+
     // 新闻子Tab
     document.querySelectorAll('.sub-tab').forEach(tab => {
       tab.addEventListener('click', function() {
@@ -628,7 +676,7 @@
         document.getElementById('news-iran').style.display = this.dataset.news === 'iran' ? 'block' : 'none';
       });
     });
-    
+
     // 加载游戏
     async function loadGames() {
       const list = document.getElementById('games-list');
@@ -638,14 +686,14 @@
           const res = await fetch(API_BASE + '/api/games');
           if (res.ok) games = await res.json();
         } catch(e) { console.log('API fail'); }
-        
+
         if (games.length === 0) {
           try {
             const res = await fetch('/data/games.json');
             games = await res.json();
           } catch {}
         }
-        
+
         if (games.length === 0) {
           list.innerHTML = `
             <div class="empty-state">
@@ -655,7 +703,7 @@
             </div>`;
           return;
         }
-        
+
         // 排序：优先级（越小越前）+ 字母顺序
         games.sort((a, b) => {
           const pa = a.priority || 100;
@@ -663,17 +711,17 @@
           if (pa !== pb) return pa - pb;
           return a.name.localeCompare(b.name);
         });
-        
+
         list.innerHTML = games.slice(0, 12).map((g, i) => {
           // 根据游戏名生成唯一渐变色
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
           const hue1 = hash % 360;
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
-          
+
           const statusMap = {backlog: '📋 待玩', playing: '🎮 正在游玩', completed: '✅ 已玩'};
           const statusIcon = statusMap[g.status] || '📋 待玩';
-          
+
           // 计算好评率
           let ratingText = '';
           if (g.ratings && Object.keys(g.ratings).length > 0) {
@@ -681,7 +729,7 @@
             const avg = sum / Object.keys(g.ratings).length;
             ratingText = `⭐ ${avg.toFixed(1)}`;
           }
-          
+
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
@@ -698,7 +746,7 @@
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
     }
-    
+
     // 搜索Steam图片
     async function searchSteam(gameName, btn) {
       btn.textContent = '⏳';
@@ -714,7 +762,7 @@
           return;
         }
       } catch {}
-      
+
       // API失败时，随机换一个酷炫的渐变
       const hues = [
         [349, 280], [45, 180], [200, 320], [150, 220], [280, 350],
@@ -725,17 +773,17 @@
       btn.classList.add('success');
       btn.textContent = '🎨';
     }
-    
+
     // 加载热点 - 从后端API实时获取
     async function loadHot() {
       const list = document.getElementById('hot-list');
       list.innerHTML = '<div class="loading"></div>';
-      
+
       try {
         // 优先调用后端API获取实时热点
         const res = await fetch(API_BASE + '/api/news/hot');
         let data;
-        
+
         if (res.ok) {
           data = await res.json();
         } else {
@@ -743,7 +791,7 @@
           const fallbackRes = await fetch('/data/news.json');
           data = await fallbackRes.json();
         }
-        
+
         // 获取AI总结
         let summaryHtml = '';
         try {
@@ -764,7 +812,7 @@
         } catch(e) {
           console.log('AI summary fetch error:', e);
         }
-        
+
         const sources = [
           {key: 'tieba', name: '贴吧', class: 'tieba'},
           {key: 'weibo', name: '微博', class: 'weibo'},
@@ -772,15 +820,15 @@
           {key: 'douyin', name: '抖音', class: 'douyin'},
           {key: 'xiaohongshu', name: '小红书', class: 'xiaohongshu'}
         ];
-        
+
         let html = summaryHtml;
         let hasAnyData = summaryHtml !== '';
-        
+
         sources.forEach(s => {
           const items = data[s.key] || [];
           // 检查是否有有效数据
           const validItems = items.filter(item => item.title && item.title !== '获取失败');
-          
+
           if (validItems.length > 0) {
             hasAnyData = true;
             html += `<div style="margin-bottom:1.5rem;"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:0.5rem;padding-left:0.5rem;">${s.name}</div>`;
@@ -802,7 +850,7 @@
             </div>`;
           }
         });
-        
+
         // 公共热点
         if (data.public && data.public.length > 0) {
           hasAnyData = true;
@@ -819,34 +867,34 @@
           });
           html += '</div>';
         }
-        
+
         if (!hasAnyData) {
           list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无热点数据</div></div>`;
           return;
         }
-        
+
         // 添加更新时间
         if (data.updated) {
           html += `<div style="text-align:center;padding:1rem;font-size:0.7rem;color:rgba(255,255,255,0.3);">更新时间: ${data.updated}</div>`;
         }
-        
+
         list.innerHTML = html;
       } catch(e) {
         console.error('Load hot news error:', e);
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div><div class="empty-hint">${e.message}</div></div>`;
       }
     }
-    
+
     // 加载伊朗 - 从后端API实时获取
     async function loadIran() {
       const list = document.getElementById('iran-list');
       list.innerHTML = '<div class="loading"></div>';
-      
+
       try {
         // 从后端API获取实时伊朗新闻
         const res = await fetch(API_BASE + '/api/news/iran');
         let data;
-        
+
         if (res.ok) {
           data = await res.json();
         } else {
@@ -854,9 +902,9 @@
           const fallbackRes = await fetch('/data/news.json');
           data = await fallbackRes.json();
         }
-        
+
         const news = data.articles || [];
-        
+
         const translations = {
           "Who is Mojtaba Khamenei, Iran's new supreme leader?": "伊朗新最高领袖是谁？",
           "'Night turned into day': Iranians tell of strikes on oil depots": "伊朗人讲述石油设施遭袭",
@@ -864,12 +912,12 @@
           "Israel and Iran": "以色列和伊朗",
           "US Iran attacks": "美国伊朗袭击"
         };
-        
+
         if (news.length === 0) {
           list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无新闻</div></div>`;
           return;
         }
-        
+
         list.innerHTML = news.map((n, i) => {
           const title = translations[n.title] || n.title;
           return `
@@ -887,43 +935,108 @@
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
     }
-    
+
     // 当前选中的游戏
-    let currentGame = null;
-    let selectedImageBase64 = null;
-    
-    // 图片预览和转base64
-    function previewImage(input) {
+    let currentGame = null;    
+    // 图片URL预览功能
+    function previewImageFromUrl(url) {
       const preview = document.getElementById('image-preview');
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 2 * 1024 * 1024) {
-          alert('图片太大，请选2MB以内的');
-          input.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          selectedImageBase64 = e.target.result;
-          preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:150px;object-fit:contain;">';
+      if (!url) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+        return;
+      }
+      preview.style.display = 'block';
+      preview.innerHTML = '<img src="' + url + '" style="width:100%;height:150px;object-fit:cover;" onerror="this.parentElement.style.display=\'none\'">';
+    }
+
+    // 从Steam搜索游戏图片
+    async function searchSteamForGame() {
+      const gameName = document.getElementById('game-name').value.trim();
+      const urlInput = document.getElementById('game-image-url');
+      const preview = document.getElementById('image-preview');
+
+      if (!gameName) return alert('请先输入游戏名称');
+
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ 搜索中...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
+        const data = await res.json();
+
+        if (data.headerUrl) {
+          urlInput.value = data.headerUrl;
           preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+          preview.innerHTML = '<img src="' + data.headerUrl + '" style="width:100%;height:150px;object-fit:cover;">';
+          btn.textContent = '✓ 已获取';
+          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
+        } else {
+          btn.textContent = '✗ 未找到';
+          setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
+      } catch(e) {
+        alert('搜索失败，请手动输入图片URL');
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
       }
     }
-    
+
     // 打开添加弹窗
     function openAddModal() {
       document.getElementById('game-name').value = '';
       document.getElementById('game-user').value = '';
       document.getElementById('add-modal').classList.add('show');
     }
-    
+
+    // 显示AI热点总结
+    async function showAISummary() {
+      const modal = document.getElementById('ai-summary-modal');
+      const content = document.getElementById('ai-summary-content');
+
+      modal.classList.add('show');
+      content.innerHTML = '<div class="loading"></div>';
+
+      try {
+        const res = await fetch(API_BASE + '/api/news/summary');
+        if (!res.ok) throw new Error('请求失败');
+
+        const data = await res.json();
+
+        if (data.hot && data.hot.summary) {
+          content.innerHTML = `
+            <div style="margin-bottom:1rem;padding:1rem;background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(0,212,255,0.2));border-radius:12px;border:1px solid rgba(123,47,247,0.3);">
+              <div style="font-size:0.75rem;color:#00d4ff;margin-bottom:0.5rem;">
+                <span>🤖</span> 热点总结
+                <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${data.updated || ''}</span>
+              </div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);">${data.hot.summary}</div>
+            </div>
+            ${data.iran ? `
+            <div style="margin-top:1rem;padding:1rem;background:linear-gradient(135deg,rgba(255,107,107,0.2),rgba(255,0,110,0.2));border-radius:12px;border:1px solid rgba(255,107,107,0.3);">
+              <div style="font-size:0.75rem;color:#ff6b6b;margin-bottom:0.5rem;">
+                <span>🇮🇷</span> 伊朗热点
+                <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${data.iran.updated || ''}</span>
+              </div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);">${data.iran.summary}</div>
+            </div>` : ''}
+          `;
+        } else {
+          content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">暂无AI总结数据</div>';
+        }
+      } catch(e) {
+        content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">加载失败，请稍后重试</div>';
+      }
+    }
+
     // 关闭弹窗
     function closeModal(id) {
       document.getElementById(id).classList.remove('show');
     }
-    
+
     // 添加游戏
     async function addGame() {
       const name = document.getElementById('game-name').value.trim();
@@ -931,10 +1044,10 @@
       const user = document.getElementById('game-user').value.trim() || 'Anonymous';
       const status = document.getElementById('game-status').value;
       const priority = parseInt(document.getElementById('game-priority').value) || 100;
-      const image = selectedImageBase64 || '';
-      
+      const image = document.getElementById('game-image-url').value.trim();
+
       if (!name) return alert('请输入游戏名称');
-      
+
       try {
         // 先添加游戏
         await fetch(API_BASE + '/api/games', {
@@ -942,12 +1055,11 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({name, url, user, status, priority, image})
         });
-        
-        // 重置图片
-        selectedImageBase64 = null;
-        document.getElementById('game-image-file').value = '';
+
+        // 重置表单
+        document.getElementById('game-image-url').value = '';
         document.getElementById('image-preview').style.display = 'none';
-        
+
         // 如果有Steam地址，尝试获取好评率
         if (url && url.includes('steampowered.com/app/')) {
           const appId = url.match(/app\/(\d+)/);
@@ -966,14 +1078,14 @@
             } catch(e) { console.log('获取好评率失败', e); }
           }
         }
-        
+
         closeModal('add-modal');
         loadGames();
       } catch {
         alert('添加失败，请重试');
       }
     }
-    
+
     // 打开详情弹窗
     function openDetail(game) {
       currentGame = game;
@@ -984,7 +1096,7 @@
       document.getElementById('detail-url').value = game.url || '';
       document.getElementById('detail-modal').classList.add('show');
     }
-    
+
     // 更新游戏
     async function updateGame() {
       if (!currentGame) return;
@@ -992,7 +1104,7 @@
       const priority = parseInt(document.getElementById('detail-priority').value) || 100;
       const image = document.getElementById('detail-image').value;
       const url = document.getElementById('detail-url').value;
-      
+
       try {
         await fetch(API_BASE + '/api/games/' + currentGame.id, {
           method: 'PUT',
@@ -1005,12 +1117,12 @@
         alert('更新失败');
       }
     }
-    
+
     // 删除游戏
     async function deleteGame() {
       if (!currentGame) return;
       if (!confirm('确定删除 ' + currentGame.name + '？')) return;
-      
+
       try {
         await fetch(API_BASE + '/api/games/' + currentGame.id, {method: 'DELETE'});
         closeModal('detail-modal');
@@ -1019,12 +1131,12 @@
         alert('删除失败');
       }
     }
-    
+
     // 点击卡片打开详情
     function onGameCardClick(g) {
       openDetail(g);
     }
-    
+
     loadGames();
     loadHot();
     loadIran();

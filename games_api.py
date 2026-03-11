@@ -61,6 +61,7 @@ def init_db():
             ("status", "VARCHAR(20) DEFAULT 'wishlist'"),
             ("source", "VARCHAR(255)"),
             ("bookmarked", "JSON"),
+            ("priority", "INT DEFAULT 100"),
         ]
         cursor.execute("SELECT DATABASE()")
         db_name = cursor.fetchone()[0]
@@ -428,10 +429,12 @@ def add_game():
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
         'image': data.get('image', ''),
-        'created_by': data.get('user', '匿名'),
+        # 兼容前端字段: user -> created_by, url -> source
+        'created_by': data.get('user') or data.get('created_by', '匿名'),
         'password': data.get('password', ''),
         'status': data.get('status', 'wishlist'),
-        'source': data.get('source', ''),
+        'source': data.get('source') or data.get('url', ''),
+        'priority': data.get('priority', 100),
         'ratings': {},
         'comments': []
     }
@@ -440,11 +443,11 @@ def add_game():
         cursor = conn.cursor()
         cursor.execute(
             'INSERT INTO games '
-            '(id, name, image, created_by, password, status, source, ratings, comments) '
-            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+            '(id, name, image, created_by, password, status, source, priority, ratings, comments) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
             (
                 game['id'], game['name'], game['image'], game['created_by'],
-                game['password'], game['status'], game['source'],
+                game['password'], game['status'], game['source'], game['priority'],
                 json.dumps(game['ratings']), json.dumps(game['comments'])
             )
         )
@@ -506,6 +509,51 @@ def comment_game(game_id):
         conn.commit()
     finally:
         conn.close()
+    return jsonify({'success': True})
+
+
+@games_bp.route('/api/games/<game_id>', methods=['PUT'])
+def update_game(game_id):
+    """更新游戏信息"""
+    data = request.json
+    
+    # 构建更新字段
+    updates = []
+    values = []
+    
+    if 'status' in data:
+        valid_statuses = ['wishlist', 'playing', 'completed', 'backlog']
+        if data['status'] not in valid_statuses:
+            return jsonify({'success': False, 'error': '无效的状态值'}), 400
+        updates.append('status = %s')
+        values.append(data['status'])
+    
+    if 'image' in data:
+        updates.append('image = %s')
+        values.append(data['image'])
+    
+    if 'url' in data:
+        updates.append('source = %s')
+        values.append(data['url'])
+    
+    if 'priority' in data:
+        updates.append('priority = %s')
+        values.append(data['priority'])
+    
+    if not updates:
+        return jsonify({'success': False, 'error': '没有需要更新的字段'}), 400
+    
+    values.append(game_id)
+    
+    conn = get_db()
+    try:
+        cursor = conn.cursor()
+        sql = f"UPDATE games SET {', '.join(updates)} WHERE id = %s"
+        cursor.execute(sql, values)
+        conn.commit()
+    finally:
+        conn.close()
+    
     return jsonify({'success': True})
 
 
