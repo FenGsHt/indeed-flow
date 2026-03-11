@@ -56,13 +56,22 @@ def init_db():
                 bookmarked JSON
             )
         ''')
-        for sql in [
-            "ALTER TABLE games ADD COLUMN IF NOT EXISTS password VARCHAR(100)",
-            "ALTER TABLE games ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'wishlist'",
-            "ALTER TABLE games ADD COLUMN IF NOT EXISTS source VARCHAR(255)",
-            "ALTER TABLE games ADD COLUMN IF NOT EXISTS bookmarked JSON",
-        ]:
-            cursor.execute(sql)
+        columns_to_add = [
+            ("password", "VARCHAR(100)"),
+            ("status", "VARCHAR(20) DEFAULT 'wishlist'"),
+            ("source", "VARCHAR(255)"),
+            ("bookmarked", "JSON"),
+        ]
+        cursor.execute("SELECT DATABASE()")
+        db_name = cursor.fetchone()[0]
+        for col, col_def in columns_to_add:
+            cursor.execute(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME=%s",
+                (db_name, col)
+            )
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(f"ALTER TABLE games ADD COLUMN {col} {col_def}")
         conn.commit()
     finally:
         conn.close()
