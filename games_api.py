@@ -9,6 +9,7 @@ import re
 import urllib.request
 import urllib.parse
 import os
+import base64
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 import pymysql
@@ -105,6 +106,71 @@ def get_bookmarks():
         return jsonify(json.loads(row['bookmarked']))
     return jsonify([])
 
+
+# ============ 图片上传处理 ============
+
+def convert_url_to_base64(image_url):
+    """将图片URL转换为base64"""
+    if not image_url:
+        return ''
+    
+    # 如果已经是base64数据（data:URL格式），直接返回
+    if image_url.startswith('data:'):
+        return image_url
+    
+    # 如果是URL，下载并转换为base64
+    if image_url.startswith('http'):
+        try:
+            req = urllib.request.Request(image_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                img_data = response.read()
+                content_type = response.headers.get('Content-Type', 'image/jpeg')
+                ext = content_type.split('/')[-1]
+                if ext == 'jpg':
+                    ext = 'jpeg'
+                if ext not in ['jpeg', 'png', 'gif', 'webp']:
+                    ext = 'jpeg'
+                b64 = base64.b64encode(img_data).decode('utf-8')
+                return f'data:image/{ext};base64,{b64}'
+        except Exception as e:
+            print(f"Image download error: {e}")
+            return image_url
+    
+    return image_url
+
+
+@games_bp.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    """处理图片上传，转换为base64"""
+    if 'image' not in request.files:
+        # 检查是否是base64字符串或URL
+        data = request.json
+        if data and 'image' in data:
+            b64_image = convert_url_to_base64(data['image'])
+            return jsonify({'success': True, 'image': b64_image})
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+    
+    # 读取图片并转换为base64
+    try:
+        img_data = file.read()
+        ext = file.filename.split('.')[-1].lower() if '.' in file.filename else 'jpeg'
+        if ext not in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+            ext = 'jpeg'
+        b64 = base64.b64encode(img_data).decode('utf-8')
+        mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
+        return jsonify({
+            'success': True, 
+            'image': f'data:{mime_type};base64,{b64}'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============ 收藏功能 ============
 
 @games_bp.route('/api/bookmarks', methods=['POST'])
 def add_bookmark():
@@ -234,6 +300,49 @@ def search_steam_image():
         print(f"Steam search error: {e}")
 
     return jsonify({'items': []})
+
+
+@games_bp.route('/api/search-steam-auto', methods=['GET'])
+def search_steam_auto():
+    """自动搜索Steam游戏并返回base64图片"""
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'success': False, 'error': 'No query provided'})
+
+    try:
+        # 先搜索游戏
+        url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(query)}&l=schinese&cc=CN"
+        )
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            items = data.get('items', [])
+            
+            if not items:
+                return jsonify({'success': False, 'error': 'No results found'})
+            
+            # 取第一个结果
+            item = items[0]
+            app_id = item.get('id')
+            header_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg" if app_id else ''
+            
+            if not header_url:
+                return jsonify({'success': False, 'error': 'No header image found'})
+            
+            # 下载图片并转换为base64
+            b64_image = convert_url_to_base64(header_url)
+            
+            return jsonify({
+                'success': True,
+                'image': b64_image,
+                'name': item.get('name', ''),
+                'app_id': app_id
+            })
+    except Exception as e:
+        print(f"Steam auto search error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @games_bp.route('/api/steam-game/<app_id>', methods=['GET'])

@@ -437,6 +437,77 @@ def regenerate_summary():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/news/summary/item", methods=["POST"])
+def get_news_item_summary():
+    """单个热点新闻的AI总结"""
+    data = request.json
+    title = data.get('title', '')
+    url = data.get('url', '')
+    source = data.get('source', '')
+    
+    if not title:
+        return jsonify({"success": False, "error": "No title provided"}), 400
+    
+    # 如果有URL，尝试获取网页内容进行总结
+    if url and url.startswith('http'):
+        try:
+            # 简单抓取网页标题和内容
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            resp = requests.get(url, headers=headers, timeout=10)
+            resp.encoding = 'utf-8'
+            html = resp.text
+            
+            # 提取页面标题
+            title_match = re.search(r'<title>([^<]+)</title>', html, re.I)
+            page_title = title_match.group(1) if title_match else title
+            
+            # 提取meta description
+            desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']+)["\']', html, re.I)
+            description = desc_match.group(1) if desc_match else ''
+            
+            # 尝试从JSON-LD或script中提取结构化数据
+            json_ld = re.search(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>([^<]+)</script>', html, re.I)
+            structured_data = ''
+            if json_ld:
+                try:
+                    jd = json.loads(json_ld.group(1))
+                    if isinstance(jd, dict):
+                        structured_data = jd.get('description', '') or jd.get('articleSection', '')
+                except:
+                    pass
+            
+            # 生成总结
+            summary_parts = []
+            if page_title and page_title != title:
+                summary_parts.append(f"页面标题: {page_title}")
+            if description:
+                # 清理HTML标签
+                clean_desc = re.sub(r'<[^>]+>', '', description)[:300]
+                summary_parts.append(f"内容摘要: {clean_desc}")
+            if structured_data:
+                summary_parts.append(f"关键信息: {structured_data[:200]}")
+            
+            if summary_parts:
+                return jsonify({
+                    "success": True,
+                    "title": title,
+                    "summary": "\n\n".join(summary_parts),
+                    "source": source
+                })
+        except Exception as e:
+            print(f"Error fetching URL: {e}")
+    
+    # 如果无法抓取，返回一个提示
+    return jsonify({
+        "success": True,
+        "title": title,
+        "summary": f"这是来自{source}的热点新闻「{title}」。点击可查看详情。",
+        "source": source
+    })
+
+
 # ============== 启动 ==============
 
 if __name__ == "__main__":

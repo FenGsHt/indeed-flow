@@ -547,11 +547,15 @@
         <input type="number" id="game-priority" value="100" min="1" max="100">
       </div>
       <div class="form-group">
-        <label>游戏图片（可选）</label>
-        <div style="display:flex;gap:0.5rem;align-items:flex-start;">
-          <input type="text" id="game-image-url" placeholder="输入图片URL或从Steam搜图" style="flex:1;" oninput="previewImageFromUrl(this.value)">
+        <label>游戏图片（上传图片或从Steam搜图）</label>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start;flex-wrap:wrap;">
+          <label for="game-image-file" style="flex:1;min-width:120px;padding:0.6rem 1rem;background:rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;text-align:center;font-size:0.85rem;border:1px dashed rgba(255,255,255,0.3);">
+            📁 上传图片
+            <input type="file" id="game-image-file" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+          </label>
           <button type="button" class="btn btn-steam" onclick="searchSteamForGame()" style="padding:0.5rem 1rem;font-size:0.85rem;white-space:nowrap;">🔍 Steam搜图</button>
         </div>
+        <input type="hidden" id="game-image-url" value="">
         <div id="image-preview" style="margin-top:0.5rem;max-width:100%;max-height:150px;overflow:hidden;border-radius:8px;display:none;"></div>
       </div>
       <div class="modal-actions">
@@ -578,8 +582,16 @@
         <input type="number" id="detail-priority" min="1" max="100" value="100">
       </div>
       <div class="form-group">
-        <label>游戏图片URL</label>
-        <input type="text" id="detail-image" placeholder="图片URL">
+        <label>游戏图片</label>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start;flex-wrap:wrap;">
+          <label for="detail-image-file" style="flex:1;min-width:120px;padding:0.6rem 1rem;background:rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;text-align:center;font-size:0.85rem;border:1px dashed rgba(255,255,255,0.3);">
+            📁 上传图片
+            <input type="file" id="detail-image-file" accept="image/*" style="display:none;" onchange="handleDetailImageUpload(this)">
+          </label>
+          <button type="button" class="btn btn-steam" onclick="searchSteamForDetail()" style="padding:0.5rem 1rem;font-size:0.85rem;white-space:nowrap;">🔍 Steam搜图</button>
+        </div>
+        <input type="hidden" id="detail-image" value="">
+        <div id="detail-image-preview" style="margin-top:0.5rem;max-width:100%;max-height:150px;overflow:hidden;border-radius:8px;display:none;"></div>
       </div>
       <div class="form-group">
         <label>Steam地址</label>
@@ -656,6 +668,112 @@
 
   <script>
     const API_BASE = 'http://150.158.110.168:5001';
+
+    // ============ 图片上传处理 ============
+    async function handleImageUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const preview = document.getElementById('image-preview');
+      const urlInput = document.getElementById('game-image-url');
+
+      // 读取文件并转换为base64
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const b64 = e.target.result;
+        urlInput.value = b64;
+        preview.style.display = 'block';
+        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function handleDetailImageUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const preview = document.getElementById('detail-image-preview');
+      const urlInput = document.getElementById('detail-image');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const b64 = e.target.result;
+        urlInput.value = b64;
+        preview.style.display = 'block';
+        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ============ Steam 搜图（自动下载转base64） ============
+    async function searchSteamForGame() {
+      const gameName = document.getElementById('game-name').value.trim();
+      const urlInput = document.getElementById('game-image-url');
+      const preview = document.getElementById('image-preview');
+
+      if (!gameName) return alert('请先输入游戏名称');
+
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ 搜索中...';
+      btn.disabled = true;
+
+      try {
+        // 使用新的自动搜索接口，直接返回base64图片
+        const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(gameName));
+        const data = await res.json();
+
+        if (data.success && data.image) {
+          urlInput.value = data.image;
+          preview.style.display = 'block';
+          preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
+          btn.textContent = '✓ 已获取';
+          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
+        } else {
+          alert(data.error || '未找到游戏图片');
+          btn.textContent = '✗ 未找到';
+          setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
+      } catch(e) {
+        alert('搜索失败，请手动上传图片');
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 详情页Steam搜图
+    async function searchSteamForDetail() {
+      if (!currentGame) return;
+      
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ 搜索中...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(currentGame.name));
+        const data = await res.json();
+
+        if (data.success && data.image) {
+          document.getElementById('detail-image').value = data.image;
+          const preview = document.getElementById('detail-image-preview');
+          preview.style.display = 'block';
+          preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
+          btn.textContent = '✓ 已获取';
+          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
+        } else {
+          alert(data.error || '未找到游戏图片');
+          btn.textContent = '✗ 未找到';
+          setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
+      } catch(e) {
+        alert('搜索失败');
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
+      }
+    }
 
     // Tab切换
     document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -833,12 +951,17 @@
             hasAnyData = true;
             html += `<div style="margin-bottom:1.5rem;"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:0.5rem;padding-left:0.5rem;">${s.name}</div>`;
             validItems.slice(0, 5).forEach((item, i) => {
+              // 对标题进行转义以避免JavaScript错误
+              const safeTitle = item.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
               html += `
-                <div class="news-item" style="animation-delay: ${i*0.03}s" onclick="window.open('${item.url||'#'}','_blank')">
+                <div class="news-item" style="animation-delay: ${i*0.03}s">
                   <div class="news-header">
                     <span class="news-source ${s.class}">${s.name}</span>
+                    <button class="btn-ai-summary" onclick="showItemAISummary('${safeTitle}', '${item.url || ''}', '${s.name}')" style="margin-left:auto;padding:0.3rem 0.6rem;font-size:0.7rem;">
+                      🤖 AI总结
+                    </button>
                   </div>
-                  <div class="news-title">${item.title}</div>
+                  <div class="news-title" onclick="window.open('${item.url||'#'}','_blank')" style="cursor:pointer;">${item.title}</div>
                 </div>`;
             });
             html += '</div>';
@@ -1032,6 +1155,45 @@
       }
     }
 
+    // 显示单个新闻的AI总结
+    async function showItemAISummary(title, url, source) {
+      event.stopPropagation(); // 阻止冒泡
+      
+      const modal = document.getElementById('ai-summary-modal');
+      const content = document.getElementById('ai-summary-content');
+
+      modal.classList.add('show');
+      content.innerHTML = '<div class="loading"></div>';
+
+      try {
+        const res = await fetch(API_BASE + '/api/news/summary/item', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title, url, source})
+        });
+        
+        if (!res.ok) throw new Error('请求失败');
+
+        const data = await res.json();
+
+        if (data.success && data.summary) {
+          content.innerHTML = `
+            <div style="margin-bottom:1rem;">
+              <div style="font-size:0.8rem;color:#00d4ff;margin-bottom:0.8rem;padding-bottom:0.5rem;border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span>🤖</span> ${data.title}
+              </div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);white-space:pre-wrap;">${data.summary}</div>
+              ${url ? `<a href="${url}" target="_blank" style="display:inline-block;margin-top:1rem;padding:0.5rem 1rem;background:rgba(0,212,255,0.2);border-radius:20px;color:#00d4ff;text-decoration:none;font-size:0.85rem;">查看原文 →</a>` : ''}
+            </div>
+          `;
+        } else {
+          content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">无法获取总结</div>';
+        }
+      } catch(e) {
+        content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">加载失败，请稍后重试</div>';
+      }
+    }
+
     // 关闭弹窗
     function closeModal(id) {
       document.getElementById(id).classList.remove('show');
@@ -1094,6 +1256,17 @@
       document.getElementById('detail-priority').value = game.priority || 100;
       document.getElementById('detail-image').value = game.image || '';
       document.getElementById('detail-url').value = game.url || '';
+      
+      // 显示现有图片预览
+      const preview = document.getElementById('detail-image-preview');
+      if (game.image) {
+        preview.style.display = 'block';
+        preview.innerHTML = '<img src="' + game.image + '" style="width:100%;height:150px;object-fit:cover;">';
+      } else {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+      }
+      
       document.getElementById('detail-modal').classList.add('show');
     }
 
