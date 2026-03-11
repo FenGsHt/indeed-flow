@@ -352,39 +352,82 @@ def get_hot_news():
 
 @app.route("/api/news/iran", methods=["GET"])
 def get_iran_news():
-    """获取伊朗新闻 - 从静态文件或实时抓取"""
+    """获取伊朗新闻 - 从NCRI获取实时新闻"""
     try:
-        # 尝试从BBC RSS获取最新伊朗新闻
-        url = "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml"
+        # 使用NCRI伊朗全国抵抗委员会新闻（和skill-news一致）
+        url = "https://r.jina.ai/https://www.ncr-iran.org/en/news/iran-news-in-brief-news/"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        resp = requests.get(url, headers=headers, timeout=15)
+        
+        if resp.status_code == 200:
+            # 解析jina.ai返回的内容
+            content = resp.text
+            items = []
+            
+            # 提取新闻条目（NCRI网站结构）
+            # 格式通常是：标题 - 时间 - 摘要
+            lines = content.split('\n')
+            current_item = {}
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                # 检测是否是新闻标题行（通常包含日期或特定关键词）
+                if any(keyword in line.lower() for keyword in ['iran', 'tehran', 'regime', 'protest', 'strike', 'execution']):
+                    if current_item and 'title' in current_item:
+                        items.append(current_item)
+                        if len(items) >= 10:
+                            break
+                    current_item = {
+                        "title": line[:100] + "..." if len(line) > 100 else line,
+                        "summary": line,
+                        "url": "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/",
+                        "time": "",
+                        "source": "NCRI"
+                    }
+                elif current_item and 'summary' in current_item:
+                    # 补充摘要内容
+                    current_item['summary'] += " " + line
+            
+            # 添加最后一个条目
+            if current_item and 'title' in current_item and len(items) < 10:
+                items.append(current_item)
+            
+            if items:
+                return jsonify({"articles": items})
+    except Exception as e:
+        print(f"NCRI fetch error: {e}")
+    
+    # 尝试备用源：Al Jazeera
+    try:
+        url = "https://r.jina.ai/https://www.aljazeera.com/news/2026/3/"
         headers = {"User-Agent": "Mozilla/5.0"}
         resp = requests.get(url, headers=headers, timeout=10)
         
-        # 解析XML提取伊朗相关新闻
-        import xml.etree.ElementTree as ET
-        root = ET.fromstring(resp.content)
-        
-        items = []
-        for item in root.findall('.//item')[:10]:
-            title = item.find('title')
-            desc = item.find('description')
-            link = item.find('link')
-            pub_date = item.find('pubDate')
+        if resp.status_code == 200:
+            content = resp.text
+            items = []
+            lines = content.split('\n')
             
-            title_text = title.text if title is not None else ''
-            # 只保留伊朗相关新闻
-            if 'iran' in title_text.lower() or 'israel' in title_text.lower() or 'gaza' in title_text.lower():
-                items.append({
-                    "title": title_text,
-                    "summary": desc.text[:200] + "..." if desc is not None and len(desc.text) > 200 else (desc.text if desc is not None else ''),
-                    "url": link.text if link is not None else '',
-                    "time": pub_date.text if pub_date is not None else '',
-                    "source": "BBC"
-                })
-        
-        if items:
-            return jsonify({"articles": items})
+            for line in lines[:20]:
+                line = line.strip()
+                if line and any(keyword in line.lower() for keyword in ['iran', 'israel', 'gaza', 'palestine', 'middle east']):
+                    items.append({
+                        "title": line[:100] + "..." if len(line) > 100 else line,
+                        "summary": line[:200],
+                        "url": "https://www.aljazeera.com/news/2026/3/",
+                        "time": "",
+                        "source": "Al Jazeera"
+                    })
+                    if len(items) >= 5:
+                        break
+            
+            if items:
+                return jsonify({"articles": items})
     except Exception as e:
-        print(f"Iran news fetch error: {e}")
+        print(f"Al Jazeera fetch error: {e}")
     
     # 回退到静态文件
     news = load_json(NEWS_FILE, {})
