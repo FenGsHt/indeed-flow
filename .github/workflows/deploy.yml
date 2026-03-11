@@ -93,6 +93,10 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: sha256=${{ secrets.HOOKS_TOKEN }}" \
             -d '{"status": "success", "message": "✅ 部署成功！indeed-flow 已上线"}' || true
+          # 发送到 QQ 群
+          curl -s -X POST "http://150.158.110.168:3001/send_group_msg" \
+            -H "Content-Type: application/json" \
+            -d "{\"group_id\":\"859294429\",\"message\":\"🚀 indeed-flow 部署成功！\\n\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请刷新页面查看最新版本。\"}" || true
 
       - name: Notify failure
         if: failure()
@@ -102,3 +106,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: sha256=${{ secrets.HOOKS_TOKEN }}" \
             -d '{"status": "failure", "message": "❌ 部署失败！请检查 Actions"}' || true
+          # 发送到 QQ 群
+          curl -s -X POST "http://150.158.110.168:3001/send_group_msg" \
+            -H "Content-Type: application/json" \
+            -d "{\"group_id\":\"859294429\",\"message\":\"❌ indeed-flow 部署失败！\\n\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请检查 GitHub Actions 日志。\"}" || true
