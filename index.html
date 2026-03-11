@@ -744,6 +744,27 @@
           data = await fallbackRes.json();
         }
         
+        // 获取AI总结
+        let summaryHtml = '';
+        try {
+          const summaryRes = await fetch(API_BASE + '/api/news/summary');
+          if (summaryRes.ok) {
+            const summaryData = await summaryRes.json();
+            if (summaryData.hot && summaryData.hot.summary && summaryData.hot.summary !== '暂无摘要') {
+              summaryHtml = `
+                <div style="margin-bottom:1.5rem;padding:1rem;background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(0,212,255,0.2));border-radius:12px;border:1px solid rgba(123,47,247,0.3);">
+                  <div style="font-size:0.75rem;color:#00d4ff;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.3rem;">
+                    <span>🤖</span> AI 热点总结
+                    <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${summaryData.updated || ''}</span>
+                  </div>
+                  <div style="font-size:0.9rem;line-height:1.6;color:rgba(255,255,255,0.9);">${summaryData.hot.summary}</div>
+                </div>`;
+            }
+          }
+        } catch(e) {
+          console.log('AI summary fetch error:', e);
+        }
+        
         const sources = [
           {key: 'tieba', name: '贴吧', class: 'tieba'},
           {key: 'weibo', name: '微博', class: 'weibo'},
@@ -752,8 +773,8 @@
           {key: 'xiaohongshu', name: '小红书', class: 'xiaohongshu'}
         ];
         
-        let html = '';
-        let hasAnyData = false;
+        let html = summaryHtml;
+        let hasAnyData = summaryHtml !== '';
         
         sources.forEach(s => {
           const items = data[s.key] || [];
@@ -799,7 +820,7 @@
           html += '</div>';
         }
         
-        if (!hasAnyData && html === '') {
+        if (!hasAnyData) {
           list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无热点数据</div></div>`;
           return;
         }
@@ -816,13 +837,25 @@
       }
     }
     
-    // 加载伊朗
+    // 加载伊朗 - 从后端API实时获取
     async function loadIran() {
       const list = document.getElementById('iran-list');
+      list.innerHTML = '<div class="loading"></div>';
+      
       try {
-        const res = await fetch('/data/news.json');
-        const data = await res.json();
-        const news = data.iran || [];
+        // 从后端API获取实时伊朗新闻
+        const res = await fetch(API_BASE + '/api/news/iran');
+        let data;
+        
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          // 后端失败时回退到静态文件
+          const fallbackRes = await fetch('/data/news.json');
+          data = await fallbackRes.json();
+        }
+        
+        const news = data.articles || [];
         
         const translations = {
           "Who is Mojtaba Khamenei, Iran's new supreme leader?": "伊朗新最高领袖是谁？",

@@ -45,7 +45,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS games (
                 id VARCHAR(36) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL DEFAULT '',
-                image VARCHAR(512),
+                image TEXT,
                 created_by VARCHAR(100),
                 password VARCHAR(100),
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -72,6 +72,17 @@ def init_db():
             )
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE games ADD COLUMN {col} {col_def}")
+        
+        # 迁移：把 image 字段从 VARCHAR(512) 改为 TEXT（支持 base64 图片）
+        cursor.execute(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME='image' AND COLUMN_TYPE='varchar(512)'",
+            (db_name,)
+        )
+        if cursor.fetchone()[0] > 0:
+            cursor.execute("ALTER TABLE games MODIFY COLUMN image TEXT")
+            print("Migrated image column to TEXT for base64 support")
+        
         conn.commit()
     finally:
         conn.close()
