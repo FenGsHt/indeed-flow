@@ -439,7 +439,7 @@ def regenerate_summary():
 
 @app.route("/api/news/summary/item", methods=["POST"])
 def get_news_item_summary():
-    """单个热点新闻的AI总结"""
+    """单个热点新闻的AI总结 - 基于标题生成总结"""
     data = request.json
     title = data.get('title', '')
     url = data.get('url', '')
@@ -448,64 +448,55 @@ def get_news_item_summary():
     if not title:
         return jsonify({"success": False, "error": "No title provided"}), 400
     
-    # 如果有URL，尝试获取网页内容进行总结
-    if url and url.startswith('http'):
-        try:
-            # 简单抓取网页标题和内容
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.encoding = 'utf-8'
-            html = resp.text
-            
-            # 提取页面标题
-            title_match = re.search(r'<title>([^<]+)</title>', html, re.I)
-            page_title = title_match.group(1) if title_match else title
-            
-            # 提取meta description
-            desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']+)["\']', html, re.I)
-            description = desc_match.group(1) if desc_match else ''
-            
-            # 尝试从JSON-LD或script中提取结构化数据
-            json_ld = re.search(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>([^<]+)</script>', html, re.I)
-            structured_data = ''
-            if json_ld:
-                try:
-                    jd = json.loads(json_ld.group(1))
-                    if isinstance(jd, dict):
-                        structured_data = jd.get('description', '') or jd.get('articleSection', '')
-                except:
-                    pass
-            
-            # 生成总结
-            summary_parts = []
-            if page_title and page_title != title:
-                summary_parts.append(f"页面标题: {page_title}")
-            if description:
-                # 清理HTML标签
-                clean_desc = re.sub(r'<[^>]+>', '', description)[:300]
-                summary_parts.append(f"内容摘要: {clean_desc}")
-            if structured_data:
-                summary_parts.append(f"关键信息: {structured_data[:200]}")
-            
-            if summary_parts:
-                return jsonify({
-                    "success": True,
-                    "title": title,
-                    "summary": "\n\n".join(summary_parts),
-                    "source": source
-                })
-        except Exception as e:
-            print(f"Error fetching URL: {e}")
+    # 基于标题生成AI总结
+    # 这里使用简单的规则来模拟AI总结，实际可以接入大模型API
+    summary = generate_title_summary(title, source)
     
-    # 如果无法抓取，返回一个提示
     return jsonify({
         "success": True,
         "title": title,
-        "summary": f"这是来自{source}的热点新闻「{title}」。点击可查看详情。",
+        "summary": summary,
         "source": source
     })
+
+
+def generate_title_summary(title, source):
+    """基于热点标题生成AI总结"""
+    # 分析标题关键词
+    keywords = []
+    
+    # 常见热点类型分析
+    if any(word in title for word in ['宣布', '发布', '推出', '上线', '开启']):
+        keywords.append("这是一条关于新产品/功能发布的消息")
+    if any(word in title for word in ['曝光', '爆料', '泄露', '传闻']):
+        keywords.append("这是一条爆料/传闻类消息")
+    if any(word in title for word in ['回应', '回复', '道歉', '声明']):
+        keywords.append("这是官方或当事人的回应声明")
+    if any(word in title for word in ['夺冠', '获胜', '晋级', '淘汰']):
+        keywords.append("这是赛事/竞技相关消息")
+    if any(word in title for word in ['涨价', '降价', '优惠', '促销']):
+        keywords.append("这是价格变动/促销信息")
+    if any(word in title for word in ['结婚', '离婚', '恋爱', '分手', '官宣']):
+        keywords.append("这是明星/名人情感相关消息")
+    if any(word in title for word in ['去世', '逝世', '离世', '病故']):
+        keywords.append("这是一条讣告消息")
+    if any(word in title for word in ['地震', '火灾', '事故', '灾难']):
+        keywords.append("这是突发事件/灾害消息")
+    
+    # 构建总结
+    parts = []
+    parts.append(f"📌 热点标题：{title}")
+    
+    if keywords:
+        parts.append(f"🔍 内容类型：{'；'.join(keywords)}")
+    
+    # 添加来源信息
+    parts.append(f"📰 来源平台：{source}")
+    
+    # 添加建议
+    parts.append("💡 点击查看详情了解更多信息")
+    
+    return "\n\n".join(parts)
 
 
 # ============== 启动 ==============
