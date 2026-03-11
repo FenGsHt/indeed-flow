@@ -498,19 +498,31 @@
         <input type="text" id="game-name" placeholder="输入游戏名称">
       </div>
       <div class="form-group">
+        <label>Steam地址（可选）</label>
+        <input type="text" id="game-url" placeholder="https://store.steampowered.com/app/...">
+      </div>
+      <div class="form-group">
         <label>你的昵称</label>
         <input type="text" id="game-user" placeholder="Anonymous">
       </div>
       <div class="form-group">
-        <label>状态</label>
+        <label>游玩状态</label>
         <select id="game-status">
-          <option value="backlog">想玩</option>
-          <option value="playing">在玩</option>
+          <option value="backlog">待玩</option>
+          <option value="playing">正在游玩</option>
           <option value="completed">已玩</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>优先级（1-100，数字越小越靠前）</label>
+        <input type="number" id="game-priority" value="100" min="1" max="100">
+      </div>
+      <div class="form-group">
+        <label>游戏图片（可选）</label>
+        <input type="text" id="game-image" placeholder="图片URL">
+      </div>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="addGame()">添加</button>
+        <button class="btn btn-primary" onclick="addGame()">添加并获取好评率</button>
         <button class="btn btn-secondary" onclick="closeModal('add-modal')">取消</button>
       </div>
     </div>
@@ -523,10 +535,22 @@
       <div class="form-group">
         <label>状态</label>
         <select id="detail-status">
-          <option value="backlog">想玩</option>
-          <option value="playing">在玩</option>
+          <option value="backlog">待玩</option>
+          <option value="playing">正在游玩</option>
           <option value="completed">已玩</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>优先级（1-100）</label>
+        <input type="number" id="detail-priority" min="1" max="100" value="100">
+      </div>
+      <div class="form-group">
+        <label>游戏图片URL</label>
+        <input type="text" id="detail-image" placeholder="图片URL">
+      </div>
+      <div class="form-group">
+        <label>Steam地址</label>
+        <input type="text" id="detail-url" placeholder="Steam链接">
       </div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="updateGame()">保存</button>
@@ -632,6 +656,14 @@
           return;
         }
         
+        // 排序：优先级（越小越前）+ 字母顺序
+        games.sort((a, b) => {
+          const pa = a.priority || 100;
+          const pb = b.priority || 100;
+          if (pa !== pb) return pa - pb;
+          return a.name.localeCompare(b.name);
+        });
+        
         list.innerHTML = games.slice(0, 12).map((g, i) => {
           // 根据游戏名生成唯一渐变色
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
@@ -639,7 +671,16 @@
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
           
-          const statusIcon = g.status === 'playing' ? '🎮' : g.status === 'completed' ? '✅' : '📋';
+          const statusMap = {backlog: '📋 待玩', playing: '🎮 正在游玩', completed: '✅ 已玩'};
+          const statusIcon = statusMap[g.status] || '📋 待玩';
+          
+          // 计算好评率
+          let ratingText = '';
+          if (g.ratings && Object.keys(g.ratings).length > 0) {
+            const sum = Object.values(g.ratings).reduce((a,b) => a+b, 0);
+            const avg = sum / Object.keys(g.ratings).length;
+            ratingText = `⭐ ${avg.toFixed(1)}`;
+          }
           
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
@@ -649,7 +690,7 @@
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
-              <div class="game-meta">${g.created_by || 'Anonymous'}</div>
+              <div class="game-meta">${g.created_by || 'Anonymous'} ${ratingText}</div>
             </div>
           </div>`;
         }).join('');
@@ -685,7 +726,7 @@
       btn.textContent = '🎨';
     }
     
-    // 加载热点
+    // 加载热点 - 显示所有平台，包括获取失败的
     async function loadHot() {
       const list = document.getElementById('hot-list');
       try {
@@ -696,37 +737,65 @@
           {key: 'tieba', name: '贴吧', class: 'tieba'},
           {key: 'douyin', name: '抖音', class: 'douyin'},
           {key: 'weibo', name: '微博', class: 'weibo'},
-          {key: 'bilibili', name: 'B站', class: 'bilibili'}
+          {key: 'bilibili', name: 'B站', class: 'bilibili'},
+          {key: 'xiaohongshu', name: '小红书', class: 'xiaohongshu'}
         ];
         
-        let all = [];
+        let html = '';
+        let hasAnyData = false;
+        
         sources.forEach(s => {
-          if (data[s.key]) {
-            data[s.key].forEach(item => {
-              if (item.title && item.title !== '获取失败') {
-                all.push({...item, source: s.name, sourceClass: s.class});
-              }
+          const items = data[s.key] || [];
+          // 检查是否有有效数据
+          const validItems = items.filter(item => item.title && item.title !== '获取失败');
+          
+          if (validItems.length > 0) {
+            hasAnyData = true;
+            html += `<div style="margin-bottom:1.5rem;"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:0.5rem;padding-left:0.5rem;">${s.name}</div>`;
+            validItems.slice(0, 5).forEach((item, i) => {
+              html += `
+                <div class="news-item" style="animation-delay: ${i*0.03}s" onclick="window.open('${item.url||'#'}','_blank')">
+                  <div class="news-header">
+                    <span class="news-source ${s.class}">${s.name}</span>
+                  </div>
+                  <div class="news-title">${item.title}</div>
+                </div>`;
             });
+            html += '</div>';
+          } else {
+            // 显示获取失败
+            html += `<div style="margin-bottom:1rem;padding:0.8rem;background:rgba(255,255,255,0.05);border-radius:8px;">
+              <span style="font-size:0.8rem;color:rgba(255,255,255,0.4);">${s.name}</span>
+              <span style="font-size:0.75rem;color:#ff6b6b;margin-left:0.5rem;">获取失败</span>
+            </div>`;
           }
         });
         
-        all = all.slice(0, 20);
+        // 公共热点
+        if (data.public && data.public.length > 0) {
+          hasAnyData = true;
+          html += `<div style="margin-bottom:1.5rem;"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:0.5rem;padding-left:0.5rem;">🔥 公共热点</div>`;
+          data.public.slice(0, 5).forEach((item, i) => {
+            html += `
+              <div class="news-item" style="animation-delay: ${i*0.03}s">
+                <div class="news-header">
+                  <span class="news-source" style="background:#ff6b6b;">公共</span>
+                  <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);">${item.platforms.join(', ')}</span>
+                </div>
+                <div class="news-title">${item.topic}</div>
+              </div>`;
+          });
+          html += '</div>';
+        }
         
-        if (all.length === 0) {
-          list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无热点</div></div>`;
+        if (!hasAnyData && html === '') {
+          list.innerHTML = `<div class="empty-state"><div class="empty-text">暂无热点数据</div></div>`;
           return;
         }
         
-        list.innerHTML = all.map((n, i) => `
-          <div class="news-item" style="animation-delay: ${i*0.03}s">
-            <div class="news-header">
-              <span class="news-source ${n.sourceClass}">${n.source}</span>
-            </div>
-            <div class="news-title">${n.title}</div>
-          </div>
-        `).join('');
+        list.innerHTML = html;
       } catch(e) {
-        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
+        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败: ${e.message}</div></div>`;
       }
     }
     
@@ -787,17 +856,41 @@
     // 添加游戏
     async function addGame() {
       const name = document.getElementById('game-name').value.trim();
+      const url = document.getElementById('game-url').value.trim();
       const user = document.getElementById('game-user').value.trim() || 'Anonymous';
       const status = document.getElementById('game-status').value;
+      const priority = parseInt(document.getElementById('game-priority').value) || 100;
+      const image = document.getElementById('game-image').value.trim();
       
       if (!name) return alert('请输入游戏名称');
       
       try {
+        // 先添加游戏
         await fetch(API_BASE + '/api/games', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name, user, status})
+          body: JSON.stringify({name, url, user, status, priority, image})
         });
+        
+        // 如果有Steam地址，尝试获取好评率
+        if (url && url.includes('steampowered.com/app/')) {
+          const appId = url.match(/app\/(\d+)/);
+          if (appId) {
+            try {
+              const res = await fetch(API_BASE + '/api/steam-game/' + appId[1]);
+              const data = await res.json();
+              if (data.positiveRatio !== undefined) {
+                // 更新好评率
+                await fetch(API_BASE + '/api/games/' + name + '/rate', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({user: 'steam', score: Math.ceil(data.positiveRatio / 20)})
+                });
+              }
+            } catch(e) { console.log('获取好评率失败', e); }
+          }
+        }
+        
         closeModal('add-modal');
         loadGames();
       } catch {
@@ -810,6 +903,9 @@
       currentGame = game;
       document.getElementById('detail-title').textContent = game.name;
       document.getElementById('detail-status').value = game.status || 'backlog';
+      document.getElementById('detail-priority').value = game.priority || 100;
+      document.getElementById('detail-image').value = game.image || '';
+      document.getElementById('detail-url').value = game.url || '';
       document.getElementById('detail-modal').classList.add('show');
     }
     
@@ -817,12 +913,15 @@
     async function updateGame() {
       if (!currentGame) return;
       const status = document.getElementById('detail-status').value;
+      const priority = parseInt(document.getElementById('detail-priority').value) || 100;
+      const image = document.getElementById('detail-image').value;
+      const url = document.getElementById('detail-url').value;
       
       try {
         await fetch(API_BASE + '/api/games/' + currentGame.id, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({status})
+          body: JSON.stringify({status, priority, image, url})
         });
         closeModal('detail-modal');
         loadGames();
