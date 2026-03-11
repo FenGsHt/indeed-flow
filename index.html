@@ -463,19 +463,24 @@
           return;
         }
         
-        list.innerHTML = games.slice(0, 12).map((g, i) => `
+        list.innerHTML = games.slice(0, 12).map((g, i) => {
+          // 根据游戏名生成唯一渐变色
+          const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
+          const hue1 = hash % 360;
+          const hue2 = (hash * 2) % 360;
+          const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
+          
+          return `
           <div class="game-card" style="animation-delay: ${i*0.05}s">
-            <div class="game-cover ${g.image ? 'has-image' : ''}" 
-                 style="${g.image ? 'background-image:url(' + g.image + ');background-size:cover' : ''}">
-              ${!g.image ? '<div class="cover-placeholder">🎮</div>' : ''}
-              <button class="steam-btn" onclick="searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="搜索Steam图片">🔍</button>
+            <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
+              <button class="steam-btn" onclick="searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="换封面">🎨</button>
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
               <div class="game-meta">${g.created_by || 'Anonymous'}</div>
             </div>
-          </div>
-        `).join('');
+          </div>`;
+        }).join('');
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
@@ -485,22 +490,27 @@
     async function searchSteam(gameName, btn) {
       btn.textContent = '⏳';
       try {
+        // 尝试后端API
         const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
         const data = await res.json();
         if (data.headerUrl) {
-          btn.parentElement.style.backgroundImage = 'url(' + data.headerUrl + ')';
+          btn.parentElement.style.background = 'url(' + data.headerUrl + ')';
           btn.parentElement.style.backgroundSize = 'cover';
           btn.classList.add('success');
           btn.textContent = '✓';
-          btn.onclick = null;
-        } else {
-          btn.textContent = '❌';
-          setTimeout(() => btn.textContent = '🔍', 2000);
+          return;
         }
-      } catch {
-        btn.textContent = '❌';
-        setTimeout(() => btn.textContent = '🔍', 2000);
-      }
+      } catch {}
+      
+      // API失败时，随机换一个酷炫的渐变
+      const hues = [
+        [349, 280], [45, 180], [200, 320], [150, 220], [280, 350],
+        [30, 120], [180, 260], [320, 40], [260, 340], [90, 170]
+      ];
+      const [h1, h2] = hues[Math.floor(Math.random() * hues.length)];
+      btn.parentElement.style.background = `linear-gradient(135deg, hsl(${h1}, 70%, 50%), hsl(${h2}, 60%, 40%))`;
+      btn.classList.add('success');
+      btn.textContent = '🎨';
     }
     
     // 加载热点
