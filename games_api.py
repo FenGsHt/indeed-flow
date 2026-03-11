@@ -63,6 +63,8 @@ def init_db():
             ("source", "VARCHAR(255)"),
             ("bookmarked", "JSON"),
             ("priority", "INT DEFAULT 100"),
+            ("recommender", "VARCHAR(100)"),
+            ("notes", "TEXT"),
         ]
         cursor.execute("SELECT DATABASE()")
         db_name = cursor.fetchone()[0]
@@ -525,7 +527,7 @@ def get_games():
         ratings = game['ratings']
         game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
         game['rating_count'] = len(ratings)
-        game['status'] = game.get('status') or 'wishlist'
+        game['status'] = game.get('status') or 'todo'
 
     games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
     return jsonify(games)
@@ -541,23 +543,26 @@ def add_game():
         # 兼容前端字段: user -> created_by, url -> source
         'created_by': data.get('user') or data.get('created_by', '匿名'),
         'password': data.get('password', ''),
-        'status': data.get('status', 'wishlist'),
+        'status': data.get('status', 'todo'),
         'source': data.get('source') or data.get('url', ''),
         'priority': data.get('priority', 100),
         'ratings': {},
-        'comments': []
+        'comments': [],
+        'recommender': data.get('recommender', ''),
+        'notes': data.get('notes', '')
     }
     conn = get_db()
     try:
         cursor = conn.cursor()
         cursor.execute(
             'INSERT INTO games '
-            '(id, name, image, created_by, password, status, source, priority, ratings, comments) '
-            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+            '(id, name, image, created_by, password, status, source, priority, ratings, comments, recommender, notes) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
             (
                 game['id'], game['name'], game['image'], game['created_by'],
                 game['password'], game['status'], game['source'], game['priority'],
-                json.dumps(game['ratings']), json.dumps(game['comments'])
+                json.dumps(game['ratings']), json.dumps(game['comments']),
+                game['recommender'], game['notes']
             )
         )
         conn.commit()
@@ -631,11 +636,15 @@ def update_game(game_id):
     values = []
     
     if 'status' in data:
-        valid_statuses = ['wishlist', 'playing', 'completed', 'backlog']
+        valid_statuses = ['todo', 'playing', 'completed']
         if data['status'] not in valid_statuses:
             return jsonify({'success': False, 'error': '无效的状态值'}), 400
         updates.append('status = %s')
         values.append(data['status'])
+    
+    if 'name' in data:
+        updates.append('name = %s')
+        values.append(data['name'])
     
     if 'image' in data:
         updates.append('image = %s')
@@ -648,6 +657,14 @@ def update_game(game_id):
     if 'priority' in data:
         updates.append('priority = %s')
         values.append(data['priority'])
+    
+    if 'recommender' in data:
+        updates.append('recommender = %s')
+        values.append(data['recommender'])
+    
+    if 'notes' in data:
+        updates.append('notes = %s')
+        values.append(data['notes'])
     
     if not updates:
         return jsonify({'success': False, 'error': '没有需要更新的字段'}), 400
@@ -669,8 +686,8 @@ def update_game(game_id):
 @games_bp.route('/api/games/<game_id>/status', methods=['PUT'])
 def update_game_status(game_id):
     data = request.json
-    new_status = data.get('status', 'wishlist')
-    valid_statuses = ['wishlist', 'playing', 'completed']
+    new_status = data.get('status', 'todo')
+    valid_statuses = ['todo', 'playing', 'completed']
     if new_status not in valid_statuses:
         return jsonify({'success': False, 'error': '无效的状态值'}), 400
 

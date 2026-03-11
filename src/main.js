@@ -59,11 +59,11 @@ document.querySelectorAll('.tab').forEach(tab => {
     // 设置状态筛选
     if (currentTab === 'all') {
       currentStatusFilter = '';
-    } else if (currentTab === 'wishlist' || currentTab === 'playing' || currentTab === 'completed') {
+    } else if (currentTab === 'todo' || currentTab === 'playing' || currentTab === 'completed') {
       currentStatusFilter = currentTab;
     }
     
-    if (currentTab === 'all' || currentTab === 'wishlist' || currentTab === 'playing' || currentTab === 'completed') {
+    if (currentTab === 'all' || currentTab === 'todo' || currentTab === 'playing' || currentTab === 'completed') {
       loadGames();
     }
     if (currentTab === 'stats') loadStats();
@@ -141,9 +141,9 @@ function renderGames() {
       games.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       break;
     default:
-      // 默认：playing > wishlist > completed
-      const statusOrder = { playing: 0, wishlist: 1, completed: 2 };
-      games.sort((a, b) => statusOrder[a.status || 'wishlist'] - statusOrder[b.status || 'wishlist']);
+      // 默认：playing > todo > completed
+      const statusOrder = { playing: 0, todo: 1, completed: 2 };
+      games.sort((a, b) => statusOrder[a.status || 'todo'] - statusOrder[b.status || 'todo']);
   }
   
   const list = document.getElementById('games-list');
@@ -158,13 +158,16 @@ function renderGames() {
     const avg = calcAvgRating(g.ratings);
     const statusClass = g.status === 'playing' ? 'status-playing' : 
                        g.status === 'completed' ? 'status-completed' : 
-                       g.status === 'wishlist' ? 'status-wishlist' : '';
-    const statusText = g.status === 'playing' ? '在玩' : 
-                      g.status === 'completed' ? '已玩' : '想玩';
+                       g.status === 'todo' ? 'status-wishlist' : '';
+    const statusText = g.status === 'playing' ? '游玩中' : 
+                      g.status === 'completed' ? '已完' : '待玩';
     
     // 生成标签
     const tags = g.tags || ['Game'];
     const tagsHtml = tags.map(t => `<span class="tag">${t}</span>`).join('');
+    
+    // 推荐人信息
+    const recommenderText = g.recommender ? ` · 推荐人: ${g.recommender}` : '';
     
     return `
       <div class="grid-row ${statusClass}" data-id="${g.id}" onclick="showDetail('${g.id}')">
@@ -172,7 +175,7 @@ function renderGames() {
         <div class="cell-cover" style="${g.image ? `background-image:url('${g.image}')` : 'background:linear-gradient(135deg,#FF3366,#FF9933)'}" onerror="this.style.background='linear-gradient(135deg,#FF3366,#FF9933)'"></div>
         <div class="cell-title">
           <span class="game-title">${g.name}</span>
-          <span class="game-platform">${g.created_by || 'Anonymous'}${g.source ? ' · ' + g.source : ''}</span>
+          <span class="game-platform">${g.created_by || 'Anonymous'}${recommenderText}${g.source ? ' · ' + g.source : ''}</span>
         </div>
         <div class="cell-tags">${tagsHtml}</div>
         <div class="cell-status ${statusClass}">
@@ -187,8 +190,8 @@ function renderGames() {
   let featured;
   if (currentTab === 'playing') {
     featured = games.find(g => g.status === 'playing') || games[0];
-  } else if (currentTab === 'wishlist') {
-    featured = games.find(g => g.status === 'wishlist') || games[0];
+  } else if (currentTab === 'todo') {
+    featured = games.find(g => g.status === 'todo') || games[0];
   } else if (currentTab === 'completed') {
     featured = games.find(g => g.status === 'completed') || games[0];
   } else {
@@ -202,7 +205,7 @@ function renderGames() {
   }
   
   if (featured) {
-    const tabLabel = currentTab === 'all' ? '全部' : currentTab === 'wishlist' ? '想玩' : currentTab === 'playing' ? '在玩' : currentTab === 'completed' ? '已玩' : currentTab;
+    const tabLabel = currentTab === 'all' ? '全部' : currentTab === 'todo' ? '待玩' : currentTab === 'playing' ? '游玩中' : currentTab === 'completed' ? '已完' : currentTab;
     document.getElementById('featured-title').textContent = featured.name;
     document.getElementById('featured-time').textContent = `${tabLabel} · ${Object.keys(featured.ratings || {}).length} ratings`;
     const imgWrapper = document.getElementById('featured-image');
@@ -362,23 +365,38 @@ async function showDetail(id) {
   
   const avg = calcAvgRating(game.ratings);
   const comments = game.comments || [];
-  const currentStatus = game.status || 'wishlist';
+  const currentStatus = game.status || 'todo';
   
   const statusOptions = [
-    {value: 'wishlist', label: '想玩'},
-    {value: 'playing', label: '在玩'},
-    {value: 'completed', label: '已玩'}
+    {value: 'todo', label: '待玩'},
+    {value: 'playing', label: '游玩中'},
+    {value: 'completed', label: '已完'}
   ].map(opt => `<option value="${opt.value}" ${opt.value === currentStatus ? 'selected' : ''}>${opt.label}</option>`).join('');
   
   document.getElementById('detail-content').innerHTML = `
-    <h2>${game.name}</h2>
-    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'}${game.source ? ' · Source: ' + game.source : ''} · ${game.created_at?.slice(0,10) || '-'}</p>
+    <div class="form-group">
+      <label>游戏名称</label>
+      <input type="text" id="detail-name" value="${game.name || ''}" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
+      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameName('${game.id}')">保存名称</button>
+    </div>
+    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'}${game.recommender ? ' · 推荐人: ' + game.recommender : ''}${game.source ? ' · Source: ' + game.source : ''} · ${game.created_at?.slice(0,10) || '-'}</p>
     ${game.image ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
     
     <div class="change-image-section">
       <input type="text" id="new-image-url" placeholder="New image URL" value="${game.image || ''}">
       <button class="btn" onclick="changeImage('${game.id}')">Change Cover</button>
       <button class="btn" onclick="fetchSteamImage('${game.id}', '${game.name.replace(/'/g, "\\'")}')">🔍 Steam</button>
+    </div>
+    
+    <div class="form-group">
+      <label>推荐人</label>
+      <input type="text" id="detail-recommender" value="${game.recommender || ''}" placeholder="推荐人（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
+    </div>
+    
+    <div class="form-group">
+      <label>备注</label>
+      <textarea id="detail-notes" placeholder="备注（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);min-height:60px;">${game.notes || ''}</textarea>
+      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameInfo('${game.id}')">保存推荐人和备注</button>
     </div>
     
     <div class="status-section">
@@ -504,6 +522,45 @@ async function changeImage(id) {
   }
 }
 
+// 更新游戏名称
+async function updateGameName(id) {
+  const newName = document.getElementById('detail-name').value;
+  if (!newName) {
+    alert('请输入游戏名称');
+    return;
+  }
+  
+  try {
+    await fetch(`${API_BASE}/api/games/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: newName})
+    });
+    showDetail(id);
+    loadGames();
+  } catch {
+    alert('Failed to update name. Please try again.');
+  }
+}
+
+// 更新游戏推荐人和备注
+async function updateGameInfo(id) {
+  const recommender = document.getElementById('detail-recommender').value;
+  const notes = document.getElementById('detail-notes').value;
+  
+  try {
+    await fetch(`${API_BASE}/api/games/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({recommender, notes})
+    });
+    showDetail(id);
+    loadGames();
+  } catch {
+    alert('Failed to update info. Please try again.');
+  }
+}
+
 // 从Steam获取图片
 async function fetchSteamImage(id, gameName) {
   try {
@@ -531,11 +588,14 @@ async function fetchSteamImage(id, gameName) {
 // 添加游戏
 async function addGame() {
   const name = document.getElementById('game-name').value;
-  const image = document.getElementById('game-image').value;
+  const image = document.getElementById('game-image-url').value || document.getElementById('game-image')?.value || '';
   const userInput = document.getElementById('game-user').value || getUserName() || 'Anonymous';
   const status = document.getElementById('game-status').value;
-  const tags = document.getElementById('game-tags').value.split(',').map(t => t.trim()).filter(t => t);
+  const tagsEl = document.getElementById('game-tags');
+  const tags = tagsEl ? tagsEl.value.split(',').map(t => t.trim()).filter(t => t) : [];
   const source = document.getElementById('game-source').value;
+  const recommender = document.getElementById('game-recommender').value;
+  const notes = document.getElementById('game-notes').value;
   
   // 保存用户名
   setUserName(userInput);
@@ -549,13 +609,15 @@ async function addGame() {
     await fetch(`${API_BASE}/api/games`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, image, user: userInput, status, tags, source})
+      body: JSON.stringify({name, image, user: userInput, status, tags, source, recommender, notes})
     });
     
     document.getElementById('game-name').value = '';
-    document.getElementById('game-image').value = '';
-    document.getElementById('game-tags').value = '';
+    document.getElementById('game-image-url').value = '';
+    if (tagsEl) tagsEl.value = '';
     document.getElementById('game-source').value = '';
+    document.getElementById('game-recommender').value = '';
+    document.getElementById('game-notes').value = '';
     document.getElementById('steam-results').innerHTML = '';
     
     closeModal('add-modal');
@@ -637,6 +699,8 @@ window.changeImage = changeImage;
 window.fetchSteamImage = fetchSteamImage;
 window.updateGameStatus = updateGameStatus;
 window.toggleBookmark = toggleBookmark;
+window.updateGameName = updateGameName;
+window.updateGameInfo = updateGameInfo;
 
 // 新闻 Tab 切换
 document.querySelectorAll('.news-tab').forEach(tab => {

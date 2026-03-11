@@ -528,7 +528,7 @@
       </div>
       <div class="form-group">
         <label>Steam地址（可选）</label>
-        <input type="text" id="game-url" placeholder="https://store.steampowered.com/app/...">
+        <input type="text" id="game-source" placeholder="https://store.steampowered.com/app/...">
       </div>
       <div class="form-group">
         <label>你的昵称</label>
@@ -537,10 +537,18 @@
       <div class="form-group">
         <label>游玩状态</label>
         <select id="game-status">
-          <option value="backlog">待玩</option>
-          <option value="playing">正在游玩</option>
-          <option value="completed">已玩</option>
+          <option value="todo" selected>待玩</option>
+          <option value="playing">游玩中</option>
+          <option value="completed">已完</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>推荐人（可选）</label>
+        <input type="text" id="game-recommender" placeholder="推荐人">
+      </div>
+      <div class="form-group">
+        <label>备注（可选）</label>
+        <input type="text" id="game-notes" placeholder="备注">
       </div>
       <div class="form-group">
         <label>优先级（1-100，数字越小越靠前）</label>
@@ -572,9 +580,9 @@
       <div class="form-group">
         <label>状态</label>
         <select id="detail-status">
-          <option value="backlog">待玩</option>
-          <option value="playing">正在游玩</option>
-          <option value="completed">已玩</option>
+          <option value="todo">待玩</option>
+          <option value="playing">游玩中</option>
+          <option value="completed">已完</option>
         </select>
       </div>
       <div class="form-group">
@@ -836,7 +844,7 @@
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
 
-          const statusMap = {backlog: '📋 待玩', playing: '🎮 正在游玩', completed: '✅ 已玩'};
+          const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[g.status] || '📋 待玩';
 
           // 计算好评率
@@ -850,7 +858,7 @@
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
-              <span class="status-badge" title="${g.status || 'backlog'}">${statusIcon}</span>
+              <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
               <button class="steam-btn" onclick="event.stopPropagation(); searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="换封面">🎨</button>
             </div>
             <div class="game-info">
@@ -1201,11 +1209,13 @@
     // 添加游戏
     async function addGame() {
       const name = document.getElementById('game-name').value.trim();
-      const url = document.getElementById('game-url').value.trim();
+      const url = document.getElementById('game-source').value.trim();
       const user = document.getElementById('game-user').value.trim() || 'Anonymous';
       const status = document.getElementById('game-status').value;
       const priority = parseInt(document.getElementById('game-priority').value) || 100;
       const image = document.getElementById('game-image-url').value.trim();
+      const recommender = document.getElementById('game-recommender').value.trim();
+      const notes = document.getElementById('game-notes').value.trim();
 
       if (!name) return alert('请输入游戏名称');
 
@@ -1214,11 +1224,15 @@
         await fetch(API_BASE + '/api/games', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name, url, user, status, priority, image})
+          body: JSON.stringify({name, url, user, status, priority, image, recommender, notes})
         });
 
         // 重置表单
+        document.getElementById('game-name').value = '';
         document.getElementById('game-image-url').value = '';
+        document.getElementById('game-source').value = '';
+        document.getElementById('game-recommender').value = '';
+        document.getElementById('game-notes').value = '';
         document.getElementById('image-preview').style.display = 'none';
 
         // 如果有Steam地址，尝试获取好评率
@@ -1251,7 +1265,7 @@
     function openDetail(game) {
       currentGame = game;
       document.getElementById('detail-title').textContent = game.name;
-      document.getElementById('detail-status').value = game.status || 'backlog';
+      document.getElementById('detail-status').value = game.status || 'todo';
       document.getElementById('detail-priority').value = game.priority || 100;
       document.getElementById('detail-image').value = game.image || '';
       document.getElementById('detail-url').value = game.url || '';
