@@ -589,16 +589,13 @@ async function fetchSteamImage(id, gameName) {
 async function addGame() {
   const name = document.getElementById('game-name').value;
   const image = document.getElementById('game-image-url').value || document.getElementById('game-image')?.value || '';
-  const userInput = document.getElementById('game-user').value || getUserName() || 'Anonymous';
+  // 不再发送 user 字段，后端默认用 Anonymous
   const status = document.getElementById('game-status').value;
   const tagsEl = document.getElementById('game-tags');
   const tags = tagsEl ? tagsEl.value.split(',').map(t => t.trim()).filter(t => t) : [];
   const source = document.getElementById('game-source').value;
   const recommender = document.getElementById('game-recommender').value;
   const notes = document.getElementById('game-notes').value;
-  
-  // 保存用户名
-  setUserName(userInput);
   
   if (!name) {
     alert('Please enter game name');
@@ -609,7 +606,7 @@ async function addGame() {
     await fetch(`${API_BASE}/api/games`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, image, user: userInput, status, tags, source, recommender, notes})
+      body: JSON.stringify({name, image, status, tags, source, recommender, notes})
     });
     
     document.getElementById('game-name').value = '';

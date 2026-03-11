@@ -540,8 +540,8 @@ def add_game():
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
         'image': data.get('image', ''),
-        # 兼容前端字段: user -> created_by, url -> source
-        'created_by': data.get('user') or data.get('created_by', '匿名'),
+        # 不再接收 user 字段，默认用 Anonymous
+        'created_by': data.get('created_by', 'Anonymous'),
         'password': data.get('password', ''),
         'status': data.get('status', 'todo'),
         'source': data.get('source') or data.get('url', ''),

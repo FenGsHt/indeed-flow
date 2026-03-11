@@ -441,6 +441,47 @@
       border-color: #00d4ff;
     }
 
+    /* 修复 select 下拉选项样式 - 深色背景白色文字 */
+    .form-group select {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 0.95rem;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    .form-group select option {
+      background: #1a1a3e;
+      color: #fff;
+      padding: 0.5rem;
+    }
+
+    /* 针对 Webkit 浏览器的额外修复 */
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      .form-group select option {
+        background: #1a1a3e;
+        color: #fff;
+      }
+    }
+
+    /* Firefox */
+    @-moz-document url-prefix() {
+      .form-group select option {
+        background: #1a1a3e;
+        color: #fff;
+      }
+    }
+
     .modal-actions {
       display: flex;
       gap: 0.8rem;
@@ -531,10 +572,6 @@
         <input type="text" id="game-source" placeholder="https://store.steampowered.com/app/...">
       </div>
       <div class="form-group">
-        <label>你的昵称</label>
-        <input type="text" id="game-user" placeholder="Anonymous">
-      </div>
-      <div class="form-group">
         <label>游玩状态</label>
         <select id="game-status">
           <option value="todo" selected>待玩</option>
@@ -578,6 +615,10 @@
     <div class="modal-content">
       <div class="modal-title" id="detail-title">游戏详情</div>
       <div class="form-group">
+        <label>游戏名称 *</label>
+        <input type="text" id="detail-name" placeholder="游戏名称">
+      </div>
+      <div class="form-group">
         <label>状态</label>
         <select id="detail-status">
           <option value="todo">待玩</option>
@@ -588,6 +629,14 @@
       <div class="form-group">
         <label>优先级（1-100）</label>
         <input type="number" id="detail-priority" min="1" max="100" value="100">
+      </div>
+      <div class="form-group">
+        <label>推荐人（可选）</label>
+        <input type="text" id="detail-recommender" placeholder="推荐人">
+      </div>
+      <div class="form-group">
+        <label>备注（可选）</label>
+        <input type="text" id="detail-notes" placeholder="备注">
       </div>
       <div class="form-group">
         <label>游戏图片</label>
@@ -1210,7 +1259,6 @@
     async function addGame() {
       const name = document.getElementById('game-name').value.trim();
       const url = document.getElementById('game-source').value.trim();
-      const user = document.getElementById('game-user').value.trim() || 'Anonymous';
       const status = document.getElementById('game-status').value;
       const priority = parseInt(document.getElementById('game-priority').value) || 100;
       const image = document.getElementById('game-image-url').value.trim();
@@ -1220,11 +1268,11 @@
       if (!name) return alert('请输入游戏名称');
 
       try {
-        // 先添加游戏
+        // 先添加游戏（不再传user字段，后端默认用Anonymous）
         await fetch(API_BASE + '/api/games', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name, url, user, status, priority, image, recommender, notes})
+          body: JSON.stringify({name, url, status, priority, image, recommender, notes})
         });
 
         // 重置表单
@@ -1265,10 +1313,13 @@
     function openDetail(game) {
       currentGame = game;
       document.getElementById('detail-title').textContent = game.name;
+      document.getElementById('detail-name').value = game.name || '';
       document.getElementById('detail-status').value = game.status || 'todo';
       document.getElementById('detail-priority').value = game.priority || 100;
+      document.getElementById('detail-recommender').value = game.recommender || '';
+      document.getElementById('detail-notes').value = game.notes || '';
       document.getElementById('detail-image').value = game.image || '';
-      document.getElementById('detail-url').value = game.url || '';
+      document.getElementById('detail-url').value = game.url || game.source || '';
       
       // 显示现有图片预览
       const preview = document.getElementById('detail-image-preview');
@@ -1286,16 +1337,21 @@
     // 更新游戏
     async function updateGame() {
       if (!currentGame) return;
+      const name = document.getElementById('detail-name').value.trim();
+      if (!name) return alert('请输入游戏名称');
+      
       const status = document.getElementById('detail-status').value;
       const priority = parseInt(document.getElementById('detail-priority').value) || 100;
+      const recommender = document.getElementById('detail-recommender').value.trim();
+      const notes = document.getElementById('detail-notes').value.trim();
       const image = document.getElementById('detail-image').value;
-      const url = document.getElementById('detail-url').value;
+      const url = document.getElementById('detail-url').value.trim();
 
       try {
         await fetch(API_BASE + '/api/games/' + currentGame.id, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({status, priority, image, url})
+          body: JSON.stringify({name, status, priority, recommender, notes, image, url})
         });
         closeModal('detail-modal');
         loadGames();

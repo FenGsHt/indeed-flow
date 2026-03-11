@@ -439,7 +439,7 @@ def regenerate_summary():
 
 @app.route("/api/news/summary/item", methods=["POST"])
 def get_news_item_summary():
-    """单个热点新闻的AI总结 - 基于标题生成总结"""
+    """单个热点新闻的AI总结 - 尝试抓取原文内容进行总结"""
     data = request.json
     title = data.get('title', '')
     url = data.get('url', '')
@@ -448,16 +448,130 @@ def get_news_item_summary():
     if not title:
         return jsonify({"success": False, "error": "No title provided"}), 400
     
-    # 基于标题生成AI总结
-    # 这里使用简单的规则来模拟AI总结，实际可以接入大模型API
-    summary = generate_title_summary(title, source)
+    # 尝试抓取网页内容进行总结
+    content = None
+    if url:
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            }
+            resp = requests.get(url, headers=headers, timeout=10)
+            resp.encoding = resp.apparent_encoding or 'utf-8'
+            html = resp.text
+            
+            # 提取正文内容（简单策略）
+            content = extract_text_from_html(html)
+            
+            if content and len(content) > 50:
+                # 使用原文内容生成总结
+                summary = generate_content_summary(title, content, source)
+                return jsonify({
+                    "success": True,
+                    "title": title,
+                    "summary": summary,
+                    "source": source,
+                    "from_url": True
+                })
+        except Exception as e:
+            print(f"Failed to fetch URL content: {e}")
     
+    # 抓取失败，回退到标题总结
+    summary = generate_title_summary(title, source)
     return jsonify({
         "success": True,
         "title": title,
         "summary": summary,
-        "source": source
+        "source": source,
+        "from_url": False
     })
+
+
+def extract_text_from_html(html):
+    """从HTML中提取正文内容"""
+    # 移除脚本和样式
+    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<noscript[^>]*>.*?</noscript>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    
+    # 尝试提取 article 或 main 内容
+    article_match = re.search(r'<article[^>]*>(.*?)</article>', html, re.DOTALL | re.IGNORECASE)
+    if article_match:
+        html = article_match.group(1)
+    else:
+        main_match = re.search(r'<main[^>]*>(.*?)</main>', html, re.DOTALL | re.IGNORECASE)
+        if main_match:
+            html = main_match.group(1)
+    
+    # 移除HTML标签
+    text = re.sub(r'<[^>]+>', ' ', html)
+    
+    # 清理空白
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+    
+    # 解码HTML实体
+    text = text.replace('&nbsp;', ' ')
+    text = text.replace('&amp;', '&')
+    text = text.replace('&lt;', '<')
+    text = text.replace('&gt;', '>')
+    text = text.replace('&quot;', '"')
+    text = text.replace('&#39;', "'")
+    
+    # 限制长度
+    if len(text) > 2000:
+        text = text[:2000] + '...'
+    
+    return text
+
+
+def generate_content_summary(title, content, source):
+    """基于网页内容生成AI总结"""
+    parts = []
+    parts.append(f"📌 热点标题：{title}")
+    
+    # 分析内容关键词
+    keywords = []
+    content_lower = content.lower()
+    
+    if any(word in content_lower for word in ['宣布', '发布', '推出', '上线', '开启', '发布', '正式']):
+        keywords.append("这是关于产品/功能发布的消息")
+    if any(word in content_lower for word in ['曝光', '爆料', '泄露', '传闻', '网传']):
+        keywords.append("这是爆料/传闻类消息")
+    if any(word in content_lower for word in ['回应', '回复', '道歉', '声明', '澄清']):
+        keywords.append("这是官方或当事人的回应声明")
+    if any(word in content_lower for word in ['夺冠', '获胜', '晋级', '淘汰', '冠军', '决赛']):
+        keywords.append("这是赛事/竞技相关消息")
+    if any(word in content_lower for word in ['涨价', '降价', '优惠', '促销', '免费', '折扣']):
+        keywords.append("这是价格变动/促销信息")
+    if any(word in content_lower for word in ['结婚', '离婚', '恋爱', '分手', '官宣', '公开']):
+        keywords.append("这是明星/名人情感相关消息")
+    if any(word in content_lower for word in ['去世', '逝世', '离世', '病故', '逝世']):
+        keywords.append("这是一条讣告消息")
+    if any(word in content_lower for word in ['地震', '火灾', '事故', '灾难', '爆炸', '坍塌']):
+        keywords.append("这是突发事件/灾害消息")
+    if any(word in content_lower for word in ['战争', '冲突', '袭击', '导弹', '军队', '部队']):
+        keywords.append("这是军事/冲突相关消息")
+    if any(word in content_lower for word in ['政府', '总统', '总理', '议员', '法律', '法案']):
+        keywords.append("这是政治相关消息")
+    if any(word in content_lower for word in ['公司', '股票', '市值', '融资', '上市', '财报']):
+        keywords.append("这是商业/财经相关消息")
+    
+    if keywords:
+        parts.append(f"🔍 内容类型：{'；'.join(keywords)}")
+    
+    # 提取内容摘要（取前300字）
+    content_snippet = content[:300] if len(content) > 300 else content
+    parts.append(f"📝 内容摘要：{content_snippet}")
+    
+    # 添加来源信息
+    parts.append(f"📰 来源平台：{source}")
+    
+    # 添加建议
+    parts.append("💡 点击查看详情了解更多信息")
+    
+    return "\n\n".join(parts)
 
 
 def generate_title_summary(title, source):
