@@ -352,98 +352,201 @@ def get_hot_news():
 
 @app.route("/api/news/iran", methods=["GET"])
 def get_iran_news():
-    """获取伊朗新闻 - 从NCRI获取实时新闻并AI翻译"""
-    try:
-        # 使用NCRI伊朗全国抵抗委员会新闻（和skill-news一致）
-        url = "https://r.jina.ai/https://www.ncr-iran.org/en/news/iran-news-in-brief-news/"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=15)
-        
-        if resp.status_code == 200:
-            # 解析jina.ai返回的内容
-            content = resp.text
-            items = []
+    """获取伊朗新闻 - 使用jina.ai提取正文内容"""
+    items = []
+    
+    # 新闻来源列表（和skill-news一致）
+    news_urls = [
+        ("https://www.ncr-iran.org/en/news/iran-news-in-brief-news/", "NCRI"),
+        ("https://www.aljazeera.com/news/2026/3/", "Al Jazeera"),
+        ("https://www.reuters.com/world/middle-east/", "Reuters"),
+    ]
+    
+    for news_url, source_name in news_urls:
+        try:
+            # 使用jina.ai提取网页正文
+            jina_url = f"https://r.jina.ai/{news_url}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(jina_url, headers=headers, timeout=15)
             
-            # 提取新闻条目（NCRI网站结构）
-            lines = content.split('\n')
-            current_item = {}
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+            if resp.status_code == 200:
+                content = resp.text
+                if content and len(content) > 100:
+                    # jina.ai返回的是纯文本，用标题行分隔
+                    # 格式通常是：# 标题 或 ## 标题，然后是正文
+                    lines = content.split('\n')
                     
-                # 检测是否是新闻标题行（通常包含日期或特定关键词）
-                if any(keyword in line.lower() for keyword in ['iran', 'tehran', 'regime', 'protest', 'strike', 'execution']):
-                    if current_item and 'title' in current_item:
-                        items.append(current_item)
-                        if len(items) >= 10:
-                            break
-                    current_item = {
-                        "title": line[:100] + "..." if len(line) > 100 else line,
-                        "summary": line,
-                        "url": "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/",
-                        "time": "",
-                        "source": "NCRI"
-                    }
-                elif current_item and 'summary' in current_item:
-                    # 补充摘要内容
-                    current_item['summary'] += " " + line
-            
-            # 添加最后一个条目
-            if current_item and 'title' in current_item and len(items) < 10:
-                items.append(current_item)
-            
-            if items:
-                # AI翻译标题和摘要
-                for item in items:
-                    item['title_zh'] = ai_translate_iran_news(item['title'])
-                    item['summary_zh'] = ai_translate_iran_news(item['summary'][:300])
-                return jsonify({"articles": items})
-    except Exception as e:
-        print(f"NCRI fetch error: {e}")
-    
-    # 尝试备用源：Al Jazeera
-    try:
-        url = "https://r.jina.ai/https://www.aljazeera.com/news/2026/3/"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        
-        if resp.status_code == 200:
-            content = resp.text
-            items = []
-            lines = content.split('\n')
-            
-            for line in lines[:20]:
-                line = line.strip()
-                if line and any(keyword in line.lower() for keyword in ['iran', 'israel', 'gaza', 'palestine', 'middle east']):
-                    items.append({
-                        "title": line[:100] + "..." if len(line) > 100 else line,
-                        "summary": line[:200],
-                        "url": "https://www.aljazeera.com/news/2026/3/",
-                        "time": "",
-                        "source": "Al Jazeera"
-                    })
-                    if len(items) >= 5:
+                    current_title = ""
+                    current_content = []
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        
+                        # 检测标题行（以 # 开头或全是短标题）
+                        if line.startswith('# ') or line.startswith('## '):
+                            # 保存之前的条目
+                            if current_title and current_content:
+                                summary = ' '.join(current_content)
+                                items.append({
+                                    "title": current_title[:150],
+                                    "summary": summary[:800],
+                                    "url": news_url,
+                                    "time": "",
+                                    "source": source_name
+                                })
+                                if len(items) >= 8:
+                                    break
+                            
+                            current_title = line.lstrip('#').strip()
+                            current_content = []
+                        elif current_title:
+                            # 正文内容
+                            if len(line) > 20:  # 过滤掉太短的行
+                                current_content.append(line)
+                    
+                    # 添加最后一个条目
+                    if current_title and current_content and len(items) < 8:
+                        summary = ' '.join(current_content)
+                        items.append({
+                            "title": current_title[:150],
+                            "summary": summary[:800],
+                            "url": news_url,
+                            "time": "",
+                            "source": source_name
+                        })
+                    
+                    if items:
                         break
-            
-            if items:
-                # AI翻译
-                for item in items:
-                    item['title_zh'] = ai_translate_iran_news(item['title'])
-                    item['summary_zh'] = ai_translate_iran_news(item['summary'][:300])
-                return jsonify({"articles": items})
-    except Exception as e:
-        print(f"Al Jazeera fetch error: {e}")
+        except Exception as e:
+            print(f"Fetch {news_url} error: {e}")
     
-    # 回退到静态文件
-    news = load_json(NEWS_FILE, {})
-    # 静态文件也需要翻译
-    for item in news.get("iran", []):
-        if 'title_zh' not in item:
-            item['title_zh'] = ai_translate_iran_news(item.get('title', ''))
-            item['summary_zh'] = ai_translate_iran_news(item.get('summary', '')[:300])
-    return jsonify({"articles": news.get("iran", [])})
+    if not items:
+        # 回退到静态文件
+        news = load_json(NEWS_FILE, {})
+        items = news.get("iran", [])
+    
+    # AI翻译
+    for item in items:
+        item['title_zh'] = ai_translate_iran_news(item.get('title', ''))
+        item['summary_zh'] = ai_translate_iran_news(item.get('summary', '')[:500])
+    
+    return jsonify({"articles": items})
+
+
+def extract_ncri_news(html):
+    """从NCRI网站HTML中提取新闻条目"""
+    items = []
+    
+    # 方法1：提取文章卡片（常见WordPress结构）
+    # 查找 article 或 .post 或 .news-item 结构
+    article_patterns = [
+        r'<article[^>]*>.*?<h[2-4][^>]*>(.*?)</h[2-4]>.*?<div[^>]*class="[^"]*(?:excerpt|summary|content)[^"]*"[^>]*>(.*?)</div>.*?</article>',
+        r'<div[^>]*class="[^"]*(?:post|entry|news-item|article)[^"]*"[^>]*>.*?<h[2-4][^>]*>(.*?)</h[2-4]>.*?<div[^>]*class="[^"]*(?:excerpt|summary|content|entry-content)[^"]*"[^>]*>(.*?)</div>.*?</div>',
+    ]
+    
+    for pattern in article_patterns:
+        matches = re.findall(pattern, html, re.DOTALL | re.IGNORECASE)
+        for title_html, summary_html in matches[:10]:
+            title = clean_html_tags(title_html)
+            summary = clean_html_tags(summary_html)
+            if title and len(title) > 10:
+                items.append({
+                    "title": title[:150],
+                    "summary": summary[:500] if summary else title[:300],
+                    "url": "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/",
+                    "time": "",
+                    "source": "NCRI"
+                })
+        if items:
+            break
+    
+    # 方法2：如果没找到，尝试提取所有段落中的新闻
+    if not items:
+        # 查找包含日期格式（如 March 11, 2026 或 2026-03-11）的段落
+        date_pattern = r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}'
+        paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html, re.DOTALL | re.IGNORECASE)
+        
+        for p in paragraphs[:20]:
+            text = clean_html_tags(p)
+            # 检查是否包含日期和伊朗相关关键词
+            if re.search(date_pattern, text) and any(kw in text.lower() for kw in ['iran', 'tehran', 'regime', 'protest']):
+                # 分割标题和正文（通常第一段是标题）
+                lines = [l.strip() for l in text.split('\n') if l.strip()]
+                if len(lines) >= 2:
+                    title = lines[0][:150]
+                    summary = ' '.join(lines[1:])[:500]
+                else:
+                    title = text[:150]
+                    summary = text[:500]
+                
+                items.append({
+                    "title": title,
+                    "summary": summary,
+                    "url": "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/",
+                    "time": "",
+                    "source": "NCRI"
+                })
+                if len(items) >= 10:
+                    break
+    
+    # 方法3：提取列表项
+    if not items:
+        list_items = re.findall(r'<li[^>]*>(.*?)</li>', html, re.DOTALL | re.IGNORECASE)
+        for li in list_items[:15]:
+            text = clean_html_tags(li)
+            if any(kw in text.lower() for kw in ['iran', 'tehran', 'regime', 'protest']) and len(text) > 20:
+                # 尝试提取链接
+                link_match = re.search(r'href=["\']([^"\']+)["\']', li)
+                link = link_match.group(1) if link_match else "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/"
+                
+                # 分割标题和摘要
+                sentences = re.split(r'(?<=[.!?])\s+', text)
+                if len(sentences) >= 2:
+                    title = sentences[0][:150]
+                    summary = ' '.join(sentences[1:])[:500]
+                else:
+                    title = text[:150]
+                    summary = text[:500]
+                
+                items.append({
+                    "title": title,
+                    "summary": summary,
+                    "url": link if link.startswith('http') else "https://www.ncr-iran.org" + link,
+                    "time": "",
+                    "source": "NCRI"
+                })
+                if len(items) >= 10:
+                    break
+    
+    return items[:10]
+
+
+def clean_html_tags(html):
+    """清理HTML标签，保留文本内容"""
+    # 移除 script 和 style
+    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    # 移除所有HTML标签
+    text = re.sub(r'<[^>]+>', ' ', html)
+    # 清理多余空白
+    text = re.sub(r'\s+', ' ', text).strip()
+    # 解码HTML实体
+    text = text.replace('&nbsp;', ' ')
+    text = text.replace('&amp;', '&')
+    text = text.replace('&lt;', '<')
+    text = text.replace('&gt;', '>')
+    text = text.replace('&quot;', '"')
+    text = text.replace('&#39;', "'")
+    text = text.replace('&#x27;', "'")
+    text = text.replace('&rsquo;', "'")
+    text = text.replace('&lsquo;', "'")
+    text = text.replace('&rdquo;', '"')
+    text = text.replace('&ldquo;', '"')
+    text = text.replace('&ndash;', '-')
+    text = text.replace('&mdash;', '-')
+    return text
 
 
 def ai_translate_iran_news(text):
@@ -799,6 +902,160 @@ def generate_title_summary(title, source):
     parts.append("💡 点击查看详情了解更多信息")
     
     return "\n\n".join(parts)
+
+
+# ============== Steam 联机游戏推荐 ==============
+
+STEAM_API_KEY = os.getenv('STEAM_API_KEY', '')
+
+@app.route("/api/steam/recommendations", methods=["GET"])
+def get_steam_recommendations():
+    """获取每日 Steam 联机游戏推荐（5款）"""
+    from games_api import get_db
+    
+    conn = get_db()
+    try:
+        cursor = conn.cursor()
+        
+        # 获取今天已展示的游戏
+        today = datetime.now().strftime('%Y-%m-%d')
+        cursor.execute(
+            "SELECT * FROM steam_games WHERE last_shown_date = %s ORDER BY weight DESC LIMIT 5",
+            (today,)
+        )
+        today_games = cursor.fetchall()
+        
+        if today_games and len(today_games) >= 5:
+            # 今天已经有推荐，直接返回
+            games = []
+            for row in today_games:
+                games.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "steam_id": row[2],
+                    "price": float(row[3]) if row[3] else 0,
+                    "original_price": float(row[4]) if row[4] else 0,
+                    "discount_percent": row[5] or 0,
+                    "image_url": row[6],
+                    "is_new": row[8] is None or row[8] == today,  # 首次展示
+                    "steam_url": f"https://store.steampowered.com/app/{row[2]}" if row[2] else ""
+                })
+            return jsonify({"success": True, "games": games, "date": today})
+        
+        # 需要生成新的推荐
+        # 优先选择未展示过的游戏，按权重排序
+        cursor.execute(
+            "SELECT * FROM steam_games WHERE last_shown_date IS NULL OR last_shown_date < %s "
+            "ORDER BY weight DESC, show_count ASC LIMIT 5",
+            (today,)
+        )
+        new_games = cursor.fetchall()
+        
+        if len(new_games) < 5:
+            # 如果不够5个，从已展示过的游戏中补充（权重最低的）
+            cursor.execute(
+                "SELECT * FROM steam_games WHERE last_shown_date IS NOT NULL "
+                "ORDER BY weight ASC, show_count ASC LIMIT %s",
+                (5 - len(new_games),)
+            )
+            additional_games = cursor.fetchall()
+            new_games = list(new_games) + list(additional_games)
+        
+        # 更新这些游戏的展示记录
+        games = []
+        for row in new_games[:5]:
+            game_id = row[0]
+            is_first_show = row[8] is None  # last_shown_date
+            
+            # 更新展示记录
+            cursor.execute(
+                "UPDATE steam_games SET last_shown_date = %s, show_count = show_count + 1, "
+                "weight = GREATEST(10, weight - 10) WHERE id = %s",
+                (today, game_id)
+            )
+            
+            games.append({
+                "id": game_id,
+                "name": row[1],
+                "steam_id": row[2],
+                "price": float(row[3]) if row[3] else 0,
+                "original_price": float(row[4]) if row[4] else 0,
+                "discount_percent": row[5] or 0,
+                "image_url": row[6],
+                "is_new": is_first_show,
+                "steam_url": f"https://store.steampowered.com/app/{row[2]}" if row[2] else ""
+            })
+        
+        conn.commit()
+        return jsonify({"success": True, "games": games, "date": today})
+        
+    except Exception as e:
+        print(f"Get recommendations error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route("/api/steam/fetch", methods=["POST"])
+def fetch_steam_games():
+    """手动触发抓取 Steam 联机游戏"""
+    try:
+        # Steam Store API - 获取热门游戏列表
+        # 使用 SteamSpy API 获取联机游戏
+        url = "https://steamspy.com/api.php?request=tag&tag=Online+Multiplayer"
+        resp = requests.get(url, timeout=30)
+        
+        if resp.status_code != 200:
+            return jsonify({"success": False, "error": "Failed to fetch from SteamSpy"}), 500
+        
+        games_data = resp.json()
+        
+        from games_api import get_db
+        conn = get_db()
+        try:
+            cursor = conn.cursor()
+            added_count = 0
+            
+            for app_id, game_info in list(games_data.items())[:50]:  # 取前50个
+                try:
+                    name = game_info.get('name', '')
+                    if not name or len(name) < 2:
+                        continue
+                    
+                    # 获取价格信息
+                    price = game_info.get('price', 0) / 100 if game_info.get('price') else 0  # 转换为元
+                    discount = game_info.get('discount', 0)
+                    
+                    # 获取图片 URL
+                    image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+                    
+                    # 检查是否已存在
+                    cursor.execute("SELECT id FROM steam_games WHERE steam_id = %s", (app_id,))
+                    if cursor.fetchone():
+                        continue
+                    
+                    # 插入新游戏
+                    cursor.execute(
+                        "INSERT INTO steam_games (name, steam_id, price, original_price, discount_percent, image_url) "
+                        "VALUES (%s, %s, %s, %s, %s, %s)",
+                        (name, app_id, price * (100 - discount) / 100 if discount else price, 
+                         price, discount, image_url)
+                    )
+                    added_count += 1
+                    
+                except Exception as e:
+                    print(f"Error processing game {app_id}: {e}")
+                    continue
+            
+            conn.commit()
+            return jsonify({"success": True, "added": added_count})
+            
+        finally:
+            conn.close()
+            
+    except Exception as e:
+        print(f"Fetch steam games error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ============== 启动 ==============

@@ -184,6 +184,117 @@
       box-shadow: 0 4px 15px rgba(123,47,247,0.3);
     }
 
+    /* Steam 每日推荐区域 */
+    .steam-recommendations {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(123,47,247,0.1) 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(0,212,255,0.2);
+    }
+
+    .steam-rec-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .steam-rec-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .steam-rec-date {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .steam-rec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .steam-rec-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.05);
+      position: relative;
+    }
+
+    .steam-rec-card:hover {
+      transform: translateY(-5px);
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border-color: rgba(0,212,255,0.3);
+    }
+
+    .steam-rec-image {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
+    }
+
+    .steam-rec-info {
+      padding: 0.8rem;
+    }
+
+    .steam-rec-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .steam-rec-price {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .steam-rec-discount {
+      background: #4c6b22;
+      color: #beee11;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .steam-rec-original {
+      text-decoration: line-through;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.75rem;
+    }
+
+    .steam-rec-current {
+      color: #beee11;
+      font-weight: 600;
+    }
+
+    .steam-rec-new {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: linear-gradient(135deg, #ff006e, #ff4d6d);
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
     /* 游戏网格 */
     .games-grid {
       display: grid;
@@ -693,6 +804,17 @@
 
     <!-- 游戏内容 -->
     <div id="tab-game" class="tab-content active">
+      <!-- Steam 每日推荐 -->
+      <div id="steam-recommendations" class="steam-recommendations" style="display:none;">
+        <div class="steam-rec-header">
+          <div class="steam-rec-title">🎯 每日推荐 <span style="font-size:0.8rem;font-weight:400;color:rgba(255,255,255,0.6);">Steam 联机游戏精选</span></div>
+          <div class="steam-rec-date" id="steam-rec-date"></div>
+        </div>
+        <div id="steam-rec-grid" class="steam-rec-grid">
+          <div class="loading"></div>
+        </div>
+      </div>
+      
       <div id="games-list" class="games-grid">
         <div class="loading"></div>
       </div>
@@ -946,6 +1068,45 @@
       btn.parentElement.style.background = `linear-gradient(135deg, hsl(${h1}, 70%, 50%), hsl(${h2}, 60%, 40%))`;
       btn.classList.add('success');
       btn.textContent = '🎨';
+    }
+
+    // 加载 Steam 每日推荐
+    async function loadSteamRecommendations() {
+      const recContainer = document.getElementById('steam-recommendations');
+      const recGrid = document.getElementById('steam-rec-grid');
+      const recDate = document.getElementById('steam-rec-date');
+      
+      try {
+        const res = await fetch(API_BASE + '/api/steam/recommendations');
+        const data = await res.json();
+        
+        if (data.success && data.games && data.games.length > 0) {
+          recContainer.style.display = 'block';
+          recDate.textContent = data.date || new Date().toISOString().split('T')[0];
+          
+          recGrid.innerHTML = data.games.map(g => {
+            const priceHtml = g.discount_percent > 0 
+              ? `<span class="steam-rec-discount">-${g.discount_percent}%</span>
+                 <span class="steam-rec-original">¥${g.original_price.toFixed(2)}</span>
+                 <span class="steam-rec-current">¥${g.price.toFixed(2)}</span>`
+              : `<span class="steam-rec-current">¥${g.price.toFixed(2)}</span>`;
+            
+            return `
+              <div class="steam-rec-card" onclick="window.open('${g.steam_url}', '_blank')">
+                ${g.is_new ? '<div class="steam-rec-new">新游戏</div>' : ''}
+                <img class="steam-rec-image" src="${g.image_url}" alt="${g.name}" onerror="this.style.display='none'">
+                <div class="steam-rec-info">
+                  <div class="steam-rec-name" title="${g.name}">${g.name}</div>
+                  <div class="steam-rec-price">${priceHtml}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch(e) {
+        console.log('Load steam recommendations error:', e);
+        recContainer.style.display = 'none';
+      }
     }
 
     // 加载热点 - 从后端API实时获取
@@ -1384,6 +1545,7 @@
     }
 
     loadGames();
+    loadSteamRecommendations();
     loadHot();
     loadIran();
   </script>

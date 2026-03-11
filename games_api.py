@@ -87,6 +87,24 @@ def init_db():
             cursor.execute("ALTER TABLE games MODIFY COLUMN image TEXT")
             print("Migrated image column to TEXT for base64 support")
         
+        # 创建 Steam 联机游戏推荐表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS steam_games (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                steam_id VARCHAR(50) UNIQUE,
+                price DECIMAL(10, 2) DEFAULT 0,
+                original_price DECIMAL(10, 2) DEFAULT 0,
+                discount_percent INT DEFAULT 0,
+                image_url VARCHAR(512),
+                is_online_multiplayer BOOLEAN DEFAULT TRUE,
+                last_shown_date DATE,
+                show_count INT DEFAULT 0,
+                weight INT DEFAULT 100,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         conn.commit()
     finally:
         conn.close()
