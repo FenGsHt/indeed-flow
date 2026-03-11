@@ -234,6 +234,14 @@
       background: #4caf50;
     }
     
+    .status-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 1.2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
     .game-info {
       padding: 1rem;
     }
@@ -336,6 +344,118 @@
       color: rgba(255,255,255,0.3);
     }
     
+    /* 添加游戏按钮 */
+    .add-game-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+      color: #fff;
+      font-size: 1.8rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+      transition: all 0.3s;
+      z-index: 100;
+    }
+    
+    .add-game-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 30px rgba(0,212,255,0.5);
+    }
+    
+    /* 弹窗 */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+    
+    .modal.show { display: flex; }
+    
+    .modal-content {
+      background: #1a1a3e;
+      border-radius: 20px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 0.4rem;
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #00d4ff;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 1.5rem;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+      color: #fff;
+    }
+    
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    
+    .btn-danger {
+      background: #ff4757;
+      color: #fff;
+    }
+    
+    .btn:active { transform: scale(0.95); }
+    
     /* 加载动画 */
     .loading {
       display: flex;
@@ -368,6 +488,55 @@
 </head>
 <body>
   <div class="bg-effect"></div>
+  
+  <!-- 添加游戏弹窗 -->
+  <div id="add-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">➕ 添加游戏</div>
+      <div class="form-group">
+        <label>游戏名称 *</label>
+        <input type="text" id="game-name" placeholder="输入游戏名称">
+      </div>
+      <div class="form-group">
+        <label>你的昵称</label>
+        <input type="text" id="game-user" placeholder="Anonymous">
+      </div>
+      <div class="form-group">
+        <label>状态</label>
+        <select id="game-status">
+          <option value="backlog">想玩</option>
+          <option value="playing">在玩</option>
+          <option value="completed">已玩</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="addGame()">添加</button>
+        <button class="btn btn-secondary" onclick="closeModal('add-modal')">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏详情弹窗 -->
+  <div id="detail-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title" id="detail-title">游戏详情</div>
+      <div class="form-group">
+        <label>状态</label>
+        <select id="detail-status">
+          <option value="backlog">想玩</option>
+          <option value="playing">在玩</option>
+          <option value="completed">已玩</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="updateGame()">保存</button>
+        <button class="btn btn-danger" onclick="deleteGame()">删除</button>
+        <button class="btn btn-secondary" onclick="closeModal('detail-modal')">关闭</button>
+      </div>
+    </div>
+  </div>
+  
+  <button class="add-game-btn" onclick="openAddModal()">+</button>
   
   <div class="container">
     <header class="header">
@@ -470,10 +639,13 @@
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
           
+          const statusIcon = g.status === 'playing' ? '🎮' : g.status === 'completed' ? '✅' : '📋';
+          
           return `
-          <div class="game-card" style="animation-delay: ${i*0.05}s">
+          <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
-              <button class="steam-btn" onclick="searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="换封面">🎨</button>
+              <span class="status-badge" title="${g.status || 'backlog'}">${statusIcon}</span>
+              <button class="steam-btn" onclick="event.stopPropagation(); searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="换封面">🎨</button>
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
@@ -595,6 +767,87 @@
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
+    }
+    
+    // 当前选中的游戏
+    let currentGame = null;
+    
+    // 打开添加弹窗
+    function openAddModal() {
+      document.getElementById('game-name').value = '';
+      document.getElementById('game-user').value = '';
+      document.getElementById('add-modal').classList.add('show');
+    }
+    
+    // 关闭弹窗
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+    
+    // 添加游戏
+    async function addGame() {
+      const name = document.getElementById('game-name').value.trim();
+      const user = document.getElementById('game-user').value.trim() || 'Anonymous';
+      const status = document.getElementById('game-status').value;
+      
+      if (!name) return alert('请输入游戏名称');
+      
+      try {
+        await fetch(API_BASE + '/api/games', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, user, status})
+        });
+        closeModal('add-modal');
+        loadGames();
+      } catch {
+        alert('添加失败，请重试');
+      }
+    }
+    
+    // 打开详情弹窗
+    function openDetail(game) {
+      currentGame = game;
+      document.getElementById('detail-title').textContent = game.name;
+      document.getElementById('detail-status').value = game.status || 'backlog';
+      document.getElementById('detail-modal').classList.add('show');
+    }
+    
+    // 更新游戏
+    async function updateGame() {
+      if (!currentGame) return;
+      const status = document.getElementById('detail-status').value;
+      
+      try {
+        await fetch(API_BASE + '/api/games/' + currentGame.id, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status})
+        });
+        closeModal('detail-modal');
+        loadGames();
+      } catch {
+        alert('更新失败');
+      }
+    }
+    
+    // 删除游戏
+    async function deleteGame() {
+      if (!currentGame) return;
+      if (!confirm('确定删除 ' + currentGame.name + '？')) return;
+      
+      try {
+        await fetch(API_BASE + '/api/games/' + currentGame.id, {method: 'DELETE'});
+        closeModal('detail-modal');
+        loadGames();
+      } catch {
+        alert('删除失败');
+      }
+    }
+    
+    // 点击卡片打开详情
+    function onGameCardClick(g) {
+      openDetail(g);
     }
     
     loadGames();
