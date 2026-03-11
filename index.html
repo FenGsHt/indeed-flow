@@ -519,7 +519,8 @@
       </div>
       <div class="form-group">
         <label>游戏图片（可选）</label>
-        <input type="text" id="game-image" placeholder="图片URL">
+        <input type="file" id="game-image-file" accept="image/*" onchange="previewImage(this)">
+        <div id="image-preview" style="margin-top:0.5rem;max-width:100%;max-height:150px;overflow:hidden;border-radius:8px;display:none;"></div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="addGame()">添加并获取好评率</button>
@@ -560,8 +561,6 @@
     </div>
   </div>
   
-  <button class="add-game-btn" onclick="openAddModal()">+</button>
-  
   <div class="container">
     <header class="header">
       <h1 class="logo">INDEED</h1>
@@ -583,6 +582,7 @@
       <div id="games-list" class="games-grid">
         <div class="loading"></div>
       </div>
+      <button class="add-game-btn" onclick="openAddModal()">+</button>
     </div>
     
     <!-- 新闻内容 -->
@@ -726,18 +726,29 @@
       btn.textContent = '🎨';
     }
     
-    // 加载热点 - 显示所有平台，包括获取失败的
+    // 加载热点 - 从后端API实时获取
     async function loadHot() {
       const list = document.getElementById('hot-list');
+      list.innerHTML = '<div class="loading"></div>';
+      
       try {
-        const res = await fetch('/data/news.json');
-        const data = await res.json();
+        // 优先调用后端API获取实时热点
+        const res = await fetch(API_BASE + '/api/news/hot');
+        let data;
+        
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          // 后端失败时回退到静态文件
+          const fallbackRes = await fetch('/data/news.json');
+          data = await fallbackRes.json();
+        }
         
         const sources = [
           {key: 'tieba', name: '贴吧', class: 'tieba'},
-          {key: 'douyin', name: '抖音', class: 'douyin'},
           {key: 'weibo', name: '微博', class: 'weibo'},
           {key: 'bilibili', name: 'B站', class: 'bilibili'},
+          {key: 'douyin', name: '抖音', class: 'douyin'},
           {key: 'xiaohongshu', name: '小红书', class: 'xiaohongshu'}
         ];
         
@@ -779,7 +790,7 @@
             html += `
               <div class="news-item" style="animation-delay: ${i*0.03}s">
                 <div class="news-header">
-                  <span class="news-source" style="background:#ff6b6b;">公共</span>
+                  <span class="news-source" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);">公共</span>
                   <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);">${item.platforms.join(', ')}</span>
                 </div>
                 <div class="news-title">${item.topic}</div>
@@ -793,9 +804,15 @@
           return;
         }
         
+        // 添加更新时间
+        if (data.updated) {
+          html += `<div style="text-align:center;padding:1rem;font-size:0.7rem;color:rgba(255,255,255,0.3);">更新时间: ${data.updated}</div>`;
+        }
+        
         list.innerHTML = html;
       } catch(e) {
-        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败: ${e.message}</div></div>`;
+        console.error('Load hot news error:', e);
+        list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div><div class="empty-hint">${e.message}</div></div>`;
       }
     }
     
@@ -840,6 +857,27 @@
     
     // 当前选中的游戏
     let currentGame = null;
+    let selectedImageBase64 = null;
+    
+    // 图片预览和转base64
+    function previewImage(input) {
+      const preview = document.getElementById('image-preview');
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+          alert('图片太大，请选2MB以内的');
+          input.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          selectedImageBase64 = e.target.result;
+          preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:150px;object-fit:contain;">';
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
     
     // 打开添加弹窗
     function openAddModal() {
@@ -860,7 +898,7 @@
       const user = document.getElementById('game-user').value.trim() || 'Anonymous';
       const status = document.getElementById('game-status').value;
       const priority = parseInt(document.getElementById('game-priority').value) || 100;
-      const image = document.getElementById('game-image').value.trim();
+      const image = selectedImageBase64 || '';
       
       if (!name) return alert('请输入游戏名称');
       
@@ -871,6 +909,11 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({name, url, user, status, priority, image})
         });
+        
+        // 重置图片
+        selectedImageBase64 = null;
+        document.getElementById('game-image-file').value = '';
+        document.getElementById('image-preview').style.display = 'none';
         
         // 如果有Steam地址，尝试获取好评率
         if (url && url.includes('steampowered.com/app/')) {

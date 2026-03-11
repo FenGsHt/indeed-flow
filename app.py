@@ -6,7 +6,10 @@ CORS enabled
 """
 
 import json
+import re
 import subprocess
+import requests
+from collections import Counter
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from pathlib import Path
@@ -102,23 +105,288 @@ def add_skill():
     return jsonify({"success": True, "skill": data})
 
 
-# ============== API: 新闻专区 ==============
+# ============== API: 新闻专区 - 实时抓取 ==============
+
+def fetch_tieba():
+    """获取贴吧热点"""
+    try:
+        url = "https://tieba.baidu.com/hottopic/browse?pn=1"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.encoding = 'utf-8'
+        html = resp.text
+        
+        items = []
+        
+        # 尝试多种模式匹配
+        # 模式1: topic-item 卡片
+        pattern1 = r'<div[^>]*class="topic-item[^"]*"[^>]*>.*?<a[^>]*href="([^"]*topic/[^"]*)"[^>]*>(.*?)</a>'
+        matches = re.findall(pattern1, html, re.DOTALL)
+        
+        # 模式2: 直接匹配话题标题
+        if not matches:
+            pattern2 = r'"topic_name":"([^"]+)"'
+            titles = re.findall(pattern2, html)
+            for title in titles[:10]:
+                items.append({
+                    "title": title.encode('utf-8').decode('unicode_escape') if '\\u' in title else title,
+                    "url": f"https://tieba.baidu.com/hottopic/browse?keyword={title}"
+                })
+        else:
+            for match in matches[:10]:
+                link, title = match
+                title = re.sub(r'<[^>]+>', '', title).strip()
+                if title and len(title) > 3:
+                    items.append({
+                        "title": title,
+                        "url": "https://tieba.baidu.com" + link if link.startswith('/') else link
+                    })
+        
+        # 模式3: 从JSON数据中提取
+        if not items:
+            pattern3 = r'"topic_list":(\[.*?\])'
+            json_match = re.search(pattern3, html)
+            if json_match:
+                try:
+                    topics = json.loads(json_match.group(1))
+                    for topic in topics[:10]:
+                        title = topic.get('topic_name', '') or topic.get('title', '')
+                        if title:
+                            items.append({
+                                "title": title,
+                                "url": topic.get('topic_url', f"https://tieba.baidu.com/hottopic/browse?keyword={title}")
+                            })
+                except:
+                    pass
+        
+        return items if items else [{"title": "获取失败", "url": ""}]
+    except Exception as e:
+        print(f"Tieba fetch error: {e}")
+        return [{"title": "获取失败", "url": ""}]
+
+
+def fetch_weibo():
+    """获取微博热搜"""
+    try:
+        url = "https://weibo.com/ajax/side/hotSearch"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://weibo.com/"
+        }
+        resp = requests.get(url, headers=headers, timeout=10)
+        data = resp.json()
+        
+        items = []
+        if data.get('data', {}).get('realtime'):
+            for item in data['data']['realtime'][:10]:
+                title = item.get('word', '')
+                if title:
+                    items.append({
+                        "title": title,
+                        "url": f"https://s.weibo.com/weibo?q=%23{title}%23"
+                    })
+        
+        return items if items else [{"title": "获取失败", "url": ""}]
+    except Exception as e:
+        print(f"Weibo fetch error: {e}")
+        return [{"title": "获取失败", "url": ""}]
+
+
+def fetch_bilibili():
+    """获取B站热点"""
+    try:
+        url = "https://api.bilibili.com/x/web-interface/popular"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://www.bilibili.com/"
+        }
+        resp = requests.get(url, headers=headers, timeout=10)
+        data = resp.json()
+        
+        items = []
+        if data.get('data', {}).get('list'):
+            for item in data['data']['list'][:10]:
+                title = item.get('title', '')
+                bvid = item.get('bvid', '')
+                if title:
+                    items.append({
+                        "title": title,
+                        "url": f"https://www.bilibili.com/video/{bvid}"
+                    })
+        
+        return items if items else [{"title": "获取失败", "url": ""}]
+    except Exception as e:
+        print(f"Bilibili fetch error: {e}")
+        return [{"title": "获取失败", "url": ""}]
+
+
+def fetch_douyin():
+    """获取抖音热点"""
+    try:
+        url = "https://www.douyin.com/aweme/v1/web/hot/search/list/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://www.douyin.com/"
+        }
+        resp = requests.get(url, headers=headers, timeout=10)
+        data = resp.json()
+        
+        items = []
+        if data.get('data', {}).get('word_list'):
+            for item in data['data']['word_list'][:10]:
+                title = item.get('word', '')
+                if title:
+                    items.append({
+                        "title": title,
+                        "url": f"https://www.douyin.com/search/{title}"
+                    })
+        
+        return items if items else [{"title": "获取失败", "url": ""}]
+    except Exception as e:
+        print(f"Douyin fetch error: {e}")
+        return [{"title": "获取失败", "url": ""}]
+
+
+def fetch_xiaohongshu():
+    """获取小红书热点"""
+    try:
+        # 小红书没有公开API，使用搜索页面
+        url = "https://www.xiaohongshu.com/explore"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        resp = requests.get(url, headers=headers, timeout=10)
+        html = resp.text
+        
+        items = []
+        # 尝试提取热门话题
+        pattern = r'"name":"([^"]{3,30})"[^}]*"link":"([^"]*)"'
+        matches = re.findall(pattern, html)
+        
+        for name, link in matches[:10]:
+            if name and len(name) > 3:
+                items.append({
+                    "title": name,
+                    "url": link if link.startswith('http') else f"https://www.xiaohongshu.com/search_result?keyword={name}"
+                })
+        
+        return items if items else [{"title": "获取失败", "url": ""}]
+    except Exception as e:
+        print(f"Xiaohongshu fetch error: {e}")
+        return [{"title": "获取失败", "url": ""}]
+
+
+def calculate_public_hotspots(sources):
+    """计算公共热点 - 出现在≥2个平台的相同话题"""
+    # 收集所有标题并标准化
+    title_to_platforms = {}
+    
+    platform_names = {
+        'tieba': '贴吧',
+        'weibo': '微博', 
+        'bilibili': 'B站',
+        'douyin': '抖音',
+        'xiaohongshu': '小红书'
+    }
+    
+    for platform, items in sources.items():
+        if platform == 'public':
+            continue
+        for item in items:
+            title = item.get('title', '')
+            if title and title != '获取失败':
+                # 标准化标题（去除标点、空格，转小写）
+                normalized = re.sub(r'[^\w\u4e00-\u9fff]', '', title).lower()
+                if normalized:
+                    if normalized not in title_to_platforms:
+                        title_to_platforms[normalized] = {
+                            'title': title,
+                            'platforms': []
+                        }
+                    if platform_names.get(platform) not in title_to_platforms[normalized]['platforms']:
+                        title_to_platforms[normalized]['platforms'].append(platform_names.get(platform))
+    
+    # 找出出现在≥2个平台的
+    public_hotspots = []
+    for normalized, info in title_to_platforms.items():
+        if len(info['platforms']) >= 2:
+            public_hotspots.append({
+                'topic': info['title'],
+                'platforms': info['platforms']
+            })
+    
+    # 按平台数量排序
+    public_hotspots.sort(key=lambda x: len(x['platforms']), reverse=True)
+    return public_hotspots[:10]
+
 
 @app.route("/api/news/hot", methods=["GET"])
 def get_hot_news():
-    news = load_json(NEWS_FILE, {})
+    """实时获取各平台热点"""
+    # 获取各平台数据
+    sources = {
+        "tieba": fetch_tieba(),
+        "weibo": fetch_weibo(),
+        "bilibili": fetch_bilibili(),
+        "douyin": fetch_douyin(),
+        "xiaohongshu": fetch_xiaohongshu()
+    }
+    
+    # 计算公共热点
+    public_hotspots = calculate_public_hotspots(sources)
+    
     return jsonify({
-        "tieba": news.get("tieba", ["加载中..."]),
-        "weibo": news.get("weibo", ["加载中..."]),
-        "bilibili": news.get("bilibili", ["加载中..."]),
-        "douyin": news.get("douyin", ["加载中..."]),
-        "xiaohongshu": news.get("xiaohongshu", ["加载中..."]),
-        "public": news.get("public", [])
+        "tieba": sources["tieba"],
+        "weibo": sources["weibo"],
+        "bilibili": sources["bilibili"],
+        "douyin": sources["douyin"],
+        "xiaohongshu": sources["xiaohongshu"],
+        "public": public_hotspots,
+        "updated": subprocess.check_output(['date', '+%Y-%m-%d %H:%M']).decode().strip()
     })
 
 
 @app.route("/api/news/iran", methods=["GET"])
 def get_iran_news():
+    """获取伊朗新闻 - 从静态文件或实时抓取"""
+    try:
+        # 尝试从BBC RSS获取最新伊朗新闻
+        url = "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        resp = requests.get(url, headers=headers, timeout=10)
+        
+        # 解析XML提取伊朗相关新闻
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(resp.content)
+        
+        items = []
+        for item in root.findall('.//item')[:10]:
+            title = item.find('title')
+            desc = item.find('description')
+            link = item.find('link')
+            pub_date = item.find('pubDate')
+            
+            title_text = title.text if title is not None else ''
+            # 只保留伊朗相关新闻
+            if 'iran' in title_text.lower() or 'israel' in title_text.lower() or 'gaza' in title_text.lower():
+                items.append({
+                    "title": title_text,
+                    "summary": desc.text[:200] + "..." if desc is not None and len(desc.text) > 200 else (desc.text if desc is not None else ''),
+                    "url": link.text if link is not None else '',
+                    "time": pub_date.text if pub_date is not None else '',
+                    "source": "BBC"
+                })
+        
+        if items:
+            return jsonify({"articles": items})
+    except Exception as e:
+        print(f"Iran news fetch error: {e}")
+    
+    # 回退到静态文件
     news = load_json(NEWS_FILE, {})
     return jsonify({"articles": news.get("iran", [])})
 
