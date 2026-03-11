@@ -1098,15 +1098,19 @@
         }
 
         list.innerHTML = news.map((n, i) => {
-          const title = translations[n.title] || n.title;
+          // 优先使用AI翻译的中文标题和摘要
+          const title = n.title_zh || translations[n.title] || n.title;
+          const summary = n.summary_zh || n.summary || '';
           return `
             <div class="news-item" style="animation-delay: ${i*0.03}s">
               <div class="news-header">
                 <span class="news-source iran">🇮🇷 伊朗</span>
                 <span class="news-time">${n.time || ''}</span>
+                ${n.source ? `<span class="news-source-tag">${n.source}</span>` : ''}
               </div>
               <div class="news-title">${title}</div>
-              ${n.summary ? `<div class="news-summary">${n.summary.substring(0,100)}...</div>` : ''}
+              ${summary ? `<div class="news-summary">${summary.substring(0,150)}...</div>` : ''}
+              ${n.url ? `<a href="${n.url}" target="_blank" class="news-link" style="font-size:0.75rem;color:#00d4ff;margin-top:0.3rem;display:inline-block;">查看原文 →</a>` : ''}
             </div>
           `;
         }).join('');

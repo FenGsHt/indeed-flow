@@ -352,7 +352,7 @@ def get_hot_news():
 
 @app.route("/api/news/iran", methods=["GET"])
 def get_iran_news():
-    """获取伊朗新闻 - 从NCRI获取实时新闻"""
+    """获取伊朗新闻 - 从NCRI获取实时新闻并AI翻译"""
     try:
         # 使用NCRI伊朗全国抵抗委员会新闻（和skill-news一致）
         url = "https://r.jina.ai/https://www.ncr-iran.org/en/news/iran-news-in-brief-news/"
@@ -365,7 +365,6 @@ def get_iran_news():
             items = []
             
             # 提取新闻条目（NCRI网站结构）
-            # 格式通常是：标题 - 时间 - 摘要
             lines = content.split('\n')
             current_item = {}
             
@@ -396,6 +395,10 @@ def get_iran_news():
                 items.append(current_item)
             
             if items:
+                # AI翻译标题和摘要
+                for item in items:
+                    item['title_zh'] = ai_translate_iran_news(item['title'])
+                    item['summary_zh'] = ai_translate_iran_news(item['summary'][:300])
                 return jsonify({"articles": items})
     except Exception as e:
         print(f"NCRI fetch error: {e}")
@@ -425,13 +428,155 @@ def get_iran_news():
                         break
             
             if items:
+                # AI翻译
+                for item in items:
+                    item['title_zh'] = ai_translate_iran_news(item['title'])
+                    item['summary_zh'] = ai_translate_iran_news(item['summary'][:300])
                 return jsonify({"articles": items})
     except Exception as e:
         print(f"Al Jazeera fetch error: {e}")
     
     # 回退到静态文件
     news = load_json(NEWS_FILE, {})
+    # 静态文件也需要翻译
+    for item in news.get("iran", []):
+        if 'title_zh' not in item:
+            item['title_zh'] = ai_translate_iran_news(item.get('title', ''))
+            item['summary_zh'] = ai_translate_iran_news(item.get('summary', '')[:300])
     return jsonify({"articles": news.get("iran", [])})
+
+
+def ai_translate_iran_news(text):
+    """AI翻译伊朗新闻 - 基于关键词和规则的智能翻译"""
+    if not text:
+        return ""
+    
+    # 常见词汇翻译映射
+    translations = {
+        # 地名
+        'iran': '伊朗',
+        'tehran': '德黑兰',
+        'israel': '以色列',
+        'gaza': '加沙',
+        'palestine': '巴勒斯坦',
+        'middle east': '中东',
+        'syria': '叙利亚',
+        'lebanon': '黎巴嫩',
+        'iraq': '伊拉克',
+        'yemen': '也门',
+        'saudi arabia': '沙特阿拉伯',
+        'jordan': '约旦',
+        'egypt': '埃及',
+        'turkey': '土耳其',
+        
+        # 政治词汇
+        'regime': '政权',
+        'government': '政府',
+        'supreme leader': '最高领袖',
+        'president': '总统',
+        'minister': '部长',
+        'parliament': '议会',
+        'sanctions': '制裁',
+        'nuclear': '核',
+        'deal': '协议',
+        'negotiation': '谈判',
+        'diplomatic': '外交',
+        'embassy': '大使馆',
+        
+        # 冲突词汇
+        'war': '战争',
+        'conflict': '冲突',
+        'attack': '袭击',
+        'strike': '打击',
+        'bomb': '炸弹',
+        'missile': '导弹',
+        'drone': '无人机',
+        'military': '军事',
+        'army': '军队',
+        'force': '部队',
+        'invasion': '入侵',
+        'occupation': '占领',
+        'resistance': '抵抗',
+        'protest': '抗议',
+        'demonstration': '示威',
+        'uprising': '起义',
+        'revolution': '革命',
+        'execution': '处决',
+        'prison': '监狱',
+        'arrest': '逮捕',
+        'detain': '拘留',
+        'torture': '酷刑',
+        'human rights': '人权',
+        'violation': '侵犯',
+        
+        # 人物词汇
+        'khamenei': '哈梅内伊',
+        'rouhani': '鲁哈尼',
+        'raisi': '莱希',
+        'ahmadinejad': '内贾德',
+        'mosavi': '穆萨维',
+        'karroubi': '卡鲁比',
+        'rajavi': '拉贾维',
+        
+        # 组织词汇
+        'ncri': '伊朗全国抵抗委员会',
+        'meK': '伊朗人民圣战组织',
+        'IRGC': '伊斯兰革命卫队',
+        'basij': '巴斯基民兵',
+        'un': '联合国',
+        'eu': '欧盟',
+        'us': '美国',
+        'uk': '英国',
+        
+        # 其他
+        'news': '新闻',
+        'report': '报道',
+        'source': '消息来源',
+        'official': '官方',
+        'civilian': '平民',
+        'casualty': '伤亡',
+        'death': '死亡',
+        'kill': '杀害',
+        'injured': '受伤',
+        'wounded': '受伤',
+        'hostage': '人质',
+        'refugee': '难民',
+        'crisis': '危机',
+        'sanction': '制裁',
+        'economy': '经济',
+        'oil': '石油',
+        'gas': '天然气',
+        'trade': '贸易',
+        'border': '边境',
+        'territory': '领土',
+        'sovereignty': '主权',
+        'ceasefire': '停火',
+        'peace': '和平',
+        'treaty': '条约',
+        'agreement': '协议',
+        'violation': '违反',
+        'violate': '违反',
+    }
+    
+    # 转换为小写进行匹配
+    text_lower = text.lower()
+    translated = text
+    
+    # 替换常见词汇
+    for en, zh in translations.items():
+        # 使用正则表达式进行单词边界匹配
+        pattern = r'\b' + re.escape(en) + r'\b'
+        translated = re.sub(pattern, zh, translated, flags=re.IGNORECASE)
+    
+    # 如果翻译后还是英文为主，添加提示
+    english_chars = len(re.findall(r'[a-zA-Z]', translated))
+    total_chars = len(re.findall(r'[\u4e00-\u9fff]', translated)) + english_chars
+    
+    if total_chars > 0 and english_chars / total_chars > 0.5:
+        # 英文占比高，添加说明
+        translated = f"[原文] {text}\n\n[AI翻译] {translated}"
+    
+    return translated
 
 
 @app.route("/api/news/refresh", methods=["POST"])
