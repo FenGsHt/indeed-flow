@@ -45,6 +45,10 @@
       50% { transform: translate(-5%, -5%) rotate(5deg); }
     }
 
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .container {
       position: relative;
       z-index: 1;
@@ -1184,15 +1188,8 @@
           // 显示推荐人（如果有）和好评率（同行，推荐人左对齐，好评率右对齐）
           const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
           
-          // 好评率显示（放在推荐人右边）
-          let ratingHtml = '';
-          if (ratingData && ratingData.success && ratingData.rating_percent !== undefined && ratingData.total_reviews > 0) {
-            const percent = ratingData.rating_percent;
-            const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
-            ratingHtml = `<span style="color:${color};font-weight:600;">${percent}% 好评</span>`;
-          } else {
-            ratingHtml = `<span style="color:rgba(255,255,255,0.3);">暂无评价</span>`;
-          }
+          // 好评率显示（放在推荐人右边）- 初始显示加载动画
+          let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
           
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
@@ -1218,14 +1215,22 @@
           const cards = list.querySelectorAll('.game-card');
           if (cards[i]) {
             const metaEl = cards[i].querySelector('.game-meta');
-            if (metaEl && ratingData && ratingData.success && ratingData.total_reviews > 0) {
-              const percent = ratingData.rating_percent;
-              const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
+            if (metaEl) {
               const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
-              metaEl.innerHTML = `
-                <span>${recommenderText}</span>
-                <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
-              `;
+              if (ratingData && ratingData.success && ratingData.total_reviews > 0) {
+                const percent = ratingData.rating_percent;
+                const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
+                metaEl.innerHTML = `
+                  <span>${recommenderText}</span>
+                  <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
+                `;
+              } else {
+                // 加载失败或没有评价，显示暂无
+                metaEl.innerHTML = `
+                  <span>${recommenderText}</span>
+                  <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
+                `;
+              }
             }
           }
         });
