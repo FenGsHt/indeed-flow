@@ -154,7 +154,7 @@ def convert_url_to_base64(image_url):
                 return f'data:image/{ext};base64,{b64}'
         except Exception as e:
             print(f"Image download error: {e}")
-            return image_url
+            return ''
     
     return image_url
 
@@ -346,13 +346,38 @@ def search_steam_auto():
             # 取第一个结果
             item = items[0]
             app_id = item.get('id')
-            header_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg" if app_id else ''
             
-            if not header_url:
-                return jsonify({'success': False, 'error': 'No header image found'})
+            if not app_id:
+                return jsonify({'success': False, 'error': 'No app ID found'})
+            
+            # 尝试获取游戏详情中的图片URL
+            image_url = item.get('tiny_image', '') or item.get('large_capsule_image', '')
+            
+            # 如果没有图片URL，尝试用header.jpg
+            if not image_url:
+                image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
             
             # 下载图片并转换为base64
-            b64_image = convert_url_to_base64(header_url)
+            b64_image = convert_url_to_base64(image_url)
+            
+            # 如果下载失败，尝试从appdetails API获取图片
+            if not b64_image:
+                try:
+                    details_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
+                    req = urllib.request.Request(details_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=5) as details_response:
+                        details_data = json.loads(details_response.read().decode())
+                        if str(app_id) in details_data and details_data[str(app_id)].get('success'):
+                            game_data = details_data[str(app_id)].get('data', {})
+                            # 尝试多种图片字段
+                            for img_field in ['header_image', 'capsule_image', 'small_capsule_image']:
+                                img_url = game_data.get(img_field, '')
+                                if img_url:
+                                    b64_image = convert_url_to_base64(img_url)
+                                    if b64_image:
+                                        break
+                except Exception as e:
+                    print(f"Get app details error: {e}")
             
             return jsonify({
                 'success': True,
