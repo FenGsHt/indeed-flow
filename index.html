@@ -1298,9 +1298,14 @@
         }
 
         list.innerHTML = news.map((n, i) => {
-          // 优先使用AI翻译的中文标题和摘要
-          const title = n.title_zh || translations[n.title] || n.title;
-          const summary = n.summary_zh || n.summary || '';
+          // 标题：原文 + （中文翻译）
+          const titleZh = n.title_zh || '';
+          const titleDisplay = titleZh ? `${n.title}（${titleZh}）` : n.title;
+          
+          // 摘要：原文 + 空行 + 中文翻译
+          const summaryZh = n.summary_zh || '';
+          const summaryDisplay = summaryZh ? `${n.summary}\n\n${summaryZh}` : n.summary;
+          
           return `
             <div class="news-item" style="animation-delay: ${i*0.03}s">
               <div class="news-header">
@@ -1308,9 +1313,9 @@
                 <span class="news-time">${n.time || ''}</span>
                 ${n.source ? `<span class="news-source-tag">${n.source}</span>` : ''}
               </div>
-              <div class="news-title">${title}</div>
-              ${summary ? `<div class="news-summary">${summary.substring(0,150)}...</div>` : ''}
-              ${n.url ? `<a href="${n.url}" target="_blank" class="news-link" style="font-size:0.75rem;color:#00d4ff;margin-top:0.3rem;display:inline-block;">查看原文 →</a>` : ''}
+              <div class="news-title" style="font-weight:600;margin-bottom:0.5rem;">${titleDisplay}</div>
+              ${summaryDisplay ? `<div class="news-summary" style="white-space:pre-wrap;line-height:1.6;">${summaryDisplay}</div>` : ''}
+              ${n.url ? `<button onclick="window.open('${n.url}', '_blank')" class="btn btn-secondary" style="margin-top:0.8rem;padding:0.4rem 1rem;font-size:0.8rem;">查看更多 →</button>` : ''}
             </div>
           `;
         }).join('');
