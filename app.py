@@ -354,78 +354,87 @@ def get_hot_news():
 
 @app.route("/api/news/iran", methods=["GET"])
 def get_iran_news():
-    """获取伊朗新闻 - 使用jina.ai提取正文内容"""
+    """获取伊朗新闻 - 从RSS源抓取"""
     items = []
     
-    # 新闻来源列表（和skill-news一致）
-    news_urls = [
-        ("https://www.ncr-iran.org/en/news/iran-news-in-brief-news/", "NCRI"),
-        ("https://www.aljazeera.com/news/2026/3/", "Al Jazeera"),
-        ("https://www.reuters.com/world/middle-east/", "Reuters"),
+    # 尝试多个RSS源
+    rss_sources = [
+        ("https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", "BBC"),
+        ("https://www.aljazeera.com/xml/rss/all.xml", "Al Jazeera"),
     ]
     
-    for news_url, source_name in news_urls:
+    for rss_url, source_name in rss_sources:
         try:
-            # 使用jina.ai提取网页正文
-            jina_url = f"https://r.jina.ai/{news_url}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(rss_url, headers=headers, timeout=10)
+            
+            if resp.status_code == 200:
+                # 解析XML
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(resp.content)
+                
+                # 查找所有item
+                for item in root.findall('.//item')[:10]:
+                    title = item.find('title')
+                    desc = item.find('description')
+                    link = item.find('link')
+                    pub_date = item.find('pubDate')
+                    
+                    title_text = title.text if title is not None else ''
+                    
+                    # 只保留伊朗/中东相关新闻
+                    if any(kw in title_text.lower() for kw in ['iran', 'israel', 'gaza', 'palestine', 'middle east', 'tehran']):
+                        items.append({
+                            "title": title_text[:150],
+                            "summary": (desc.text[:300] + "...") if desc is not None and len(desc.text) > 300 else (desc.text if desc is not None else ''),
+                            "url": link.text if link is not None else rss_url,
+                            "time": pub_date.text if pub_date is not None else '',
+                            "source": source_name
+                        })
+                        
+                        if len(items) >= 8:
+                            break
+                
+                if items:
+                    break
+        except Exception as e:
+            print(f"RSS fetch {rss_url} error: {e}")
+    
+    # 如果RSS失败，尝试jina.ai直接抓取
+    if not items:
+        try:
+            url = "https://www.ncr-iran.org/en/news/iran-news-in-brief-news/"
+            jina_url = f"https://r.jina.ai/{url}"
             headers = {"User-Agent": "Mozilla/5.0"}
             resp = requests.get(jina_url, headers=headers, timeout=15)
             
             if resp.status_code == 200:
                 content = resp.text
-                if content and len(content) > 100:
-                    # jina.ai返回的是纯文本，用标题行分隔
-                    # 格式通常是：# 标题 或 ## 标题，然后是正文
-                    lines = content.split('\n')
-                    
-                    current_title = ""
-                    current_content = []
-                    
-                    for line in lines:
-                        line = line.strip()
-                        if not line:
-                            continue
+                # 简单提取：按行分割，找包含日期和关键词的段落
+                paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
+                
+                for para in paragraphs[:10]:
+                    if any(kw in para.lower() for kw in ['iran', 'tehran', 'regime']) and len(para) > 50:
+                        # 提取标题（第一行或前100字）
+                        lines = para.split('\n')
+                        title = lines[0][:100] if lines else para[:100]
+                        summary = para[:300]
                         
-                        # 检测标题行（以 # 开头或全是短标题）
-                        if line.startswith('# ') or line.startswith('## '):
-                            # 保存之前的条目
-                            if current_title and current_content:
-                                summary = ' '.join(current_content)
-                                items.append({
-                                    "title": current_title[:150],
-                                    "summary": summary[:800],
-                                    "url": news_url,
-                                    "time": "",
-                                    "source": source_name
-                                })
-                                if len(items) >= 8:
-                                    break
-                            
-                            current_title = line.lstrip('#').strip()
-                            current_content = []
-                        elif current_title:
-                            # 正文内容
-                            if len(line) > 20:  # 过滤掉太短的行
-                                current_content.append(line)
-                    
-                    # 添加最后一个条目
-                    if current_title and current_content and len(items) < 8:
-                        summary = ' '.join(current_content)
                         items.append({
-                            "title": current_title[:150],
-                            "summary": summary[:800],
-                            "url": news_url,
+                            "title": title,
+                            "summary": summary,
+                            "url": url,
                             "time": "",
-                            "source": source_name
+                            "source": "NCRI"
                         })
-                    
-                    if items:
-                        break
+                        
+                        if len(items) >= 5:
+                            break
         except Exception as e:
-            print(f"Fetch {news_url} error: {e}")
+            print(f"jina.ai fetch error: {e}")
     
+    # 回退到静态文件
     if not items:
-        # 回退到静态文件
         news = load_json(NEWS_FILE, {})
         items = news.get("iran", [])
     
