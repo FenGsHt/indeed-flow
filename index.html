@@ -1551,6 +1551,10 @@
 
     // 点击卡片打开详情
     function onGameCardClick(g) {
+      // 确保游戏对象有 id，如果没有则使用 name 生成一个临时 id
+      if (!g.id) {
+        g.id = 'game_' + g.name.replace(/[^a-zA-Z0-9]/g, '_');
+      }
       openDetail(g);
     }
 
