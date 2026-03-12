@@ -1028,6 +1028,9 @@
             ratingText = `⭐ ${avg.toFixed(1)}`;
           }
 
+          // 显示推荐人（如果有）
+          const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
+          
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
@@ -1036,7 +1039,7 @@
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
-              <div class="game-meta">${g.created_by || 'Anonymous'} ${ratingText}</div>
+              <div class="game-meta">${recommenderText} ${ratingText}</div>
             </div>
           </div>`;
         }).join('');
