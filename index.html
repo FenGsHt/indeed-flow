@@ -1332,7 +1332,12 @@
     // 打开添加弹窗
     function openAddModal() {
       document.getElementById('game-name').value = '';
-      document.getElementById('game-user').value = '';
+      document.getElementById('game-source').value = '';
+      document.getElementById('game-recommender').value = '';
+      document.getElementById('game-notes').value = '';
+      document.getElementById('game-priority').value = '100';
+      document.getElementById('game-image-url').value = '';
+      document.getElementById('image-preview').style.display = 'none';
       document.getElementById('add-modal').classList.add('show');
     }
 
