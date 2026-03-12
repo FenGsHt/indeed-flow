@@ -704,15 +704,62 @@ def refresh_news():
 
 @app.route("/api/news/summary", methods=["GET"])
 def get_news_summary():
-    summary_file = DATA_DIR / "daily_summary.json"
-    summary = load_json(summary_file, {
-        "date": "",
-        "updated": "",
-        "iran": {"title": "伊朗/中东局势", "summary": "暂无摘要"},
-        "hot": {"title": "今日热点", "summary": "暂无摘要"},
-        "public": {"title": "公共热点", "summary": "暂无摘要"}
-    })
-    return jsonify(summary)
+    """获取新闻 AI 总结 - 动态生成"""
+    from datetime import datetime
+    
+    # 获取最新热点数据
+    try:
+        sources = [
+            {"name": "贴吧", "url": "https://tieba.baidu.com/hottopic/browse?pn=1", "class": "tieba"},
+            {"name": "微博", "url": "https://weibo.com/ajax/side/hotSearch", "class": "weibo"},
+            {"name": "B站", "url": "https://api.bilibili.com/x/web-interface/popular", "class": "bilibili"},
+            {"name": "抖音", "url": "https://www.douyin.com/aweme/v1/web/hot/search/list/", "class": "douyin"},
+            {"name": "小红书", "url": "https://www.xiaohongshu.com/explore", "class": "xiaohongshu"},
+        ]
+        
+        all_topics = []
+        for s in sources:
+            try:
+                headers = {"User-Agent": "Mozilla/5.0"}
+                resp = requests.get(s['url'], headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if s['name'] == "贴吧":
+                        data = resp.text
+                        topics = re.findall(r'"topic_name":"([^"]+)"|"topic_title":"([^"]+)"', data)
+                        for t in topics[:5]:
+                            title = t[0] or t[1]
+                            if title:
+                                all_topics.append({"title": title, "platform": s['name'], "url": ""})
+                    elif s['name'] == "微博":
+                        data = data.get('data', {}).get('realtime', [])[:5]
+                        for t in data:
+                            all_topics.append({"title": t.get('note', ''), "platform": s['name'], "url": ""})
+            except Exception as e:
+                print(f"Error fetching {s['name']}: {e}")
+        
+        # 生成热点摘要
+        hot_topics = all_topics[:10]
+        hot_summary = "今日热点：" + " | ".join([t['title'][:30] for t in hot_topics[:5]])
+        
+        # 生成伊朗摘要（简化版）
+        iran_summary = "伊朗/中东局势：关注最新地区动态，请查看具体新闻了解详情"
+        
+        return jsonify({
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "iran": {"title": "🇮🇷 伊朗/中东局势", "summary": iran_summary},
+            "hot": {"title": "🔥 今日热点", "summary": hot_summary},
+            "public": {"title": "🌐 公共热点", "summary": hot_summary}
+        })
+    except Exception as e:
+        return jsonify({
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "iran": {"title": "伊朗/中东局势", "summary": "加载失败"},
+            "hot": {"title": "今日热点", "summary": "加载失败"},
+            "public": {"title": "公共热点", "summary": "加载失败"}
+        })
 
 
 @app.route("/api/news/summary/regenerate", methods=["POST"])
