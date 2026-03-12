@@ -704,61 +704,54 @@ def refresh_news():
 
 @app.route("/api/news/summary", methods=["GET"])
 def get_news_summary():
-    """获取新闻 AI 总结 - 动态生成"""
+    """获取新闻 AI 总结 - 使用已有热点数据"""
     from datetime import datetime
     
-    # 获取最新热点数据
     try:
-        sources = [
-            {"name": "贴吧", "url": "https://tieba.baidu.com/hottopic/browse?pn=1", "class": "tieba"},
-            {"name": "微博", "url": "https://weibo.com/ajax/side/hotSearch", "class": "weibo"},
-            {"name": "B站", "url": "https://api.bilibili.com/x/web-interface/popular", "class": "bilibili"},
-            {"name": "抖音", "url": "https://www.douyin.com/aweme/v1/web/hot/search/list/", "class": "douyin"},
-            {"name": "小红书", "url": "https://www.xiaohongshu.com/explore", "class": "xiaohongshu"},
-        ]
+        # 使用已有的热点数据
+        hot_data = get_hot_news().get_json()
         
-        all_topics = []
-        for s in sources:
-            try:
-                headers = {"User-Agent": "Mozilla/5.0"}
-                resp = requests.get(s['url'], headers=headers, timeout=5)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if s['name'] == "贴吧":
-                        data = resp.text
-                        topics = re.findall(r'"topic_name":"([^"]+)"|"topic_title":"([^"]+)"', data)
-                        for t in topics[:5]:
-                            title = t[0] or t[1]
-                            if title:
-                                all_topics.append({"title": title, "platform": s['name'], "url": ""})
-                    elif s['name'] == "微博":
-                        data = data.get('data', {}).get('realtime', [])[:5]
-                        for t in data:
-                            all_topics.append({"title": t.get('note', ''), "platform": s['name'], "url": ""})
-            except Exception as e:
-                print(f"Error fetching {s['name']}: {e}")
+        # 提取热点标题生成摘要
+        hot_titles = []
+        for source in hot_data.get('sources', []):
+            for item in source.get('items', [])[:3]:  # 每个平台取前3个
+                title = item.get('title', '')
+                if title and len(title) > 5:
+                    hot_titles.append(f"[{source['name']}] {title[:25]}")
         
-        # 生成热点摘要
-        hot_topics = all_topics[:10]
-        hot_summary = "今日热点：" + " | ".join([t['title'][:30] for t in hot_topics[:5]])
+        # 公共热点
+        public_titles = []
+        for pub in hot_data.get('public', [])[:5]:
+            topic = pub.get('topic', '')
+            if topic:
+                platforms = ', '.join(pub.get('platforms', []))
+                public_titles.append(f"{topic}（{platforms}）")
         
-        # 生成伊朗摘要（简化版）
-        iran_summary = "伊朗/中东局势：关注最新地区动态，请查看具体新闻了解详情"
+        # 生成摘要文本
+        hot_summary = "今日热点 TOP10：\n" + "\n".join(hot_titles[:10]) if hot_titles else "暂无热点数据"
+        public_summary = "公共热点（多平台关注）：\n" + "\n".join(public_titles[:5]) if public_titles else "暂无公共热点"
+        
+        # 获取伊朗新闻
+        iran_data = get_iran_news().get_json()
+        iran_articles = iran_data.get('articles', [])[:3]
+        iran_titles = [a.get('title_zh', a.get('title', ''))[:30] for a in iran_articles if a.get('title')]
+        iran_summary = "伊朗/中东最新：\n" + "\n".join(iran_titles) if iran_titles else "暂无伊朗新闻"
         
         return jsonify({
             "date": datetime.now().strftime("%Y-%m-%d"),
             "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "iran": {"title": "🇮🇷 伊朗/中东局势", "summary": iran_summary},
             "hot": {"title": "🔥 今日热点", "summary": hot_summary},
-            "public": {"title": "🌐 公共热点", "summary": hot_summary}
+            "public": {"title": "🌐 公共热点", "summary": public_summary}
         })
     except Exception as e:
+        print(f"Summary error: {e}")
         return jsonify({
             "date": datetime.now().strftime("%Y-%m-%d"),
             "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "iran": {"title": "伊朗/中东局势", "summary": "加载失败"},
-            "hot": {"title": "今日热点", "summary": "加载失败"},
-            "public": {"title": "公共热点", "summary": "加载失败"}
+            "iran": {"title": "🇮🇷 伊朗/中东局势", "summary": "加载失败，请查看具体新闻"},
+            "hot": {"title": "🔥 今日热点", "summary": "加载失败，请查看热点列表"},
+            "public": {"title": "🌐 公共热点", "summary": "加载失败"}
         })
 
 
