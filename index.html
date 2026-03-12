@@ -1071,17 +1071,21 @@
           // 计算好评率和显示格式
           let ratingDisplay = '';
           let ratingBadge = '';
-          if (g.ratings && Object.keys(g.ratings).length > 0) {
-            const ratings = Object.values(g.ratings);
-            const sum = ratings.reduce((a,b) => a+b, 0);
-            const avg = sum / ratings.length;
-            const percentage = Math.round((avg / 10) * 100); // 假设满分10分，转为百分比
-            const score = avg.toFixed(1);
-            const count = ratings.length;
+          
+          // 使用后端计算的 avg_rating 和 rating_count
+          const avgRating = g.avg_rating || 0;
+          const ratingCount = g.rating_count || 0;
+          
+          if (avgRating > 0 && ratingCount > 0) {
+            const percentage = Math.round((avgRating / 10) * 100); // 假设满分10分，转为百分比
+            const score = avgRating.toFixed(1);
             
             // 卡片右下角显示：80%（8.0/10）
             ratingDisplay = `${percentage}%（${score}/10）`;
             ratingBadge = `<span class="rating-badge">${percentage}%</span>`;
+          } else {
+            // 没有评分时显示暂无
+            ratingDisplay = '<span style="color:rgba(255,255,255,0.4);">暂无评分</span>';
           }
 
           // 显示推荐人（如果有）
