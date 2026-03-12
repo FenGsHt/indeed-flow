@@ -545,6 +545,63 @@ def get_game_news():
     return jsonify({'news': []})
 
 
+# ============ Steam 游戏好评率 ============
+
+@games_bp.route('/api/steam/rating', methods=['GET'])
+def get_steam_rating():
+    """获取 Steam 游戏好评率"""
+    app_id = request.args.get('appid', '')
+    game_name = request.args.get('name', '')
+    
+    if not app_id and not game_name:
+        return jsonify({'success': False, 'error': '需要提供 appid 或 name'})
+    
+    try:
+        # 如果没有 app_id，先搜索获取
+        if not app_id and game_name:
+            search_url = f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
+            req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                items = data.get('items', [])
+                if items:
+                    app_id = items[0].get('id')
+        
+        if not app_id:
+            return jsonify({'success': False, 'error': '未找到游戏'})
+        
+        # 获取游戏详情
+        details_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
+        req = urllib.request.Request(details_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            app_data = data.get(str(app_id), {})
+            
+            if app_data.get('success'):
+                details = app_data.get('data', {})
+                
+                # 获取评价信息
+                reviews = details.get('reviews', [])
+                review_score = details.get('review_score', 0)  # 0-10
+                
+                # 计算好评率百分比
+                rating_percent = review_score * 10 if review_score else 0
+                
+                return jsonify({
+                    'success': True,
+                    'app_id': app_id,
+                    'name': details.get('name', ''),
+                    'rating_percent': rating_percent,
+                    'review_score': review_score,
+                    'review_count': len(reviews)
+                })
+            
+        return jsonify({'success': False, 'error': '无法获取游戏详情'})
+    except Exception as e:
+        print(f"Steam rating error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 # ============ 游戏 CRUD ============
 
 @games_bp.route('/api/games', methods=['GET'])
