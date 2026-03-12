@@ -785,6 +785,33 @@
         <label>Steam地址</label>
         <input type="text" id="detail-url" placeholder="Steam链接">
       </div>
+      <!-- Steam 好评率区域 -->
+      <div class="form-group" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.1);">
+        <label style="color:#00d4ff;font-size:0.9rem;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.5rem;">
+          🎮 Steam 好评率
+        </label>
+        <!-- Steam 评分显示 -->
+        <div id="steam-rating-display" style="background:rgba(0,212,255,0.1);padding:1rem;border-radius:10px;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:2rem;font-weight:700;" id="steam-rating-percent">--%</div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">好评率</div>
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:1.2rem;font-weight:600;" id="steam-review-count">--</div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">评价总数</div>
+            </div>
+          </div>
+          <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.1);font-size:0.85rem;color:rgba(255,255,255,0.7);" id="steam-rating-desc">
+            加载中...
+          </div>
+        </div>
+        <!-- 刷新按钮 -->
+        <button id="refresh-steam-rating" class="btn btn-steam" onclick="refreshSteamRatingInDetail()" style="width:100%;padding:0.8rem;">
+          🔄 刷新 Steam 评分
+        </button>
+        <div id="steam-rating-message" style="font-size:0.8rem;color:#00d4ff;min-height:1.2rem;margin-top:0.5rem;text-align:center;"></div>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="updateGame()">保存</button>
         <button class="btn btn-danger" onclick="deleteGame()">删除</button>
@@ -930,6 +957,68 @@
       }, 3000);
     }
 
+    // ============ Steam 评分缓存 ============
+    const steamRatingCache = {};
+
+    // 从 Steam 链接提取 appid
+    function extractAppId(source) {
+      if (!source) return null;
+      // 匹配 store.steampowered.com/app/数字
+      const match = source.match(/steampowered\.com\/app\/(\d+)/);
+      return match ? match[1] : null;
+    }
+
+    // 获取 Steam 好评率
+    async function getSteamRating(gameName, appId) {
+      const cacheKey = appId || gameName;
+      
+      // 检查缓存
+      if (steamRatingCache[cacheKey]) {
+        return steamRatingCache[cacheKey];
+      }
+
+      try {
+        let url = API_BASE + '/api/steam/rating';
+        if (appId) {
+          url += '?appid=' + appId;
+        } else {
+          url += '?name=' + encodeURIComponent(gameName);
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+          steamRatingCache[cacheKey] = data;
+          return data;
+        } else {
+          // 如果游戏未发售，尝试搜索 demo
+          if (appId && !data.appid_found) {
+            return await getSteamRating(gameName + ' demo', null);
+          }
+          // 如果没找到，尝试用游戏名搜索
+          if (!appId) {
+            // 缓存失败结果，避免重复请求
+            steamRatingCache[cacheKey] = { success: false, error: data.error };
+          }
+          return data;
+        }
+      } catch(e) {
+        console.log('获取Steam好评率失败:', e);
+        steamRatingCache[cacheKey] = { success: false, error: e.message };
+        return { success: false, error: e.message };
+      }
+    }
+
+    // 刷新单个游戏的 Steam 评分
+    async function refreshSteamRating(gameName, appId, onComplete) {
+      const cacheKey = appId || gameName;
+      delete steamRatingCache[cacheKey]; // 清除缓存
+      const result = await getSteamRating(gameName, appId);
+      if (onComplete) onComplete(result);
+      return result;
+    }
+
     // ============ Steam 搜图（自动下载转base64） ============
     async function searchSteamForGame() {
       const gameName = document.getElementById('game-name').value.trim();
@@ -1026,6 +1115,8 @@
     // 加载游戏
     async function loadGames() {
       const list = document.getElementById('games-list');
+      list.innerHTML = '<div class="loading"></div>';
+      
       try {
         let games = [];
         try {
@@ -1058,7 +1149,11 @@
           return a.name.localeCompare(b.name);
         });
 
-        list.innerHTML = games.slice(0, 12).map((g, i) => {
+        // 先显示游戏列表（不等待评分）
+        // Steam 评分会异步加载并更新
+        const gamesWithRatings = games.map(g => ({ ...g, steamRating: null }));
+
+        list.innerHTML = gamesWithRatings.slice(0, 12).map((g, i) => {
           // 根据游戏名生成唯一渐变色
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
           const hue1 = hash % 360;
@@ -1068,42 +1163,72 @@
           const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[g.status] || '📋 待玩';
 
-          // 计算好评率和显示格式
+          // Steam 好评率显示
           let ratingDisplay = '';
           let ratingBadge = '';
           
-          // 使用后端计算的 avg_rating 和 rating_count
-          const avgRating = g.avg_rating || 0;
-          const ratingCount = g.rating_count || 0;
-          
-          if (avgRating > 0 && ratingCount > 0) {
-            const percentage = Math.round((avgRating / 10) * 100); // 假设满分10分，转为百分比
-            const score = avgRating.toFixed(1);
+          const ratingData = g.steamRating;
+          if (ratingData && ratingData.success && ratingData.rating_percent !== undefined) {
+            const percent = ratingData.rating_percent;
+            const total = ratingData.total_reviews || 0;
+            const desc = ratingData.review_score_desc || '';
             
-            // 卡片右下角显示：80%（8.0/10）
-            ratingDisplay = `${percentage}%（${score}/10）`;
-            ratingBadge = `<span class="rating-badge">${percentage}%</span>`;
+            // 卡片右下角显示好评率
+            ratingDisplay = `${percent}% 好评`;
+            ratingBadge = `<span class="rating-badge" style="background: ${percent >= 70 ? 'linear-gradient(135deg, #4caf50, #8bc34a)' : (percent >= 40 ? 'linear-gradient(135deg, #ff9800, #ffc107)' : 'linear-gradient(135deg, #f44336, #ff5722)')}">${percent}%</span>`;
           } else {
-            // 没有评分时显示暂无
-            ratingDisplay = '<span style="color:rgba(255,255,255,0.4);">暂无评分</span>';
+            // 没有 Steam 评价时显示暂无
+            ratingDisplay = '<span style="color:rgba(255,255,255,0.4);font-size:0.75rem;">暂无评价</span>';
           }
 
-          // 显示推荐人（如果有）
+          // 显示推荐人（如果有）和好评率（同行，推荐人左对齐，好评率右对齐）
           const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
+          
+          // 好评率显示（放在推荐人右边）
+          let ratingHtml = '';
+          if (ratingData && ratingData.success && ratingData.rating_percent !== undefined && ratingData.total_reviews > 0) {
+            const percent = ratingData.rating_percent;
+            const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
+            ratingHtml = `<span style="color:${color};font-weight:600;">${percent}% 好评</span>`;
+          } else {
+            ratingHtml = `<span style="color:rgba(255,255,255,0.3);">暂无评价</span>`;
+          }
           
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
               <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
-              ${ratingBadge}
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
-              <div class="game-meta">${recommenderText}</div>
-              ${ratingDisplay ? `<div class="game-rating" style="font-size:0.75rem;color:#00d4ff;margin-top:0.3rem;">${ratingDisplay}</div>` : ''}
+              <div class="game-meta" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>${recommenderText}</span>
+                <span class="steam-rating-tag" style="font-size:0.75rem;">${ratingHtml}</span>
+              </div>
             </div>
           </div>`;
         }).join('');
+        
+        // 异步加载 Steam 评分并更新显示
+        games.slice(0, 12).forEach(async (g, i) => {
+          const appId = extractAppId(g.source || g.url);
+          const ratingData = await getSteamRating(g.name, appId);
+          
+          // 找到对应的卡片元素
+          const cards = list.querySelectorAll('.game-card');
+          if (cards[i]) {
+            const metaEl = cards[i].querySelector('.game-meta');
+            if (metaEl && ratingData && ratingData.success && ratingData.total_reviews > 0) {
+              const percent = ratingData.rating_percent;
+              const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
+              const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
+              metaEl.innerHTML = `
+                <span>${recommenderText}</span>
+                <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
+              `;
+            }
+          }
+        });
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
@@ -1572,7 +1697,107 @@
         preview.innerHTML = '';
       }
       
+      // 加载 Steam 好评率
+      loadSteamRating(game);
+      
       document.getElementById('detail-modal').classList.add('show');
+    }
+
+    // 加载 Steam 好评率
+    async function loadSteamRating(game) {
+      const percentEl = document.getElementById('steam-rating-percent');
+      const countEl = document.getElementById('steam-review-count');
+      const descEl = document.getElementById('steam-rating-desc');
+      const messageEl = document.getElementById('steam-rating-message');
+      
+      percentEl.textContent = '--%';
+      countEl.textContent = '--';
+      descEl.textContent = '加载中...';
+      messageEl.textContent = '';
+      
+      const appId = extractAppId(game.source || game.url);
+      const ratingData = await getSteamRating(game.name, appId);
+      
+      if (ratingData && ratingData.success) {
+        const percent = ratingData.rating_percent;
+        const total = ratingData.total_reviews || 0;
+        const desc = ratingData.review_score_desc || '';
+        
+        // 设置好评率颜色
+        let colorStyle = '';
+        if (percent >= 70) {
+          colorStyle = 'color: #4caf50;';
+        } else if (percent >= 40) {
+          colorStyle = 'color: #ff9800;';
+        } else {
+          colorStyle = 'color: #f44336;';
+        }
+        
+        percentEl.innerHTML = `<span style="${colorStyle}">${percent}%</span>`;
+        countEl.textContent = total.toLocaleString();
+        descEl.textContent = desc || (percent >= 70 ? '好评如潮' : (percent >= 40 ? '褒贬不一' : '差评居多'));
+        
+        // 保存到 currentGame 以便刷新时使用
+        currentGame.steamRating = ratingData;
+      } else {
+        percentEl.textContent = '--%';
+        countEl.textContent = '0';
+        descEl.textContent = ratingData?.error || '暂无评价';
+      }
+    }
+
+    // 刷新详情页的 Steam 评分
+    async function refreshSteamRatingInDetail() {
+      if (!currentGame) return;
+      
+      const btn = document.getElementById('refresh-steam-rating');
+      const messageEl = document.getElementById('steam-rating-message');
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ 刷新中...';
+      messageEl.textContent = '';
+      
+      try {
+        const appId = extractAppId(currentGame.source || currentGame.url);
+        await refreshSteamRating(currentGame.name, appId, (result) => {
+          if (result && result.success) {
+            const percent = result.rating_percent;
+            const total = result.total_reviews || 0;
+            const desc = result.review_score_desc || '';
+            
+            // 设置好评率颜色
+            let colorStyle = '';
+            if (percent >= 70) {
+              colorStyle = 'color: #4caf50;';
+            } else if (percent >= 40) {
+              colorStyle = 'color: #ff9800;';
+            } else {
+              colorStyle = 'color: #f44336;';
+            }
+            
+            document.getElementById('steam-rating-percent').innerHTML = `<span style="${colorStyle}">${percent}%</span>`;
+            document.getElementById('steam-review-count').textContent = total.toLocaleString();
+            document.getElementById('steam-rating-desc').textContent = desc;
+            
+            messageEl.textContent = '刷新成功！';
+            messageEl.style.color = '#4caf50';
+            
+            // 刷新游戏列表
+            loadGames();
+          } else {
+            messageEl.textContent = result?.error || '刷新失败';
+            messageEl.style.color = '#ff6b6b';
+          }
+          
+          btn.disabled = false;
+          btn.textContent = '🔄 刷新 Steam 评分';
+        });
+      } catch(e) {
+        messageEl.textContent = '刷新失败';
+        messageEl.style.color = '#ff6b6b';
+        btn.disabled = false;
+        btn.textContent = '🔄 刷新 Steam 评分';
+      }
     }
 
     // 更新游戏
