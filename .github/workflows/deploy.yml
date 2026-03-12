@@ -64,6 +64,11 @@ jobs:
             scp -i ~/.ssh/id_rsa -r dist/* \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}
 
+      - name: Create backend directory
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "mkdir -p /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend"
+
       - name: Deploy backend files
         uses: nick-fields/retry@v2
         with:
@@ -71,7 +76,6 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend" && \
             scp -i ~/.ssh/id_rsa app.py games_api.py \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend/
 
