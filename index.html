@@ -377,6 +377,19 @@
       text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
+    .rating-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
     .game-info {
       padding: 1rem;
     }
@@ -1055,12 +1068,20 @@
           const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[g.status] || '📋 待玩';
 
-          // 计算好评率
-          let ratingText = '';
+          // 计算好评率和显示格式
+          let ratingDisplay = '';
+          let ratingBadge = '';
           if (g.ratings && Object.keys(g.ratings).length > 0) {
-            const sum = Object.values(g.ratings).reduce((a,b) => a+b, 0);
-            const avg = sum / Object.keys(g.ratings).length;
-            ratingText = `⭐ ${avg.toFixed(1)}`;
+            const ratings = Object.values(g.ratings);
+            const sum = ratings.reduce((a,b) => a+b, 0);
+            const avg = sum / ratings.length;
+            const percentage = Math.round((avg / 10) * 100); // 假设满分10分，转为百分比
+            const score = avg.toFixed(1);
+            const count = ratings.length;
+            
+            // 卡片右下角显示：80%（8.0/10）
+            ratingDisplay = `${percentage}%（${score}/10）`;
+            ratingBadge = `<span class="rating-badge">${percentage}%</span>`;
           }
 
           // 显示推荐人（如果有）
@@ -1070,10 +1091,12 @@
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
               <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
+              ${ratingBadge}
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
-              <div class="game-meta">${recommenderText} ${ratingText}</div>
+              <div class="game-meta">${recommenderText}</div>
+              ${ratingDisplay ? `<div class="game-rating" style="font-size:0.75rem;color:#00d4ff;margin-top:0.3rem;">${ratingDisplay}</div>` : ''}
             </div>
           </div>`;
         }).join('');
