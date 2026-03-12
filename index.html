@@ -77,6 +77,11 @@
       50% { background-position: 100% 50%; }
     }
 
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateX(-50%) translateY(0); }
+      to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
+
     .slogan {
       font-size: 0.9rem;
       color: rgba(255,255,255,0.5);
@@ -885,13 +890,43 @@
       reader.readAsDataURL(file);
     }
 
+    // 显示临时提示（3秒后自动消失）
+    function showTip(message, type = 'info') {
+      const tip = document.createElement('div');
+      tip.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 14px;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+        background: ${type === 'error' ? 'rgba(255, 71, 87, 0.9)' : 'rgba(0, 212, 255, 0.9)'};
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      `;
+      tip.textContent = message;
+      document.body.appendChild(tip);
+      
+      setTimeout(() => {
+        tip.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => tip.remove(), 300);
+      }, 3000);
+    }
+
     // ============ Steam 搜图（自动下载转base64） ============
     async function searchSteamForGame() {
       const gameName = document.getElementById('game-name').value.trim();
       const urlInput = document.getElementById('game-image-url');
       const preview = document.getElementById('image-preview');
 
-      if (!gameName) return alert('请先输入游戏名称');
+      if (!gameName) {
+        showTip('请先输入游戏名称', 'error');
+        return;
+      }
 
       const btn = event.target;
       const originalText = btn.textContent;
@@ -910,12 +945,12 @@
           btn.textContent = '✓ 已获取';
           btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
         } else {
-          alert(data.error || '未找到游戏图片');
+          showTip(data.error || '未找到游戏图片', 'error');
           btn.textContent = '✗ 未找到';
           setTimeout(() => { btn.textContent = originalText; }, 2000);
         }
       } catch(e) {
-        alert('搜索失败，请手动上传图片');
+        showTip('搜索失败，请手动上传图片', 'error');
         btn.textContent = originalText;
       } finally {
         btn.disabled = false;
@@ -943,12 +978,12 @@
           btn.textContent = '✓ 已获取';
           btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
         } else {
-          alert(data.error || '未找到游戏图片');
+          showTip(data.error || '未找到游戏图片', 'error');
           btn.textContent = '✗ 未找到';
           setTimeout(() => { btn.textContent = originalText; }, 2000);
         }
       } catch(e) {
-        alert('搜索失败');
+        showTip('搜索失败', 'error');
         btn.textContent = originalText;
       } finally {
         btn.disabled = false;
@@ -1035,7 +1070,6 @@
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover;">
               <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
-              <button class="steam-btn" onclick="event.stopPropagation(); searchSteam('${g.name.replace(/'/g,"\\'")}', this)" title="换封面">🎨</button>
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
