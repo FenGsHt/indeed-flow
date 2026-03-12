@@ -549,7 +549,7 @@ def get_game_news():
 
 @games_bp.route('/api/steam/rating', methods=['GET'])
 def get_steam_rating():
-    """获取 Steam 游戏好评率"""
+    """获取 Steam 游戏好评率 - 使用 appreviews API"""
     app_id = request.args.get('appid', '')
     game_name = request.args.get('name', '')
     
@@ -570,33 +570,37 @@ def get_steam_rating():
         if not app_id:
             return jsonify({'success': False, 'error': '未找到游戏'})
         
-        # 获取游戏详情
-        details_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
-        req = urllib.request.Request(details_url, headers={'User-Agent': 'Mozilla/5.0'})
+        # 使用 appreviews API 获取评价数据
+        reviews_url = f"https://store.steampowered.com/appreviews/{app_id}?json=1&language=all"
+        req = urllib.request.Request(reviews_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
-            app_data = data.get(str(app_id), {})
             
-            if app_data.get('success'):
-                details = app_data.get('data', {})
+            if data.get('success'):
+                query_summary = data.get('query_summary', {})
                 
-                # 获取评价信息
-                reviews = details.get('reviews', [])
-                review_score = details.get('review_score', 0)  # 0-10
+                total_positive = query_summary.get('total_positive', 0)
+                total_negative = query_summary.get('total_negative', 0)
+                total_reviews = query_summary.get('total_reviews', 0)
+                review_score = query_summary.get('review_score', 0)  # 0-10
+                review_score_desc = query_summary.get('review_score_desc', '')
                 
-                # 计算好评率百分比
-                rating_percent = review_score * 10 if review_score else 0
+                # 计算好评率
+                rating_percent = round((total_positive / total_reviews) * 100, 1) if total_reviews > 0 else 0
                 
                 return jsonify({
                     'success': True,
                     'app_id': app_id,
-                    'name': details.get('name', ''),
                     'rating_percent': rating_percent,
                     'review_score': review_score,
-                    'review_count': len(reviews)
+                    'review_score_desc': review_score_desc,
+                    'total_positive': total_positive,
+                    'total_negative': total_negative,
+                    'total_reviews': total_reviews,
+                    'url': f"https://store.steampowered.com/app/{app_id}"
                 })
             
-        return jsonify({'success': False, 'error': '无法获取游戏详情'})
+        return jsonify({'success': False, 'error': '无法获取游戏评价'})
     except Exception as e:
         print(f"Steam rating error: {e}")
         return jsonify({'success': False, 'error': str(e)})
