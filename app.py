@@ -1115,4 +1115,6 @@ if __name__ == "__main__":
     print("OpenClaw 控制台启动中...")
     print("访问: http://0.0.0.0:5001")
     init_db()
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    # 生产模式：通过环境变量控制 debug 模式，默认关闭
+    debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(host="0.0.0.0", port=5001, debug=debug_mode)

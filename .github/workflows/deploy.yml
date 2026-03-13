@@ -88,7 +88,7 @@ jobs:
           command: |
             ssh -i ~/.ssh/id_rsa \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend && echo 'DB_HOST=${{ secrets.DB_HOST }}' > .env && echo 'DB_PORT=${{ secrets.DB_PORT }}' >> .env && echo 'DB_USER=${{ secrets.DB_USER }}' >> .env && echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env && echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
+              "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend && echo 'DB_HOST=${{ secrets.DB_HOST }}' > .env && echo 'DB_PORT=${{ secrets.DB_PORT }}' >> .env && echo 'DB_USER=${{ secrets.DB_USER }}' >> .env && echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env && echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env && echo 'FLASK_DEBUG=false' >> .env && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
       - name: Notify success
         if: success()
