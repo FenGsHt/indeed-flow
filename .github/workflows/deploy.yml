@@ -63,6 +63,9 @@ jobs:
           command: |
             scp -i ~/.ssh/id_rsa -r dist/* \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}
+            # 部署根目录的 games.html
+            scp -i ~/.ssh/id_rsa games.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Create backend directory
         run: |
