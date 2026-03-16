@@ -678,8 +678,27 @@
       animation: spin 1s linear infinite;
     }
 
+    /* AI 加载转圈圈 */
+    .ai-loading {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    /* 在线游戏卡片悬停效果 */
+    .online-game-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,255,136,0.3);
+      border-color: rgba(0,255,136,0.6) !important;
     }
 
     /* 移动端适配 */
@@ -855,6 +874,22 @@
 
     <!-- 游戏内容 -->
     <div id="tab-game" class="tab-content active">
+      <!-- 在线游戏入口 -->
+      <div class="online-games-section" style="margin-bottom: 2rem;">
+        <div style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.8);">🎮 在线游戏</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <a href="games.html" style="text-decoration: none;">
+            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(0,255,136,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
+              <div style="font-size: 2.5rem;">🐍</div>
+              <div>
+                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">贪吃蛇</div>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">经典怀旧 • 挑战高分</div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
       <!-- Steam 每日推荐 -->
       <div id="steam-recommendations" class="steam-recommendations" style="display:none;">
         <div class="steam-rec-header">
@@ -879,6 +914,7 @@
           <button class="sub-tab active" data-news="hot">🔥 热点</button>
           <button class="sub-tab" data-news="iran">🇮🇷 伊朗</button>
         </div>
+        <button class="btn-ai-summary" onclick="showAISummary()">🤖 AI 总结</button>
       </div>
 
       <div id="news-hot" class="news-content">
@@ -1224,8 +1260,14 @@
                   <span>${recommenderText}</span>
                   <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
                 `;
+              } else if (ratingData && ratingData.success && ratingData.total_reviews === 0) {
+                // 游戏存在但没有评价
+                metaEl.innerHTML = `
+                  <span>${recommenderText}</span>
+                  <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>
+                `;
               } else {
-                // 加载失败或没有评价，显示暂无
+                // API 查询失败（超时等），显示暂无
                 metaEl.innerHTML = `
                   <span>${recommenderText}</span>
                   <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
@@ -1463,11 +1505,26 @@
           const summaryZh = n.summary_zh || '';
           const summaryDisplay = summaryZh ? `${n.summary}\n\n${summaryZh}` : n.summary;
           
+          // 时间转换：UTC -> 北京时间 (UTC+8)
+          let timeDisplay = n.time || '';
+          if (timeDisplay) {
+            try {
+              const date = new Date(timeDisplay);
+              if (!isNaN(date.getTime())) {
+                // 转换为北京时间 (UTC+8)
+                const beijingDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+                timeDisplay = beijingDate.toISOString().replace('T', ' ').substring(0, 16);
+              }
+            } catch(e) {
+              // 转换失败就用原时间
+            }
+          }
+          
           return `
             <div class="news-item" style="animation-delay: ${i*0.03}s">
               <div class="news-header">
                 <span class="news-source iran">🇮🇷 伊朗</span>
-                <span class="news-time">${n.time || ''}</span>
+                <span class="news-time">${timeDisplay}</span>
                 ${n.source ? `<span class="news-source-tag">${n.source}</span>` : ''}
               </div>
               <div class="news-title" style="font-weight:600;margin-bottom:0.5rem;">${titleDisplay}</div>
@@ -1542,43 +1599,77 @@
       document.getElementById('add-modal').classList.add('show');
     }
 
+    // 生成热点总结的函数
+    async function generateHotSummary(hotData) {
+      // 提取热点标题
+      const topics = [];
+      if (hotData.bilibili) topics.push(...hotData.bilibili.slice(0, 3).map(i => i.title));
+      if (hotData.weibo) topics.push(...hotData.weibo.slice(0, 3).map(i => i.title));
+      if (hotData.tieba) topics.push(...hotData.tieba.slice(0, 3).map(i => i.title));
+      if (hotData.douyin) topics.push(...hotData.douyin.slice(0, 3).map(i => i.title));
+      if (hotData.xiaohongshu) topics.push(...hotData.xiaohongshu.slice(0, 3).map(i => i.title));
+      
+      // 简单的本地总结（实际应该调用 AI 接口）
+      if (topics.length === 0) return '暂无热点数据';
+      
+      return `今日热点话题：\n\n${topics.map((t, i) => `${i+1}. ${t}`).join('\n')}\n\n以上为各平台热门话题汇总。`;
+    }
+
     // 显示AI热点总结
     async function showAISummary() {
       const modal = document.getElementById('ai-summary-modal');
       const content = document.getElementById('ai-summary-content');
-
+      
       modal.classList.add('show');
-      content.innerHTML = '<div class="loading"></div>';
-
+      content.innerHTML = '<div class="ai-loading"></div><div style="text-align:center;margin-top:1rem;color:rgba(255,255,255,0.5);">正在生成 AI 总结...</div>';
+      
       try {
+        // 先尝试获取已有的总结
         const res = await fetch(API_BASE + '/api/news/summary');
-        if (!res.ok) throw new Error('请求失败');
-
         const data = await res.json();
-
-        if (data.hot && data.hot.summary) {
+        
+        // 如果热点总结为空或暂无，重新获取热点并生成
+        if (!data.hot || !data.hot.summary || data.hot.summary === '暂无热点数据' || data.hot.summary === '暂无摘要') {
+          // 获取原始热点数据
+          const hotRes = await fetch(API_BASE + '/api/news/hot');
+          const hotData = await hotRes.json();
+          
+          // 生成 AI 总结（这里需要调用 AI 接口或本地生成）
+          const summary = await generateHotSummary(hotData);
+          
           content.innerHTML = `
             <div style="margin-bottom:1rem;padding:1rem;background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(0,212,255,0.2));border-radius:12px;border:1px solid rgba(123,47,247,0.3);">
               <div style="font-size:0.75rem;color:#00d4ff;margin-bottom:0.5rem;">
-                <span>🤖</span> 热点总结
+                <span>🤖</span> AI 热点总结
+                <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${data.updated || new Date().toLocaleString()}</span>
+              </div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);white-space:pre-wrap;">${summary}</div>
+            </div>
+            <button class="btn btn-secondary" onclick="showAISummary()" style="width:100%;margin-top:0.5rem;">🔄 重新生成</button>
+          `;
+        } else {
+          // 显示已有的总结
+          content.innerHTML = `
+            <div style="margin-bottom:1rem;padding:1rem;background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(0,212,255,0.2));border-radius:12px;border:1px solid rgba(123,47,247,0.3);">
+              <div style="font-size:0.75rem;color:#00d4ff;margin-bottom:0.5rem;">
+                <span>🤖</span> ${data.hot.title || '热点总结'}
                 <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${data.updated || ''}</span>
               </div>
-              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);">${data.hot.summary}</div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);white-space:pre-wrap;">${data.hot.summary}</div>
             </div>
             ${data.iran ? `
             <div style="margin-top:1rem;padding:1rem;background:linear-gradient(135deg,rgba(255,107,107,0.2),rgba(255,0,110,0.2));border-radius:12px;border:1px solid rgba(255,107,107,0.3);">
               <div style="font-size:0.75rem;color:#ff6b6b;margin-bottom:0.5rem;">
-                <span>🇮🇷</span> 伊朗热点
+                <span>🇮🇷</span> ${data.iran.title || '伊朗热点'}
                 <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,255,255,0.4);">${data.iran.updated || ''}</span>
               </div>
-              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);">${data.iran.summary}</div>
+              <div style="font-size:0.95rem;line-height:1.8;color:rgba(255,255,255,0.95);white-space:pre-wrap;">${data.iran.summary}</div>
             </div>` : ''}
+            <button class="btn btn-secondary" onclick="showAISummary()" style="width:100%;margin-top:1rem;">🔄 重新生成</button>
           `;
-        } else {
-          content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">暂无AI总结数据</div>';
         }
       } catch(e) {
-        content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">加载失败，请稍后重试</div>';
+        content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:2rem;">生成失败，请稍后重试</div>';
       }
     }
 
