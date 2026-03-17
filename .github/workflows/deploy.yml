@@ -65,6 +65,8 @@ jobs:
 
       - name: Deploy frontend (dist)
         run: |
+          echo "dist contents:"
+          ls -la dist/
           rsync -az -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
