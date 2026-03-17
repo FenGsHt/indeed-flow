@@ -1,0 +1,319 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 20px;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* 屏幕切换 */
+.screen {
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.screen.hidden {
+  display: none;
+}
+
+/* 加入表单 */
+.join-form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.join-form h2 {
+  margin-bottom: 20px;
+  color: #4ECDC4;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #4ECDC4;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 16px;
+}
+
+.form-group input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #45B7D1;
+  box-shadow: 0 0 10px rgba(78,205,196,0.3);
+}
+
+.btn {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(78,205,196,0.4);
+}
+
+.btn-small {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid #4ECDC4;
+  border-radius: 5px;
+  color: #4ECDC4;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-small:hover {
+  background: #4ECDC4;
+  color: #1a1a2e;
+}
+
+.error {
+  color: #FF6B6B;
+  margin-top: 10px;
+}
+
+/* 游戏头部 */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 玩家列表 */
+.players-list {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.players-title {
+  font-weight: bold;
+  color: #aaa;
+}
+
+.player-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.player-badge.current {
+  background: rgba(78,205,196,0.3);
+  border: 2px solid #4ECDC4;
+}
+
+.player-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/* 游戏信息 */
+.game-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+#game-status {
+  font-weight: bold;
+  color: #FFEAA7;
+}
+
+/* 棋盘 */
+.board {
+  display: inline-grid;
+  gap: 2px;
+  background: #2d3436;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.cell {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #636e72, #2d3436);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.cell:hover:not(.revealed):not(.game-over) {
+  background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+  transform: scale(1.05);
+}
+
+.cell.revealed {
+  background: #dfe6e9;
+  cursor: default;
+}
+
+.cell.flagged {
+  color: #FF6B6B;
+}
+
+/* 数字颜色 */
+.cell.num-1 { color: #0984e3; }
+.cell.num-2 { color: #00b894; }
+.cell.num-3 { color: #d63031; }
+.cell.num-4 { color: #6c5ce7; }
+.cell.num-5 { color: #e17055; }
+.cell.num-6 { color: #00cec9; }
+.cell.num-7 { color: #2d3436; }
+.cell.num-8 { color: #636e72; }
+
+/* 雷 */
+.cell.mine {
+  background: #FF6B6B;
+}
+
+/* 其他玩家操作的格子显示边框 */
+.cell.player-action {
+  position: relative;
+}
+
+.cell.player-action::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 3px solid;
+  border-radius: 6px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.cell.game-over {
+  cursor: default;
+}
+
+/* 弹窗 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  border: 2px solid #4ECDC4;
+}
+
+.modal-content h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+}
+
+.modal-content p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+  .cell {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .players-list {
+    width: 100%;
+  }
+}
