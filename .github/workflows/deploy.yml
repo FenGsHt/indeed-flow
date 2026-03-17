@@ -66,6 +66,9 @@ jobs:
             # 部署根目录的游戏页面
             scp -i ~/.ssh/id_rsa games.html minesweeper.html minesweeper-multiplayer.html \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+            # 部署扫雷客户端
+            scp -i ~/.ssh/id_rsa -r games \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Create backend directory
         run: |
