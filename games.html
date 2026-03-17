@@ -99,6 +99,37 @@
       transform: translateX(-3px);
     }
 
+    /* 游戏选择器 */
+    .game-selector {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1rem 0 2rem;
+    }
+
+    .selector-btn {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      border-radius: 50px;
+      transition: all 0.3s;
+    }
+
+    .selector-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .selector-btn.active {
+      background: linear-gradient(90deg, #7b2ff7, #00d4ff);
+      border-color: transparent;
+      box-shadow: 0 4px 20px rgba(123, 47, 247, 0.4);
+    }
+
     /* 游戏标题区 */
     .game-title {
       text-align: center;
@@ -384,10 +415,29 @@
       <div style="width: 100px;"></div>
     </div>
 
+    <!-- 游戏选择器 -->
+    <div class="game-selector">
+      <button class="selector-btn active" onclick="switchGame('snake')">🐍 贪吃蛇</button>
+      <button class="selector-btn" onclick="switchGame('minesweeper')">💣 多人扫雷</button>
+    </div>
+
     <!-- 游戏标题 -->
-    <div class="game-title">
+    <div class="game-title" id="gameTitle">
       <h1>🐍 贪吃蛇</h1>
       <p>经典怀旧 • 挑战极限</p>
+    </div>
+
+    <!-- 多人扫雷入口 -->
+    <div id="minesweeperEntrance" style="display:none; text-align:center; padding: 2rem;">
+      <div style="background: linear-gradient(135deg, #1a1a3e, #2d2d5a); border-radius: 16px; padding: 2rem; max-width: 400px; margin: 0 auto;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">💣</div>
+        <h2 style="margin-bottom: 0.5rem;">多人扫雷</h2>
+        <p style="color: #888; margin-bottom: 1.5rem;">实时多人联机 • 排行榜挑战</p>
+        <a href="./games/minesweeper/client/index.html" 
+           style="display: inline-block; padding: 0.8rem 2rem; background: linear-gradient(90deg, #7b2ff7, #00d4ff); border-radius: 50px; text-decoration: none; font-weight: 600; color: #fff;">
+          开始游戏 →
+        </a>
+      </div>
     </div>
 
     <!-- 游戏信息 -->
@@ -458,6 +508,39 @@
   </div>
 
   <script>
+    // 游戏切换函数
+    function switchGame(game) {
+      const btns = document.querySelectorAll('.selector-btn');
+      const title = document.getElementById('gameTitle');
+      const entrance = document.getElementById('minesweeperEntrance');
+      const canvasContainer = document.querySelector('.game-canvas-container');
+      const stats = document.querySelector('.game-stats');
+      const controls = document.querySelector('.controls');
+      const mobileControls = document.querySelector('.mobile-controls');
+      
+      btns.forEach(btn => btn.classList.remove('active'));
+      
+      if (game === 'minesweeper') {
+        btns[1].classList.add('active');
+        title.style.display = 'none';
+        entrance.style.display = 'block';
+        canvasContainer.style.display = 'none';
+        stats.style.display = 'none';
+        controls.style.display = 'none';
+        if (mobileControls) mobileControls.style.display = 'none';
+        if (gameLoop) clearInterval(gameLoop);
+        isRunning = false;
+      } else {
+        btns[0].classList.add('active');
+        title.style.display = 'block';
+        entrance.style.display = 'none';
+        canvasContainer.style.display = 'block';
+        stats.style.display = 'flex';
+        controls.style.display = 'flex';
+        if (mobileControls) mobileControls.style.display = 'flex';
+      }
+    }
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
