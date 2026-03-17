@@ -75,7 +75,7 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            scp -i ~/.ssh/id_rsa games.html minesweeper-multiplayer.html \
+            scp -i ~/.ssh/id_rsa games.html \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Deploy minesweeper client
