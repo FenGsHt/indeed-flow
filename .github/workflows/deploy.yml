@@ -108,18 +108,18 @@ jobs:
         if: success()
         run: |
           curl -s "https://api.day.app/${{ secrets.BARK_KEY }}/部署成功/indeed-flow%20构建部署完成" || true
-          # 发送到 OpenClaw webhook，由 work-agent 转发到 QQ 群
-          curl -s -X POST "http://150.158.110.168:18789/hooks/agent" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY" \
-            -d "{\"message\":\"发送部署成功通知到 QQ 群 859294429：\\n\\n🚀 indeed-flow 部署成功！\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请刷新页面查看最新版本。\",\"agentId\":\"work-agent\",\"channel\":\"qq\",\"to\":\"group:859294429\",\"deliver\":true}" || true
+          # 发送到 OpenClaw webhook，由 work-agent 转发到 QQ 群（暂时屏蔽）
+          # curl -s -X POST "http://150.158.110.168:18789/hooks/agent" \
+          #   -H "Content-Type: application/json" \
+          #   -H "Authorization: Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY" \
+          #   -d "{\"message\":\"发送部署成功通知到 QQ 群 859294429：\\n\\n🚀 indeed-flow 部署成功！\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请刷新页面查看最新版本。\",\"agentId\":\"work-agent\",\"channel\":\"qq\",\"to\":\"group:859294429\",\"deliver\":true}" || true
 
       - name: Notify failure
         if: failure()
         run: |
           curl -s "https://api.day.app/${{ secrets.BARK_KEY }}/部署失败/indeed-flow%20构建异常" || true
-          # 发送到 OpenClaw webhook，由 work-agent 转发到 QQ 群
-          curl -s -X POST "http://150.158.110.168:18789/hooks/agent" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY" \
-            -d "{\"message\":\"发送部署失败通知到 QQ 群 859294429：\\n\\n❌ indeed-flow 部署失败！\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请检查 GitHub Actions 日志。\",\"agentId\":\"work-agent\",\"channel\":\"qq\",\"to\":\"group:859294429\",\"deliver\":true}" || true
+          # 发送到 OpenClaw webhook，由 work-agent 转发到 QQ 群（暂时屏蔽）
+          # curl -s -X POST "http://150.158.110.168:18789/hooks/agent" \
+          #   -H "Content-Type: application/json" \
+          #   -H "Authorization: Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY" \
+          #   -d "{\"message\":\"发送部署失败通知到 QQ 群 859294429：\\n\\n❌ indeed-flow 部署失败！\\n提交：$(echo '${{ github.event.head_commit.message }}' | head -1)\\n作者：${{ github.event.head_commit.author.name }}\\n\\n请检查 GitHub Actions 日志。\",\"agentId\":\"work-agent\",\"channel\":\"qq\",\"to\":\"group:859294429\",\"deliver\":true}" || true
