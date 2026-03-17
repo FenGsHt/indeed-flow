@@ -1,5 +1,5 @@
 // 多人扫雷前端逻辑
-const SERVER_URL = 'http://150.158.110.168:3002';
+const SERVER_URL = '';
 
 // 游戏状态
 let socket = null;
