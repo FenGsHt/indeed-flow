@@ -524,10 +524,12 @@ h1 {
 /* ====== 棋盘 ====== */
 .board-wrapper {
   overflow: hidden;
-  flex-shrink: 1;
+  flex: 1;
+  min-width: 0;
+  height: calc(100vh - 160px);
   cursor: grab;
   border-radius: 10px;
-  min-width: 0;
+  position: relative;
 }
 
 .board-wrapper.dragging {
@@ -545,8 +547,8 @@ h1 {
 }
 
 .cell {
-  width: 32px;
-  height: 32px;
+  width: 35px;
+  height: 35px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -554,7 +556,7 @@ h1 {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 15px;
+  font-size: 16px;
   transition: all 0.12s;
   user-select: none;
 }
