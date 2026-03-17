@@ -93,6 +93,17 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
               "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/backend && echo 'DB_HOST=${{ secrets.DB_HOST }}' > .env && echo 'DB_PORT=${{ secrets.DB_PORT }}' >> .env && echo 'DB_USER=${{ secrets.DB_USER }}' >> .env && echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env && echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env && echo 'FLASK_DEBUG=false' >> .env && sudo systemctl restart flask-app && sleep 2 && sudo systemctl is-active flask-app"
 
+      - name: Start Minesweeper server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/games/minesweeper/server && npm install && pm2 start server.js --name minesweeper-server || pm2 restart minesweeper-server && pm2 save"
+
       - name: Notify success
         if: success()
         run: |
