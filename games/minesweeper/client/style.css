@@ -49,6 +49,14 @@ h1 {
   backdrop-filter: blur(10px);
 }
 
+/* 游戏界面去掉框，全宽展开 */
+#game-screen {
+  background: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding: 0;
+}
+
 .screen.hidden {
   display: none;
 }
@@ -515,10 +523,16 @@ h1 {
 
 /* ====== 棋盘 ====== */
 .board-wrapper {
-  overflow: auto;
-  max-width: calc(100vw - 260px);
-  max-height: calc(100vh - 180px);
+  overflow: hidden;
   flex-shrink: 1;
+  cursor: grab;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.board-wrapper.dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .board {

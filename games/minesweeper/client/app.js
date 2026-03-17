@@ -300,8 +300,46 @@ window.addEventListener('resize', () => {
   if (gameState?.board) renderBoard(gameState.board);
 });
 
+// ====== 拖动平移（桌面端）======
+const boardWrapper = document.querySelector('.board-wrapper');
+let isDragging = false;
+let hasDragged = false;
+let dragStartX = 0, dragStartY = 0;
+let scrollStartX = 0, scrollStartY = 0;
+const DRAG_THRESHOLD = 5;
+
+boardWrapper.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  isDragging = true;
+  hasDragged = false;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  scrollStartX = boardWrapper.scrollLeft;
+  scrollStartY = boardWrapper.scrollTop;
+  boardWrapper.classList.add('dragging');
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+    hasDragged = true;
+    boardWrapper.scrollLeft = scrollStartX - dx;
+    boardWrapper.scrollTop = scrollStartY - dy;
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  boardWrapper.classList.remove('dragging');
+  // 短暂延迟后清除 hasDragged，避免 click 触发
+  setTimeout(() => { hasDragged = false; }, 50);
+});
+
 // 处理格子点击（揭开）
 function handleCellClick(x, y) {
+  if (hasDragged) return; // 拖动后忽略点击
   if (!socket || !currentRoom) return;
   if (gameState && (gameState.gameStatus === 'won' || gameState.gameStatus === 'lost')) return;
   socket.emit('reveal-cell', { x, y });
