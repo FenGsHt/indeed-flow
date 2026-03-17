@@ -283,11 +283,34 @@ function renderBoard(board) {
       boardDiv.appendChild(cell);
     }
   }
+
+  // 渲染完成后更新边缘提示
+  requestAnimationFrame(updateScrollHints);
 }
 
 
-// ====== 拖动平移（桌面端）======
+// ====== 滚动提示 ======
 const boardWrapper = document.querySelector('.board-wrapper');
+const hintRight  = document.querySelector('.scroll-hint-right');
+const hintLeft   = document.querySelector('.scroll-hint-left');
+const hintBottom = document.querySelector('.scroll-hint-bottom');
+const hintTop    = document.querySelector('.scroll-hint-top');
+
+function updateScrollHints() {
+  const bw = boardWrapper;
+  const canRight  = bw.scrollLeft < bw.scrollWidth  - bw.clientWidth  - 1;
+  const canLeft   = bw.scrollLeft > 1;
+  const canBottom = bw.scrollTop  < bw.scrollHeight - bw.clientHeight - 1;
+  const canTop    = bw.scrollTop  > 1;
+  hintRight .classList.toggle('visible', canRight);
+  hintLeft  .classList.toggle('visible', canLeft);
+  hintBottom.classList.toggle('visible', canBottom);
+  hintTop   .classList.toggle('visible', canTop);
+}
+
+boardWrapper.addEventListener('scroll', updateScrollHints);
+
+// ====== 拖动平移（桌面端）======
 let isDragging = false;
 let hasDragged = false;
 let dragStartX = 0, dragStartY = 0;

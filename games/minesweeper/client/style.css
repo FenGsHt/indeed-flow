@@ -537,6 +537,40 @@ h1 {
   user-select: none;
 }
 
+/* 边缘滚动提示 */
+.scroll-hint {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.75);
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.scroll-hint.visible { opacity: 1; }
+
+.scroll-hint-right {
+  right: 0; top: 0; bottom: 0; width: 56px;
+  background: linear-gradient(to right, transparent, rgba(22,33,62,0.9));
+}
+.scroll-hint-left {
+  left: 0; top: 0; bottom: 0; width: 56px;
+  background: linear-gradient(to left, transparent, rgba(22,33,62,0.9));
+}
+.scroll-hint-bottom {
+  bottom: 0; left: 0; right: 0; height: 56px;
+  background: linear-gradient(to bottom, transparent, rgba(22,33,62,0.9));
+}
+.scroll-hint-top {
+  top: 0; left: 0; right: 0; height: 56px;
+  background: linear-gradient(to top, transparent, rgba(22,33,62,0.9));
+}
+
 .board {
   display: inline-grid;
   gap: 2px;
