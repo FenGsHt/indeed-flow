@@ -80,6 +80,7 @@ io.on('connection', (socket) => {
     }
 
     // 创建或加入房间（支持自定义尺寸，默认16x16/40雷）
+    console.log(`[join-room] received width=${width}, height=${height}, mines=${mines}`);
     const w = Math.min(Math.max(parseInt(width) || 16, 5), 50);
     const h = Math.min(Math.max(parseInt(height) || 16, 5), 30);
     const m = Math.min(Math.max(parseInt(mines) || 40, 1), w * h - 9);

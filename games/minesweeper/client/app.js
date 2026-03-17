@@ -198,9 +198,10 @@ function joinRoom(roomId) {
 function createRoom() {
   const playerName = playerNameInput.value.trim() || '匿名玩家';
   const roomId = generateRoomId();
-  const width = parseInt(boardWidthInput.value) || 16;
-  const height = parseInt(boardHeightInput.value) || 16;
-  const mines = parseInt(boardMinesInput.value) || 40;
+  const width = parseInt(boardWidthInput?.value) || 16;
+  const height = parseInt(boardHeightInput?.value) || 16;
+  const mines = parseInt(boardMinesInput?.value) || 40;
+  console.log('[createRoom] sending:', { roomId, width, height, mines });
   currentRoom = roomId;
   socket.emit('join-room', { roomId, playerName, width, height, mines });
 }
