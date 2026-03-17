@@ -280,14 +280,17 @@ function renderBoard(board) {
         e.preventDefault();
         handleCellRightClick(x, y);
       });
-      // 移动端长按插旗
+      // 移动端长按插旗（阻止 iOS 系统菜单）
       let longPressTimer = null;
       cell.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // 阻止 iOS 选中/呼出菜单
         longPressTimer = setTimeout(() => {
           if (!hasDragged) handleCellRightClick(x, y);
         }, 500);
-      }, { passive: true });
-      cell.addEventListener('touchend', () => clearTimeout(longPressTimer));
+      }, { passive: false });
+      cell.addEventListener('touchend', (e) => {
+        clearTimeout(longPressTimer);
+      });
       cell.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 
       boardDiv.appendChild(cell);
@@ -346,6 +349,7 @@ document.addEventListener('mousemove', (e) => {
     hasDragged = true;
     boardWrapper.scrollLeft = scrollStartX - dx;
     boardWrapper.scrollTop = scrollStartY - dy;
+    updateScrollHints();
   }
 });
 
@@ -376,7 +380,8 @@ boardWrapper.addEventListener('touchmove', (e) => {
     hasDragged = true;
     boardWrapper.scrollLeft = scrollStartX - dx;
     boardWrapper.scrollTop  = scrollStartY - dy;
-    e.preventDefault(); // 阻止页面滚动
+    updateScrollHints();
+    e.preventDefault();
   }
 }, { passive: false });
 
