@@ -510,9 +510,17 @@ h1 {
   gap: 18px;
   align-items: flex-start;
   justify-content: center;
+  min-width: 0;
 }
 
 /* ====== 棋盘 ====== */
+.board-wrapper {
+  overflow: auto;
+  max-width: calc(100vw - 260px);
+  max-height: calc(100vh - 180px);
+  flex-shrink: 1;
+}
+
 .board {
   display: inline-grid;
   gap: 2px;
@@ -520,7 +528,6 @@ h1 {
   padding: 8px;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  flex-shrink: 0;
 }
 
 .cell {

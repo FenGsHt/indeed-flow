@@ -162,13 +162,19 @@ class RoomManager {
     this.rooms = new Map();
   }
 
-  createRoom(roomId, width = 9, height = 9, mines = 10) {
+  createRoom(roomId, width = 9, height = 9, mines = 10, forceNew = false) {
     if (!this.rooms.has(roomId)) {
       this.rooms.set(roomId, {
         game: new MinesweeperGame(width, height, mines),
         players: new Map(),
         currentPlayer: null
       });
+    } else if (forceNew) {
+      // 强制用新尺寸重置（仅在 waiting 状态或明确要求时）
+      const existing = this.rooms.get(roomId);
+      if (existing.game.gameStatus === 'waiting') {
+        existing.game = new MinesweeperGame(width, height, mines);
+      }
     }
     return this.rooms.get(roomId);
   }

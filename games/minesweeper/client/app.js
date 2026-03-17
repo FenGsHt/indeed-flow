@@ -229,14 +229,28 @@ function updateGameState(state) {
   }
 }
 
+// 动态计算格子大小，适配屏幕
+function calcCellSize(boardW, boardH) {
+  const lbW = window.innerWidth > 900 ? 210 : 0;
+  const paddingW = 80;
+  const paddingH = 220; // header + game-info + padding
+  const availW = window.innerWidth - lbW - paddingW;
+  const availH = window.innerHeight - paddingH;
+  const byW = Math.floor(availW / boardW);
+  const byH = Math.floor(availH / boardH);
+  return Math.min(Math.max(Math.min(byW, byH), 14), 35);
+}
+
 // 渲染棋盘
 function renderBoard(board) {
   if (!board) return;
 
   const width = board[0]?.length || 16;
   const height = board.length || 16;
+  const cellSize = calcCellSize(width, height);
+  const fontSize = Math.max(Math.floor(cellSize * 0.55), 9);
 
-  boardDiv.style.gridTemplateColumns = `repeat(${width}, 32px)`;
+  boardDiv.style.gridTemplateColumns = `repeat(${width}, ${cellSize}px)`;
   boardDiv.innerHTML = '';
 
   for (let y = 0; y < height; y++) {
@@ -246,6 +260,9 @@ function renderBoard(board) {
       cell.className = 'cell';
       cell.dataset.x = x;
       cell.dataset.y = y;
+      cell.style.width = cellSize + 'px';
+      cell.style.height = cellSize + 'px';
+      cell.style.fontSize = fontSize + 'px';
 
       if (cellData.isRevealed) {
         cell.classList.add('revealed');
@@ -277,6 +294,11 @@ function renderBoard(board) {
     }
   }
 }
+
+// 窗口缩放时重新渲染
+window.addEventListener('resize', () => {
+  if (gameState?.board) renderBoard(gameState.board);
+});
 
 // 处理格子点击（揭开）
 function handleCellClick(x, y) {

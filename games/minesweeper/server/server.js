@@ -84,7 +84,8 @@ io.on('connection', (socket) => {
     const w = Math.min(Math.max(parseInt(width) || 16, 5), 50);
     const h = Math.min(Math.max(parseInt(height) || 16, 5), 30);
     const m = Math.min(Math.max(parseInt(mines) || 40, 1), w * h - 9);
-    const room = roomManager.createRoom(roomId, w, h, m);
+    // 有自定义尺寸时强制用新参数（覆盖已有未开始的房间）
+    const room = roomManager.createRoom(roomId, w, h, m, !!width);
     currentRoom = roomId;
     currentPlayer = roomManager.addPlayer(roomId, socket.id, playerName);
     socket.join(roomId);
