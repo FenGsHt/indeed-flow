@@ -54,6 +54,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Check SSH user
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "whoami && ls -la ${{ secrets.SERVER_PATH }}/games/minesweeper/client/ || echo 'client dir empty or missing'"
+
       - name: Deploy files with retry
         uses: nick-fields/retry@v2
         with:
