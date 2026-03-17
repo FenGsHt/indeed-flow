@@ -57,6 +57,28 @@ h1 {
   padding: 0;
 }
 
+/* ====== 游戏模式：建立高度链让棋盘能填满视口 ====== */
+body.in-game {
+  align-items: stretch;   /* body flex 拉伸，让 container 获得 100vh 高度 */
+}
+
+body.in-game .container {
+  display: flex;
+  flex-direction: column;
+}
+
+body.in-game h1 {
+  display: none;          /* 进入游戏后隐藏标题（桌面+移动端）*/
+  flex-shrink: 0;
+}
+
+body.in-game #game-screen {
+  flex: 1;                /* 撑满 container 剩余空间 */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .screen.hidden {
   display: none;
 }
@@ -739,10 +761,8 @@ h1 {
     width: 100%;
   }
 
-  /* 游戏界面：全屏无边距 */
+  /* 游戏界面：全屏无边距（高度由 body.in-game flex 链决定，100svh 兜底） */
   #game-screen {
-    display: flex;
-    flex-direction: column;
     height: 100svh;
   }
 
@@ -787,8 +807,7 @@ h1 {
     flex-shrink: 0;
   }
 
-  /* 游戏时隐藏标题节省空间 */
-  #game-screen ~ h1,
+  /* h1 已由 body.in-game h1 { display:none } 全局处理，此处保留兜底 */
   body.in-game h1 {
     display: none;
   }
