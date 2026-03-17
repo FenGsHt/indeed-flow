@@ -135,7 +135,7 @@ jobs:
           command: |
             ssh -i ~/.ssh/id_rsa \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/games/minesweeper/server && (md5sum package.json > /tmp/pkg_hash_new && (diff -q /tmp/pkg_hash_new /tmp/pkg_hash_old > /dev/null 2>&1 || (npm install --no-audit && cp /tmp/pkg_hash_new /tmp/pkg_hash_old))) && (pm2 restart minesweeper-server 2>/dev/null || pm2 start server.js --name minesweeper-server) && pm2 save"
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && cd /opt/1panel/apps/openclaw/openclaw/data/conf/workspace-work-agent/indeed-flow/games/minesweeper/server && (md5sum package.json > /tmp/pkg_hash_new && (diff -q /tmp/pkg_hash_new /tmp/pkg_hash_old > /dev/null 2>&1 || (npm install --no-audit && cp /tmp/pkg_hash_new /tmp/pkg_hash_old))) && pm2 stop minesweeper-server 2>/dev/null; pm2 delete minesweeper-server 2>/dev/null; pm2 start server.js --name minesweeper-server && pm2 save"
 
       - name: Notify success
         if: success()
