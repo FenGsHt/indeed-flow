@@ -30,3 +30,6 @@ Thumbs.db
 test.txt
 test.yml
 .deploy-trigger
+
+# Runtime data / cache
+backend/data/
