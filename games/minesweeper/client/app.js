@@ -19,6 +19,12 @@ const createRoomBtn = document.getElementById('create-room-btn');
 const refreshBtn = document.getElementById('refresh-btn');
 const playerNameInput = document.getElementById('player-name');
 const joinError = document.getElementById('join-error');
+const boardWidthInput = document.getElementById('board-width');
+const boardHeightInput = document.getElementById('board-height');
+const boardMinesInput = document.getElementById('board-mines');
+const createToggle = document.getElementById('create-toggle');
+const createBody = document.getElementById('create-body');
+const boardSizeInfo = document.getElementById('board-size-info');
 const currentRoomSpan = document.getElementById('current-room');
 const playersListDiv = document.getElementById('players-list');
 const flagCountSpan = document.getElementById('flag-count');
@@ -188,12 +194,15 @@ function joinRoom(roomId) {
   socket.emit('join-room', { roomId, playerName });
 }
 
-// 创建新房间
+// 创建新房间（含自定义尺寸）
 function createRoom() {
   const playerName = playerNameInput.value.trim() || '匿名玩家';
   const roomId = generateRoomId();
+  const width = parseInt(boardWidthInput.value) || 16;
+  const height = parseInt(boardHeightInput.value) || 16;
+  const mines = parseInt(boardMinesInput.value) || 40;
   currentRoom = roomId;
-  socket.emit('join-room', { roomId, playerName });
+  socket.emit('join-room', { roomId, playerName, width, height, mines });
 }
 
 // 更新游戏状态
@@ -211,6 +220,11 @@ function updateGameState(state) {
     joinScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     currentRoomSpan.textContent = currentRoom;
+  }
+
+  // 显示雷区尺寸
+  if (state.width && state.height && state.mines) {
+    boardSizeInfo.textContent = `${state.width}×${state.height} / ${state.mines}雷`;
   }
 }
 
@@ -371,6 +385,26 @@ function showGameStatus(message) {
     if (gameState) updateGameStatus(gameState.gameStatus);
   }, 3000);
 }
+
+// 创建面板展开/折叠
+let createExpanded = false;
+createBody.style.display = 'none';
+createToggle.addEventListener('click', () => {
+  createExpanded = !createExpanded;
+  createBody.style.display = createExpanded ? 'block' : 'none';
+  createToggle.querySelector('.create-arrow').textContent = createExpanded ? '▾' : '▸';
+});
+
+// 预设按钮
+document.querySelectorAll('.btn-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    boardWidthInput.value = btn.dataset.w;
+    boardHeightInput.value = btn.dataset.h;
+    boardMinesInput.value = btn.dataset.m;
+    document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
 
 // 切换游戏内榜单展开/折叠
 lbToggle.addEventListener('click', () => {

@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
   });
 
   // 加入房间
-  socket.on('join-room', ({ roomId, playerName }) => {
+  socket.on('join-room', ({ roomId, playerName, width, height, mines }) => {
     if (!roomId) {
       socket.emit('error', { message: '房间号不能为空' });
       return;
@@ -79,8 +79,11 @@ io.on('connection', (socket) => {
       }
     }
 
-    // 创建或加入房间（高级模式：16x16，40个雷）
-    const room = roomManager.createRoom(roomId, 16, 16, 40);
+    // 创建或加入房间（支持自定义尺寸，默认16x16/40雷）
+    const w = Math.min(Math.max(parseInt(width) || 16, 5), 50);
+    const h = Math.min(Math.max(parseInt(height) || 16, 5), 30);
+    const m = Math.min(Math.max(parseInt(mines) || 40, 1), w * h - 9);
+    const room = roomManager.createRoom(roomId, w, h, m);
     currentRoom = roomId;
     currentPlayer = roomManager.addPlayer(roomId, socket.id, playerName);
     socket.join(roomId);
@@ -167,14 +170,16 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 新建游戏（高级模式）
+  // 新建游戏（保持房间原有尺寸）
   socket.on('new-game', () => {
     if (!currentRoom) return;
 
     const room = roomManager.getRoom(currentRoom);
     if (!room) return;
 
-    room.game = new MinesweeperGame(16, 16, 40);
+    // 沿用原来的尺寸和雷数
+    const { width, height, mines } = room.game;
+    room.game = new MinesweeperGame(width, height, mines);
     room.currentPlayer = room.players.keys().next().value;
 
     console.log(`New game started in room ${currentRoom}`);

@@ -222,11 +222,118 @@ h1 {
   box-shadow: 0 3px 10px rgba(78,205,196,0.4);
 }
 
+/* 创建房间区域 */
+.create-area {
+  border: 1px solid rgba(78,205,196,0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.create-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: rgba(78,205,196,0.1);
+  font-weight: bold;
+  color: #4ECDC4;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.create-header:hover {
+  background: rgba(78,205,196,0.18);
+}
+
+.create-arrow {
+  font-size: 12px;
+}
+
+.create-body {
+  padding: 14px;
+  background: rgba(0,0,0,0.15);
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.preset-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+}
+
+.btn-preset {
+  padding: 5px 12px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preset:hover, .btn-preset.active {
+  background: rgba(78,205,196,0.3);
+  border-color: #4ECDC4;
+  color: #4ECDC4;
+}
+
+.custom-inputs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.custom-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-field label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+
+.custom-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
+.custom-field input:focus {
+  outline: none;
+  border-color: #4ECDC4;
+}
+
 /* 创建房间按钮 */
 .create-btn {
   width: 100%;
-  padding: 12px;
-  font-size: 15px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* 雷区尺寸信息 */
+.board-size-info {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.08);
+  padding: 3px 8px;
+  border-radius: 10px;
 }
 
 /* ====== 暴雷榜 ====== */
