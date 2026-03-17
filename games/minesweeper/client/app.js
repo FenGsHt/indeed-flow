@@ -275,22 +275,29 @@ function renderBoard(board) {
         cell.classList.add('game-over');
       }
 
-      cell.addEventListener('click', () => handleCellClick(x, y));
+      // 长按标记（移动端）
+      let longPressTimer = null;
+      let longPressOccurred = false;
+
+      cell.addEventListener('click', () => {
+        if (longPressOccurred) { longPressOccurred = false; return; }
+        handleCellClick(x, y);
+      });
       cell.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         handleCellRightClick(x, y);
       });
-      // 移动端长按插旗（阻止 iOS 系统菜单）
-      let longPressTimer = null;
-      cell.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // 阻止 iOS 选中/呼出菜单
+      // passive: true 保证 click 事件正常触发；长按通过计时器检测
+      cell.addEventListener('touchstart', () => {
+        longPressOccurred = false;
         longPressTimer = setTimeout(() => {
-          if (!hasDragged) handleCellRightClick(x, y);
+          if (!hasDragged) {
+            longPressOccurred = true;
+            handleCellRightClick(x, y);
+          }
         }, 500);
-      }, { passive: false });
-      cell.addEventListener('touchend', (e) => {
-        clearTimeout(longPressTimer);
-      });
+      }, { passive: true });
+      cell.addEventListener('touchend', () => clearTimeout(longPressTimer));
       cell.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 
       boardDiv.appendChild(cell);
