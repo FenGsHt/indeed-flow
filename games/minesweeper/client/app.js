@@ -221,6 +221,7 @@ function updateGameState(state) {
     joinScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     currentRoomSpan.textContent = currentRoom;
+    document.body.classList.add('in-game');
   }
 
   // 显示雷区尺寸
@@ -279,6 +280,15 @@ function renderBoard(board) {
         e.preventDefault();
         handleCellRightClick(x, y);
       });
+      // 移动端长按插旗
+      let longPressTimer = null;
+      cell.addEventListener('touchstart', (e) => {
+        longPressTimer = setTimeout(() => {
+          if (!hasDragged) handleCellRightClick(x, y);
+        }, 500);
+      }, { passive: true });
+      cell.addEventListener('touchend', () => clearTimeout(longPressTimer));
+      cell.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 
       boardDiv.appendChild(cell);
     }
@@ -342,7 +352,36 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', () => {
   isDragging = false;
   boardWrapper.classList.remove('dragging');
-  // 短暂延迟后清除 hasDragged，避免 click 触发
+  setTimeout(() => { hasDragged = false; }, 50);
+});
+
+// ====== 触摸拖动（移动端）======
+boardWrapper.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  isDragging = true;
+  hasDragged = false;
+  dragStartX = t.clientX;
+  dragStartY = t.clientY;
+  scrollStartX = boardWrapper.scrollLeft;
+  scrollStartY = boardWrapper.scrollTop;
+}, { passive: true });
+
+boardWrapper.addEventListener('touchmove', (e) => {
+  if (!isDragging || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = t.clientX - dragStartX;
+  const dy = t.clientY - dragStartY;
+  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+    hasDragged = true;
+    boardWrapper.scrollLeft = scrollStartX - dx;
+    boardWrapper.scrollTop  = scrollStartY - dy;
+    e.preventDefault(); // 阻止页面滚动
+  }
+}, { passive: false });
+
+boardWrapper.addEventListener('touchend', () => {
+  isDragging = false;
   setTimeout(() => { hasDragged = false; }, 50);
 });
 
@@ -434,6 +473,7 @@ function leaveRoom() {
 
   joinScreen.classList.remove('hidden');
   gameScreen.classList.add('hidden');
+  document.body.classList.remove('in-game');
   hideGameOverModal();
 
   // 刷新房间列表

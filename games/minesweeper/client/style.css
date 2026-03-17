@@ -701,38 +701,76 @@ h1 {
 
 /* ====== 响应式 ====== */
 @media (max-width: 768px) {
+  body {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .container {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+    padding: 10px 12px 0;
+    margin-bottom: 10px;
+  }
+
+  /* 大厅 */
   .lobby-layout {
     flex-direction: column;
+    padding: 12px;
   }
 
   .lobby-right {
     width: 100%;
   }
 
+  /* 游戏界面：全屏无边距 */
+  #game-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+  }
+
+  .game-header {
+    padding: 8px 12px;
+    flex-shrink: 0;
+  }
+
+  .game-info {
+    padding: 6px 12px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
   .game-area {
     flex-direction: column;
-    align-items: center;
+    flex: 1;
+    gap: 0;
+    min-height: 0;
   }
 
+  /* 棋盘占满剩余空间 */
+  .board-wrapper {
+    height: auto;
+    flex: 1;
+    width: 100%;
+    border-radius: 0;
+    min-height: 0;
+  }
+
+  /* 游戏内榜单折叠到底部 */
   .ingame-leaderboard {
     width: 100%;
+    border-radius: 0;
+    flex-shrink: 0;
   }
 
-  .cell {
-    width: 26px;
-    height: 26px;
-    font-size: 12px;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .cell {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
+  /* 游戏时隐藏标题节省空间 */
+  #game-screen ~ h1,
+  body.in-game h1 {
+    display: none;
   }
 }
