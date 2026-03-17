@@ -226,6 +226,15 @@ class RoomManager {
     return Array.from(room.players.values());
   }
 
+  getRoomList() {
+    return Array.from(this.rooms.entries()).map(([roomId, room]) => ({
+      roomId,
+      playerCount: room.players.size,
+      gameStatus: room.game.gameStatus,
+      players: Array.from(room.players.values()).map(p => p.name)
+    }));
+  }
+
   nextPlayer(roomId) {
     const room = this.getRoom(roomId);
     if (!room || room.players.size === 0) return null;
