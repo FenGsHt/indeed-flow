@@ -64,14 +64,9 @@ jobs:
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
       - name: Deploy frontend (dist)
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            scp -i ~/.ssh/id_rsa -r dist/* \
-              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+        run: |
+          rsync -az -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" dist/ \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Deploy static game pages
         uses: nick-fields/retry@v2
