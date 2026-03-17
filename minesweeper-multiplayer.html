@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INDEED - 多人实时扫雷</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    .bg-effect {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .bg-effect::before {
+      content: '';
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
+      animation: bgMove 20s ease-in-out infinite;
+    }
+
+    @keyframes bgMove {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-5%, -5%) rotate(5deg); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0 2rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoShine 3s ease-in-out infinite;
+    }
+
+    @keyframes logoShine {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-radius: 50px;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateX(-3px);
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      padding: 2rem 0;
+    }
+
+    .game-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .game-subtitle {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .game-frame {
+      width: 100%;
+      max-width: 900px;
+      height: 700px;
+      border: 2px solid rgba(123, 47, 247, 0.5);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(123, 47, 247, 0.3);
+    }
+
+    .game-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 2rem;
+    }
+
+    .info-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .info-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: #00d4ff;
+    }
+
+    .info-card p {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+      .game-title { font-size: 1.8rem; }
+      .game-frame { height: 600px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effect"></div>
+  
+  <div class="container">
+    <div class="header">
+      <div class="logo">INDEED</div>
+      <a href="./index.html" class="back-btn">← 返回首页</a>
+    </div>
+
+    <div class="game-container">
+      <h1 class="game-title">💣 多人实时扫雷</h1>
+      <p class="game-subtitle">支持多人在线对战，实时同步游戏状态</p>
+      
+      <div class="game-frame">
+        <iframe src="./games/minesweeper/client/index.html" allowfullscreen></iframe>
+      </div>
+
+      <div class="info-cards">
+        <div class="info-card">
+          <h3>🎮 多人对战</h3>
+          <p>创建或加入房间，与好友一起挑战扫雷</p>
+        </div>
+        <div class="info-card">
+          <h3>⚡ 实时同步</h3>
+          <p>WebSocket 实时通信，游戏状态即时同步</p>
+        </div>
+        <div class="info-card">
+          <h3>🏆 排行榜</h3>
+          <p>记录最快通关时间，与全球玩家竞争</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
