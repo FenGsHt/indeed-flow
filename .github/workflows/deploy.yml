@@ -54,10 +54,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Check SSH user
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "whoami && ls -la ${{ secrets.SERVER_PATH }}/games/minesweeper/client/ || echo 'client dir empty or missing'"
-
       - name: Deploy files with retry
         uses: nick-fields/retry@v2
         with:
@@ -70,9 +66,9 @@ jobs:
             # 部署根目录的游戏页面
             scp -i ~/.ssh/id_rsa games.html minesweeper.html minesweeper-multiplayer.html \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
-            # 确保扫雷客户端目录存在
+            # 确保扫雷客户端目录存在且可写
             ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "mkdir -p ${{ secrets.SERVER_PATH }}/games/minesweeper/client ${{ secrets.SERVER_PATH }}/games/minesweeper/scripts"
+              "mkdir -p ${{ secrets.SERVER_PATH }}/games/minesweeper/client ${{ secrets.SERVER_PATH }}/games/minesweeper/scripts && chmod -R 777 ${{ secrets.SERVER_PATH }}/games"
             # 部署扫雷客户端
             scp -i ~/.ssh/id_rsa \
               games/minesweeper/client/index.html \
