@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>UNO 多人对战</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ 大厅 ══════════════════════════════════════════════════ -->
+<div id="lobby-screen" class="screen">
+  <div class="lobby-header">
+    <h1>UNO</h1>
+    <p>多人实时对战 · 2~10人</p>
+  </div>
+
+  <div class="name-row">
+    <input id="player-name" type="text" placeholder="输入你的名字" maxlength="16" autocomplete="off">
+  </div>
+
+  <div class="lobby-cols">
+    <div class="lobby-left">
+      <!-- 房间列表 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🃏 房间列表</span>
+          <button class="btn-icon" id="btn-refresh" title="刷新">↺</button>
+        </div>
+        <div class="room-list" id="room-list">
+          <div class="room-empty">暂无房间，快来创建第一个！</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lobby-right">
+      <!-- 创建房间 -->
+      <div class="panel">
+        <div class="panel-header create-toggle" id="create-toggle">
+          <span>➕ 创建房间</span>
+          <span id="create-arrow">▲</span>
+        </div>
+        <div class="create-body" id="create-body">
+          <div class="settings-row">
+            <div class="setting-item">
+              <div>
+                <div>叠加 +2/+4</div>
+                <span>可以用相同牌抵消</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="opt-stack" checked>
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div>
+                <div>7换/0传</div>
+                <span>出7换手牌，出0传递</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="opt-sevens">
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div>
+                <div>强制出牌</div>
+                <span>摸到能出的牌必须出</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="opt-force" checked>
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-create">创建并加入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 等待室 ════════════════════════════════════════════════ -->
+<div id="waiting-screen" class="screen hidden">
+  <div class="waiting-header">
+    <h2 id="waiting-room-name">房间</h2>
+    <p id="waiting-hint-text">等待其他玩家加入…</p>
+  </div>
+
+  <div class="waiting-players panel" id="waiting-players"></div>
+
+  <div class="waiting-actions">
+    <button class="btn btn-ghost" id="btn-leave-waiting">离开房间</button>
+    <button class="btn btn-primary" id="btn-ready">准备</button>
+  </div>
+
+  <p class="waiting-hint">所有玩家准备后自动开始（至少 2 人）</p>
+</div>
+
+<!-- ══ 游戏界面 ══════════════════════════════════════════════ -->
+<div id="game-screen" class="screen hidden">
+  <!-- 顶部状态栏 -->
+  <div class="game-topbar">
+    <button class="btn btn-ghost btn-sm" id="btn-leave-game">← 离开</button>
+    <div class="game-topbar-center">
+      <span id="game-room-name" style="font-size:12px;color:var(--muted)"></span>
+      <span id="game-direction">↻</span>
+      <span id="game-turn-label" style="font-size:12px"></span>
+    </div>
+    <div style="width:56px"></div>
+  </div>
+
+  <!-- 其他玩家 -->
+  <div class="other-players" id="other-players"></div>
+
+  <!-- 中央牌区 -->
+  <div class="game-center">
+    <div class="color-indicator">
+      <div class="color-dot" id="color-dot"></div>
+      <div class="color-label" id="color-label">颜色</div>
+      <div class="pending-draw-badge hidden" id="pending-draw-badge"></div>
+    </div>
+
+    <div class="pile-area">
+      <!-- 摸牌堆 -->
+      <div class="draw-pile">
+        <div class="draw-pile-stack" id="btn-draw">
+          <div class="card-back"><span class="card-back-label">UNO</span></div>
+          <div class="card-back"><span class="card-back-label">UNO</span></div>
+        </div>
+        <div id="deck-count">-- 张</div>
+        <div class="pile-label">摸牌</div>
+      </div>
+
+      <!-- 弃牌堆 -->
+      <div class="discard-pile">
+        <div id="discard-top"></div>
+        <div class="pile-label">出牌区</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 你的手牌 -->
+  <div class="your-hand-area">
+    <div class="hand-label">YOUR HAND</div>
+    <div class="hand-scroll" id="hand-scroll"></div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <div class="game-actions">
+    <button class="btn" id="btn-uno">UNO!</button>
+    <button class="btn btn-ghost btn-sm" id="btn-sort">整理手牌</button>
+  </div>
+</div>
+
+<!-- ══ 颜色选择弹窗 ════════════════════════════════════════ -->
+<div class="modal hidden" id="color-picker">
+  <div class="color-picker-box">
+    <h3>选择颜色</h3>
+    <div class="color-options">
+      <button class="color-btn red"    data-color="red">♥</button>
+      <button class="color-btn blue"   data-color="blue">♦</button>
+      <button class="color-btn green"  data-color="green">♣</button>
+      <button class="color-btn yellow" data-color="yellow">★</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 游戏结束弹窗 ══════════════════════════════════════ -->
+<div class="modal hidden" id="game-over-modal">
+  <div class="game-over-box">
+    <h2>🎉 游戏结束</h2>
+    <p id="game-over-msg"></p>
+    <div class="score-list" id="score-list"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-primary" id="btn-play-again">再来一局</button>
+      <button class="btn btn-ghost"   id="btn-back-lobby">返回大厅</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Toast ══════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
