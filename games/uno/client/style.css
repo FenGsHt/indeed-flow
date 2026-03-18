@@ -834,33 +834,33 @@ body {
 }
 .modal.hidden { display: none; }
 
-/* 颜色选择：底部浮层，不遮挡手牌 */
+/* 颜色选择：居中靠上，不遮挡底部手牌 */
 #color-picker {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  top: auto;           /* 不全屏覆盖 */
+  bottom: auto;
   background: none;
   backdrop-filter: none;
-  align-items: flex-end;
+  display: flex;
+  align-items: flex-start;
   justify-content: center;
-  padding-bottom: 8px;
+  padding-top: 88px;   /* 顶部状态栏 + 回合提示高度 */
   z-index: 200;
-  pointer-events: none; /* 透明区域不拦截鼠标事件 */
-}
-.color-picker-box {
-  pointer-events: auto; /* 仅选色框本身响应交互 */
+  pointer-events: none;
 }
 
 .color-picker-box {
+  pointer-events: auto;
   background: rgba(15, 18, 40, 0.96);
   border: 1px solid var(--border);
-  border-radius: 20px 20px 14px 14px;
+  border-radius: 16px;
   padding: 16px 28px 20px;
   text-align: center;
-  width: 100%;
-  max-width: 360px;
+  width: calc(100% - 32px);
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
 .color-picker-box h3 { font-size: 16px; margin-bottom: 20px; color: var(--muted); }
