@@ -505,16 +505,17 @@ function renderGame(state) {
   if (isMyTurn) drawStack.classList.add('my-turn');
   else          drawStack.classList.remove('my-turn');
 
-  // 摸牌 / 结束回合 按钮（底部）
+  // 摸牌 / 结束回合 按钮（底部，始终显示，非自己回合灰态）
   const drawBtn = $('btn-draw-action');
   const passBtn = $('btn-pass-turn');
+  drawBtn.classList.remove('hidden');
+  passBtn.classList.remove('hidden');
   if (isMyTurn) {
-    drawBtn.classList.remove('hidden');
     drawBtn.disabled = state.drawnThisTurn;
-    passBtn.classList.toggle('hidden', !state.drawnThisTurn);
+    passBtn.disabled = !state.drawnThisTurn;
   } else {
-    drawBtn.classList.add('hidden');
-    passBtn.classList.add('hidden');
+    drawBtn.disabled = true;
+    passBtn.disabled = true;
   }
 
   // 其他玩家

@@ -817,6 +817,7 @@ body {
 #btn-uno.show { display: flex; }
 
 /* ── 颜色选择弹窗 ───────────────────────── */
+/* 游戏结束等全屏弹窗 */
 .modal {
   position: fixed;
   inset: 0;
@@ -829,12 +830,28 @@ body {
 }
 .modal.hidden { display: none; }
 
+/* 颜色选择：底部浮层，不遮挡手牌 */
+#color-picker {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: none;
+  backdrop-filter: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  z-index: 200;
+}
+
 .color-picker-box {
-  background: #1a1f3c;
+  background: rgba(15, 18, 40, 0.96);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 28px;
+  border-radius: 20px 20px 14px 14px;
+  padding: 16px 28px 20px;
   text-align: center;
+  width: 100%;
+  max-width: 360px;
 }
 
 .color-picker-box h3 { font-size: 16px; margin-bottom: 20px; color: var(--muted); }
@@ -954,7 +971,8 @@ body {
   animation: draw-bounce 0.6s ease infinite alternate;
   transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
-.btn-draw-action:disabled {
+.btn-draw-action:disabled,
+.btn-pass:disabled {
   background: linear-gradient(135deg, #555, #333);
   box-shadow: none;
   opacity: 0.5;
