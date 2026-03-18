@@ -135,7 +135,7 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py \
+            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
 
       - name: Restart Flask backend
@@ -153,6 +153,7 @@ jobs:
                echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env && \
                echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env && \
                echo 'FLASK_DEBUG=false' >> .env && \
+               echo 'BARK_KEY=${{ secrets.BARK_KEY }}' >> .env && \
                sudo systemctl restart flask-app && \
                sleep 2 && \
                sudo systemctl is-active flask-app"

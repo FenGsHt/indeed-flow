@@ -1574,41 +1574,6 @@
       preview.innerHTML = '<img src="' + url + '" style="width:100%;height:150px;object-fit:cover;" onerror="this.parentElement.style.display=\'none\'">';
     }
 
-    // 从Steam搜索游戏图片
-    async function searchSteamForGame() {
-      const gameName = document.getElementById('game-name').value.trim();
-      const urlInput = document.getElementById('game-image-url');
-      const preview = document.getElementById('image-preview');
-
-      if (!gameName) return alert('请先输入游戏名称');
-
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = '⏳ 搜索中...';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch(API_BASE + '/api/search-steam?q=' + encodeURIComponent(gameName));
-        const data = await res.json();
-
-        if (data.headerUrl) {
-          urlInput.value = data.headerUrl;
-          preview.style.display = 'block';
-          preview.innerHTML = '<img src="' + data.headerUrl + '" style="width:100%;height:150px;object-fit:cover;">';
-          btn.textContent = '✓ 已获取';
-          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
-        } else {
-          btn.textContent = '✗ 未找到';
-          setTimeout(() => { btn.textContent = originalText; }, 2000);
-        }
-      } catch(e) {
-        alert('搜索失败，请手动输入图片URL');
-        btn.textContent = originalText;
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
     // 打开添加弹窗
     function openAddModal() {
       document.getElementById('game-name').value = '';
@@ -1899,9 +1864,6 @@
             
             messageEl.textContent = '刷新成功！';
             messageEl.style.color = '#4caf50';
-            
-            // 刷新游戏列表
-            loadGames();
           } else {
             messageEl.textContent = result?.error || '刷新失败';
             messageEl.style.color = '#ff6b6b';
