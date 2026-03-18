@@ -1,6 +1,8 @@
 // 多人实时扫雷 WebSocket 服务
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { Server } = require('socket.io');
 const { RoomManager, MinesweeperGame } = require('./game');
 
@@ -13,17 +15,77 @@ const io = new Server(server, {
   }
 });
 
-const roomManager = new RoomManager();
-
-// 预创建默认房间并标记为持久（不因无人而删除）
-const DEFAULT_ROOM = '游乐场';
-roomManager.createRoom(DEFAULT_ROOM, 16, 16, 40);
-roomManager.rooms.get(DEFAULT_ROOM).persist = true;
+const STATE_FILE = path.join(__dirname, 'state.json');
 
 // 全局暴雷榜 playerName -> { name, hits }
 const mineLeaderboard = new Map();
 // 全局得分榜 playerName -> { name, score }（揭开格子数累计）
 const scoreLeaderboard = new Map();
+
+const roomManager = new RoomManager();
+const DEFAULT_ROOM = '游乐场';
+
+// 从文件加载持久化状态
+function loadState() {
+  try {
+    if (!fs.existsSync(STATE_FILE)) return;
+    const data = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+
+    // 恢复榜单
+    if (data.mineLeaderboard) {
+      data.mineLeaderboard.forEach(e => mineLeaderboard.set(e.name, e));
+    }
+    if (data.scoreLeaderboard) {
+      data.scoreLeaderboard.forEach(e => scoreLeaderboard.set(e.name, e));
+    }
+
+    // 恢复默认房间游戏状态
+    if (data.defaultRoom) {
+      const d = data.defaultRoom;
+      const room = roomManager.getRoom(DEFAULT_ROOM);
+      if (room && d.gameStatus !== 'waiting') {
+        room.game.width = d.width;
+        room.game.height = d.height;
+        room.game.mines = d.mines;
+        room.game.gameStatus = d.gameStatus;
+        room.game.revealedCount = d.revealedCount;
+        room.game.board = d.board;
+      }
+    }
+    console.log('State loaded from file');
+  } catch (e) {
+    console.error('Failed to load state:', e.message);
+  }
+}
+
+// 保存状态到文件
+function saveState() {
+  try {
+    const room = roomManager.getRoom(DEFAULT_ROOM);
+    const data = {
+      mineLeaderboard: Array.from(mineLeaderboard.values()),
+      scoreLeaderboard: Array.from(scoreLeaderboard.values()),
+      defaultRoom: room ? {
+        width: room.game.width,
+        height: room.game.height,
+        mines: room.game.mines,
+        gameStatus: room.game.gameStatus,
+        revealedCount: room.game.revealedCount,
+        board: room.game.board,
+      } : null,
+    };
+    fs.writeFileSync(STATE_FILE, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save state:', e.message);
+  }
+}
+
+// 预创建默认房间并标记为持久（不因无人而删除）
+roomManager.createRoom(DEFAULT_ROOM, 16, 16, 40);
+roomManager.rooms.get(DEFAULT_ROOM).persist = true;
+
+// 加载持久化状态（覆盖默认房间初始值）
+loadState();
 
 app.use(express.static('../client'));
 
@@ -38,6 +100,7 @@ function recordMineHit(playerName) {
   entry.hits++;
   mineLeaderboard.set(playerName, entry);
   io.emit('leaderboard-update', getMineLeaderboard());
+  saveState();
 }
 
 function getMineLeaderboard() {
@@ -53,6 +116,7 @@ function recordScore(playerName, cells) {
   entry.score += cells;
   scoreLeaderboard.set(playerName, entry);
   io.emit('score-leaderboard-update', getScoreLeaderboard());
+  saveState();
 }
 
 function getScoreLeaderboard() {
@@ -170,10 +234,12 @@ io.on('connection', (socket) => {
         if (room.game.gameStatus === 'won') {
           // 胜利时记录最后揭开的格子得分
           recordScore(currentPlayer.name, cellsRevealed);
+          saveState();
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
         } else if (room.game.gameStatus === 'lost') {
           // 暴雷不计分，记录暴雷榜
           recordMineHit(currentPlayer.name);
+          saveState();
           io.to(currentRoom).emit('game-over', {
             won: false,
             message: `💥 ${currentPlayer.name} 踩到雷了！`
@@ -182,6 +248,7 @@ io.on('connection', (socket) => {
       } else {
         // 正常揭开，记录得分
         recordScore(currentPlayer.name, cellsRevealed);
+        if (currentRoom === DEFAULT_ROOM) saveState();
       }
     }
   });
@@ -224,6 +291,7 @@ io.on('connection', (socket) => {
       players: roomManager.getPlayersList(currentRoom),
     });
 
+    if (currentRoom === DEFAULT_ROOM) saveState();
     broadcastRoomList();
   });
 
