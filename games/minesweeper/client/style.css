@@ -709,105 +709,127 @@ body.in-game #game-screen {
   color: #FF6B6B;
 }
 
-/* ====== 游戏内榜单（带标签） ====== */
-.ingame-leaderboard {
-  background: rgba(0,0,0,0.25);
-  border-radius: 10px;
-  overflow: hidden;
+/* ====== 右侧面板容器 ====== */
+.game-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 230px;
+  flex-shrink: 0;
 }
 
-/* 综合榜单标题 */
+/* ====== 游戏内榜单 ====== */
+.ingame-leaderboard {
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* 榜单标题 */
 .lb-title {
-  padding: 9px 10px 6px;
-  font-size: 12px;
+  padding: 10px 12px 8px;
+  font-size: 13px;
   font-weight: bold;
   color: #4ECDC4;
-  background: rgba(0,0,0,0.2);
-  border-radius: 10px 10px 0 0;
+  background: rgba(78,205,196,0.1);
   text-align: center;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  border-bottom: 1px solid rgba(78,205,196,0.15);
 }
 
-/* 榜单列头 */
+/* 列头 */
 .lb-header-row {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
-  background: rgba(0,0,0,0.15);
+  padding: 5px 10px;
+  background: rgba(0,0,0,0.2);
   font-size: 10px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.35);
   font-weight: bold;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 
-/* 综合榜单列布局 */
+/* 综合榜单行 */
 .lb-row-combined {
   display: flex !important;
   align-items: center;
-  padding: 6px 8px !important;
+  padding: 8px 10px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
 }
 
+.lb-row-combined:last-child {
+  border-bottom: none;
+}
+
+.lb-row-combined:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* 列：名次 */
 .lb-col-rank {
-  width: 28px;
+  width: 26px;
   flex-shrink: 0;
   text-align: center;
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1;
 }
 
+/* 列：名字 */
 .lb-col-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 6px;
+  color: rgba(255,255,255,0.9);
 }
 
+/* 列：胜场 */
 .lb-col-score {
-  width: 28px;
+  width: 30px;
   flex-shrink: 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: #FFEAA7;
   font-weight: bold;
 }
 
-.lb-col-cells {
-  width: 42px;
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 11px;
-  color: #74b9ff;
-  font-weight: bold;
-}
-
+/* 列：暴雷 */
 .lb-col-hits {
-  width: 28px;
+  width: 30px;
   flex-shrink: 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: #FF7675;
   font-weight: bold;
 }
 
-/* 右侧面板容器 */
-.game-right-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 210px;
+/* 列：积分（最后） */
+.lb-col-cells {
+  width: 40px;
   flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  color: #74b9ff;
+  font-weight: bold;
 }
 
 .ingame-lb-body {
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
-/* 历史记录区 */
+/* ====== 历史记录区 ====== */
 .ingame-history {
-  background: rgba(0,0,0,0.25);
-  border-radius: 10px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
   overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .lb-title-sm {
@@ -815,8 +837,8 @@ body.in-game #game-screen {
 }
 
 .ingame-history-body {
-  padding: 4px 0;
-  max-height: 180px;
+  padding: 2px 0;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -825,17 +847,18 @@ body.in-game #game-screen {
 }
 
 .ingame-history-body::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
   border-radius: 2px;
 }
 
 .history-row {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px 8px;
-  font-size: 11px;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
 }
 
 .history-row:last-child {
@@ -844,7 +867,7 @@ body.in-game #game-screen {
 
 .history-icon {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .history-player {
@@ -852,7 +875,8 @@ body.in-game #game-screen {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.88);
+  font-size: 12px;
 }
 
 .history-result {

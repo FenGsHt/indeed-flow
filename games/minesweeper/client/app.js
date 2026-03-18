@@ -225,8 +225,8 @@ function renderCombinedLeaderboard() {
       <span class="lb-col-rank">${medal}</span>
       <span class="lb-col-name">${entry.name}</span>
       <span class="lb-col-score">${entry.score}</span>
-      <span class="lb-col-cells">${entry.cellsScore}</span>
       <span class="lb-col-hits">${entry.hits}</span>
+      <span class="lb-col-cells">${entry.cellsScore}</span>
     `;
     ingameLb.appendChild(row);
   });
