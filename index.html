@@ -1323,66 +1323,78 @@
           </div>`;
         }).join('');
         
-        // 批量获取 Steam 评分（单次请求，后端有 24h 缓存）
+        // 价格渲染辅助函数
+        function renderPriceEl(priceEl, pd) {
+          if (!pd || !pd.success) return;
+          if (pd.free) {
+            priceEl.innerHTML = `<span style="color:rgba(100,220,100,0.6)">免费</span>`;
+          } else if (pd.discount > 0) {
+            priceEl.innerHTML =
+              `<span style="color:#ff9800;font-weight:600">-${pd.discount}%</span> ` +
+              `<span style="color:rgba(255,255,255,0.85)">¥${pd.final_price.toFixed(0)}</span> ` +
+              `<span style="text-decoration:line-through;color:rgba(255,255,255,0.3)">¥${pd.original_price.toFixed(0)}</span>`;
+          } else {
+            priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.35)">¥${pd.final_price.toFixed(0)}</span>`;
+          }
+        }
+
         const visibleGames = games.slice(0, 12);
-        getSteamRatingsBatch(visibleGames).then(async ratingsMap => {
+
+        // ── 评分：独立并行 ──────────────────────────────────────────
+        getSteamRatingsBatch(visibleGames).then(ratingsMap => {
           const cards = list.querySelectorAll('.game-card');
+          const newlyDiscovered = []; // 通过评分接口搜索出 appid 的游戏
+
           visibleGames.forEach((g, i) => {
             if (!cards[i]) return;
             const metaEl = cards[i].querySelector('.game-meta');
             if (!metaEl) return;
             const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
-            const ratingData = ratingsMap[g.id];
-            if (ratingData && ratingData.success && ratingData.total_reviews > 0) {
-              const percent = ratingData.rating_percent;
+            const rd = ratingsMap[g.id];
+            if (rd && rd.success && rd.total_reviews > 0) {
+              const percent = rd.rating_percent;
               const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
-              metaEl.innerHTML = `
-                <span>${recommenderText}</span>
-                <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
-              `;
-            } else if (ratingData && ratingData.success && ratingData.total_reviews === 0) {
-              metaEl.innerHTML = `
-                <span>${recommenderText}</span>
-                <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>
-              `;
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>`;
+            } else if (rd && rd.success && rd.total_reviews === 0) {
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>`;
             } else {
-              metaEl.innerHTML = `
-                <span>${recommenderText}</span>
-                <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
-              `;
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>`;
             }
+
+            // 收集通过名字搜索才发现的 appid（之前未知的），用于补充拉取价格
+            const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
+            const newAppid   = rd && rd.app_id && !knownAppid ? String(rd.app_id) : '';
+            if (newAppid) newlyDiscovered.push({ idx: i, id: g.id, appid: newAppid });
           });
 
-          // 批量获取价格（用评分中已解析的 appid，优先级最高）
-          const priceItems = visibleGames.map(g => {
-            const rd    = ratingsMap[g.id];
-            const appid = (rd && rd.app_id)
-              || extractAppId(g.source || g.url)
-              || g.steam_appid || '';
-            return appid ? { id: g.id, appid: String(appid) } : null;
-          }).filter(Boolean);
-
-          if (priceItems.length === 0) return;
-          const pricesMap = await getSteamPricesBatch(priceItems);
-
-          visibleGames.forEach((g, i) => {
-            if (!cards[i]) return;
-            const priceEl = cards[i].querySelector('.game-price-row');
-            if (!priceEl) return;
-            const pd = pricesMap[g.id];
-            if (!pd || !pd.success) return;
-            if (pd.free) {
-              priceEl.innerHTML = `<span style="color:rgba(100,220,100,0.6)">免费</span>`;
-            } else if (pd.discount > 0) {
-              priceEl.innerHTML =
-                `<span style="color:#ff9800;font-weight:600">-${pd.discount}%</span> ` +
-                `<span style="color:rgba(255,255,255,0.85)">¥${pd.final_price.toFixed(0)}</span> ` +
-                `<span style="text-decoration:line-through;color:rgba(255,255,255,0.3)">¥${pd.original_price.toFixed(0)}</span>`;
-            } else {
-              priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.35)">¥${pd.final_price.toFixed(0)}</span>`;
-            }
-          });
+          // 对新发现 appid 的游戏补充拉取价格
+          if (newlyDiscovered.length > 0) {
+            getSteamPricesBatch(newlyDiscovered.map(p => ({ id: p.id, appid: p.appid }))).then(pm => {
+              const freshCards = list.querySelectorAll('.game-card');
+              newlyDiscovered.forEach(p => {
+                const priceEl = freshCards[p.idx] && freshCards[p.idx].querySelector('.game-price-row');
+                if (priceEl) renderPriceEl(priceEl, pm[p.id]);
+              });
+            });
+          }
         });
+
+        // ── 价格：独立并行，用已知 appid 立即开始 ────────────────────
+        const knownPriceItems = visibleGames.map(g => {
+          const appid = extractAppId(g.source || g.url) || g.steam_appid || '';
+          return appid ? { id: g.id, appid: String(appid) } : null;
+        }).filter(Boolean);
+
+        if (knownPriceItems.length > 0) {
+          getSteamPricesBatch(knownPriceItems).then(pricesMap => {
+            const cards = list.querySelectorAll('.game-card');
+            visibleGames.forEach((g, i) => {
+              if (!cards[i]) return;
+              const priceEl = cards[i].querySelector('.game-price-row');
+              if (priceEl) renderPriceEl(priceEl, pricesMap[g.id]);
+            });
+          });
+        }
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
