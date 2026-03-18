@@ -473,11 +473,11 @@ function updateGameStatus(status) {
   };
   gameStatusSpan.textContent = statusMap[status] || status;
 
-  // 游戏进行中隐藏"新游戏"按钮，结束/等待时显示
-  if (status === 'playing') {
-    newGameBtn.classList.add('hidden');
-  } else {
+  // 只有胜利或失败时才显示"新游戏"按钮
+  if (status === 'won' || status === 'lost') {
     newGameBtn.classList.remove('hidden');
+  } else {
+    newGameBtn.classList.add('hidden');
   }
 }
 
