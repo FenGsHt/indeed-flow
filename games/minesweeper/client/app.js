@@ -1,5 +1,5 @@
 // 多人扫雷前端逻辑
-const SERVER_URL = '';
+const SERVER_URL = 'http://150.158.110.168:3002';
 const DEFAULT_ROOM = '游乐场';
 const PLAYER_NAME_KEY = 'minesweeper_player_name';
 
