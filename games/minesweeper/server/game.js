@@ -220,8 +220,8 @@ class RoomManager {
       room.currentPlayer = null;
     }
 
-    // 如果房间没人了，删除房间
-    if (room.players.size === 0) {
+    // 如果房间没人了且非持久房间，删除房间
+    if (room.players.size === 0 && !room.persist) {
       this.deleteRoom(roomId);
     }
   }

@@ -15,6 +15,11 @@ const io = new Server(server, {
 
 const roomManager = new RoomManager();
 
+// 预创建默认房间并标记为持久（不因无人而删除）
+const DEFAULT_ROOM = '游乐场';
+roomManager.createRoom(DEFAULT_ROOM, 16, 16, 40);
+roomManager.rooms.get(DEFAULT_ROOM).persist = true;
+
 // 全局暴雷榜 playerName -> { name, hits }
 const mineLeaderboard = new Map();
 // 全局得分榜 playerName -> { name, score }（揭开格子数累计）
