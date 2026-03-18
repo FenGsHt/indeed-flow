@@ -652,12 +652,25 @@
 
 <script>
 // ──────────────────────────────────────────────────────────────────
-//  Config
+//  Config — proxy-first, direct fallback
 // ──────────────────────────────────────────────────────────────────
-// 通过 nginx 反向代理连接，避免移动端运营商拦截非标准端口
-const SERVER_URL = window.location.origin;
-const SOCKET_PATH = '/snake-ws/socket.io';
+const PROXY  = { url: window.location.origin,      path: '/snake-ws/socket.io' };
+const DIRECT = { url: 'http://150.158.110.168:3003', path: '/socket.io' };
 const GRID = 30;
+
+// Try nginx proxy first (needed on mobile to bypass carrier port blocks).
+// Fall back to direct connection if proxy not available (e.g. nginx not yet configured).
+async function resolveServerConfig() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(PROXY.url + PROXY.path + '/?EIO=4&transport=polling',
+                          { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.status < 500) return PROXY;
+  } catch (e) { /* proxy unreachable */ }
+  return DIRECT;
+}
 
 // ──────────────────────────────────────────────────────────────────
 //  State
@@ -712,9 +725,9 @@ nameInput.addEventListener('input', () => {
 // ──────────────────────────────────────────────────────────────────
 //  Socket connection
 // ──────────────────────────────────────────────────────────────────
-function initSocket() {
-  socket = io(SERVER_URL, {
-    path: SOCKET_PATH,
+function initSocket(cfg) {
+  socket = io(cfg.url, {
+    path: cfg.path,
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
@@ -1175,9 +1188,14 @@ canvas.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 // ──────────────────────────────────────────────────────────────────
-//  Init
+//  Init — probe proxy, then connect
 // ──────────────────────────────────────────────────────────────────
-initSocket();
+(async () => {
+  connStatus.textContent = '检测连接中...';
+  const cfg = await resolveServerConfig();
+  console.log('[snake] using server config:', cfg.url, cfg.path);
+  initSocket(cfg);
+})();
 
 // Resize canvas once game screen becomes visible
 const gameScreenObserver = new MutationObserver(() => {
