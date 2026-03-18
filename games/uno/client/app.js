@@ -31,6 +31,17 @@ let isReady     = false;
 let gameState   = null;
 let pendingCard = null; // 等待选色的卡牌 id
 
+// ─── 重连存档 ────────────────────────────────────────────────
+function getSavedGame() {
+  try { return JSON.parse(localStorage.getItem('uno_saved_game') || 'null'); } catch { return null; }
+}
+function saveGame(roomId, playerName) {
+  localStorage.setItem('uno_saved_game', JSON.stringify({ roomId, playerName }));
+}
+function clearSavedGame() {
+  localStorage.removeItem('uno_saved_game');
+}
+
 // ─── DOM 快捷引用 ────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
@@ -172,6 +183,7 @@ socket.on('room-list', rooms => {
 // ─── 等待室 ──────────────────────────────────────────────────
 socket.on('joined', ({ roomId }) => {
   myRoomId = roomId;
+  saveGame(roomId, $('player-name').value.trim() || getSavedGame()?.playerName || '');
   $('waiting-room-name').textContent = `🃏 ${roomId}`;
   isReady = false;
   $('btn-ready').textContent = '准备';
@@ -209,6 +221,7 @@ $('btn-ready').addEventListener('click', () => {
 
 $('btn-leave-waiting').addEventListener('click', () => {
   socket.emit('leave-room');
+  clearSavedGame();
   myRoomId = null;
   showScreen('lobby');
 });
@@ -314,6 +327,7 @@ function renderOtherPlayers(state) {
     div.className = 'other-player';
     if (p.id === state.currentPlayerId) div.classList.add('active');
     if (p.cardCount === 1 && !p.saidUno) div.classList.add('uno-danger');
+    if (!p.connected) div.classList.add('disconnected');
     div.dataset.pid = p.id;
 
     // 迷你背面牌（最多显示 10 张）
@@ -322,6 +336,7 @@ function renderOtherPlayers(state) {
 
     div.innerHTML = `
       ${p.saidUno ? '<span class="uno-tag">UNO!</span>' : ''}
+      ${!p.connected ? '<span class="disconnected-tag">断线中…</span>' : ''}
       <div class="other-player-name">${p.name}</div>
       <div class="other-player-cards">${miniCards}</div>
       <div class="other-player-score">🏆 ${p.score} 胜</div>
@@ -501,6 +516,7 @@ $('btn-sort').addEventListener('click', () => {
 // 离开游戏
 $('btn-leave-game').addEventListener('click', () => {
   socket.emit('leave-room');
+  clearSavedGame();
   myRoomId = null;
   gameState = null;
   showScreen('lobby');
@@ -539,6 +555,7 @@ $('btn-play-again').addEventListener('click', () => {
 
 $('btn-back-lobby').addEventListener('click', () => {
   socket.emit('leave-room');
+  clearSavedGame();
   $('game-over-modal').classList.add('hidden');
   myRoomId = null;
   gameState = null;
@@ -561,8 +578,23 @@ socket.on('error', ({ message }) => {
 // ─── Socket 连接 ────────────────────────────────────────────
 socket.on('connect', () => {
   myId = socket.id;
+  // 刷新后自动尝试重连
+  const saved = getSavedGame();
+  if (saved) socket.emit('reconnect-game', saved);
 });
 
 socket.on('disconnect', () => {
   toast('连接断开，正在重连…');
+});
+
+socket.on('reconnected', ({ roomId }) => {
+  myRoomId = roomId;
+  toast('✅ 重连成功！');
+  // 等待 game-state / lobby-state 事件自动切换界面
+});
+
+socket.on('reconnect-failed', ({ reason }) => {
+  clearSavedGame();
+  toast(`重连失败：${reason}`);
+  showScreen('lobby');
 });

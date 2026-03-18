@@ -380,6 +380,22 @@ body {
   color: var(--muted);
 }
 
+.disconnected-tag {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  background: #616161;
+  color: #fff;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 6px;
+}
+
+.other-player.disconnected {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
 .uno-tag {
   position: absolute;
   top: -8px;

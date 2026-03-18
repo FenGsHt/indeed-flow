@@ -100,12 +100,45 @@ class UnoGame {
     if (this.status !== 'waiting') return false;
     if (this.players.find(p => p.id === id)) return false;
     if (this.players.length >= 10) return false;
-    this.players.push({ id, name, hand: [], saidUno: false, ready: false, score: 0 });
+    this.players.push({ id, name, hand: [], saidUno: false, ready: false, score: 0, connected: true });
     return true;
   }
 
   removePlayer(id) {
     const idx = this.players.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    if (this.status === 'playing') this.deck.push(...this.players[idx].hand);
+    this.players.splice(idx, 1);
+    if (this.players.length > 0 && this.currentIdx >= this.players.length) {
+      this.currentIdx = 0;
+    }
+  }
+
+  // 标记断线（保留手牌，等待重连）
+  disconnectPlayer(id) {
+    const p = this.players.find(p => p.id === id);
+    if (!p) return null;
+    p.connected = false;
+    // 若轮到断线玩家，自动跳过
+    if (this.status === 'playing' && this.currentPlayer?.id === id) {
+      this.drawnThisTurn = false;
+      this._advance();
+    }
+    return p.name;
+  }
+
+  // 重连：按名字找回玩家，更新 socket id
+  reconnectPlayer(name, newId) {
+    const p = this.players.find(p => p.name === name && !p.connected);
+    if (!p) return false;
+    p.id   = newId;
+    p.connected = true;
+    return true;
+  }
+
+  // 按名字移除（宽限期结束时用）
+  removePlayerByName(name) {
+    const idx = this.players.findIndex(p => p.name === name);
     if (idx === -1) return;
     if (this.status === 'playing') this.deck.push(...this.players[idx].hand);
     this.players.splice(idx, 1);
@@ -346,6 +379,7 @@ class UnoGame {
         saidUno:   p.saidUno,
         ready:     p.ready,
         score:     p.score || 0,
+        connected: p.connected,
         isYou:     p.id === playerId,
         hand:      p.id === playerId ? p.hand : null,
       })),

@@ -15,7 +15,8 @@ const io     = new Server(server, {
 app.use(express.static(path.join(__dirname, '../client')));
 
 // ─── Room Manager ────────────────────────────────────────────
-const rooms = new Map(); // roomId → UnoGame
+const rooms          = new Map(); // roomId → UnoGame
+const pendingRemovals = new Map(); // `${roomId}:${name}` → { timer }
 
 function getOrCreateRoom(roomId, settings) {
   if (!rooms.has(roomId)) rooms.set(roomId, new UnoGame(settings));
@@ -169,22 +170,79 @@ io.on('connection', socket => {
     broadcastRoomList();
   });
 
-  // ── 断开连接 ──────────────────────────────
-  socket.on('disconnect', doLeave);
+  // ── 主动离开房间 ──────────────────────────
+  socket.on('leave-room', () => doLeave(false));
 
-  function doLeave() {
+  // ── 断线重连 ──────────────────────────────
+  socket.on('reconnect-game', ({ roomId: rid, playerName }) => {
+    if (!rid || !playerName) return;
+    const game = rooms.get(rid);
+    if (!game) { socket.emit('reconnect-failed', { reason: '房间已不存在' }); return; }
+
+    const key = `${rid}:${playerName}`;
+    const pending = pendingRemovals.get(key);
+    if (!pending) {
+      socket.emit('reconnect-failed', { reason: '重连超时或已被移除' });
+      return;
+    }
+
+    clearTimeout(pending.timer);
+    pendingRemovals.delete(key);
+
+    const ok = game.reconnectPlayer(playerName, socket.id);
+    if (!ok) { socket.emit('reconnect-failed', { reason: '重连失败' }); return; }
+
+    socket.join(rid);
+    roomId = rid;
+    socket.emit('reconnected', { roomId: rid, playerId: socket.id });
+
+    if (game.status === 'waiting') broadcastLobby(rid);
+    else                           broadcastGame(rid);
+    broadcastRoomList();
+  });
+
+  // ── 断开连接 ──────────────────────────────
+  socket.on('disconnect', () => doLeave(true));
+
+  function doLeave(isDisconnect = false) {
     if (!roomId) return;
     const game = rooms.get(roomId);
     if (game) {
-      game.removePlayer(socket.id);
-      socket.leave(roomId);
-      if (game.players.length === 0) {
-        rooms.delete(roomId);
+      // 游戏进行中断线 → 宽限期 20 秒
+      if (isDisconnect && game.status === 'playing') {
+        const playerName = game.disconnectPlayer(socket.id);
+        if (playerName) {
+          const key        = `${roomId}:${playerName}`;
+          const savedRoom  = roomId;
+          const timer = setTimeout(() => {
+            pendingRemovals.delete(key);
+            const g = rooms.get(savedRoom);
+            if (!g) return;
+            g.removePlayerByName(playerName);
+            if (g.players.length === 0) {
+              rooms.delete(savedRoom);
+            } else {
+              broadcastLobby(savedRoom);
+              broadcastGame(savedRoom);
+            }
+            broadcastRoomList();
+          }, 20_000);
+          pendingRemovals.set(key, { timer });
+          broadcastGame(roomId); // 让其他玩家看到断线状态
+          broadcastRoomList();
+        }
       } else {
-        broadcastLobby(roomId);
-        broadcastGame(roomId);
+        // 等待室断线或主动离开 → 立即移除
+        game.removePlayer(socket.id);
+        socket.leave(roomId);
+        if (game.players.length === 0) {
+          rooms.delete(roomId);
+        } else {
+          broadcastLobby(roomId);
+          broadcastGame(roomId);
+        }
+        broadcastRoomList();
       }
-      broadcastRoomList();
     }
     roomId = null;
   }
