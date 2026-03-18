@@ -246,6 +246,7 @@ function generateRoomId() {
 
 // 更新游戏状态
 function updateGameState(state) {
+  const prevStatus = gameState?.gameStatus;
   gameState = state;
   players = state.players || [];
 
@@ -253,6 +254,17 @@ function updateGameState(state) {
   renderPlayers();
   updateFlagCount(state.board);
   updateGameStatus(state.gameStatus);
+
+  // 加入一个已结束的房间时（如刷新后），自动触发新局
+  if (state.gameStatus === 'lost' && prevStatus === undefined && !autoRestartTimer) {
+    gameOverHint.classList.remove('hidden');
+    gameOverHint.textContent = '3秒后自动开始新游戏...';
+    autoRestartTimer = setTimeout(() => {
+      autoRestartTimer = null;
+      gameOverHint.classList.add('hidden');
+      socket.emit('new-game', getRandomBoardConfig());
+    }, 3000);
+  }
 
   // 切换到游戏界面
   if (currentRoom && gameScreen.classList.contains('hidden')) {

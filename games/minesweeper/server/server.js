@@ -43,13 +43,18 @@ function loadState() {
     if (data.defaultRoom) {
       const d = data.defaultRoom;
       const room = roomManager.getRoom(DEFAULT_ROOM);
-      if (room && d.gameStatus !== 'waiting') {
-        room.game.width = d.width;
-        room.game.height = d.height;
-        room.game.mines = d.mines;
-        room.game.gameStatus = d.gameStatus;
-        room.game.revealedCount = d.revealedCount;
-        room.game.board = d.board;
+      if (room) {
+        if (d.gameStatus === 'waiting') {
+          // 仅恢复棋盘尺寸，重新初始化空棋盘
+          room.game = new MinesweeperGame(d.width, d.height, d.mines);
+        } else {
+          room.game.width = d.width;
+          room.game.height = d.height;
+          room.game.mines = d.mines;
+          room.game.gameStatus = d.gameStatus;
+          room.game.revealedCount = d.revealedCount;
+          room.game.board = d.board;
+        }
       }
     }
     console.log('State loaded from file');
