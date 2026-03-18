@@ -490,6 +490,8 @@ body {
 .uno-card.playable:hover {
   transform: translateY(-12px) scale(1.06);
   box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  z-index: 10;
+  position: relative;
 }
 
 .uno-card.not-playable {
@@ -627,6 +629,7 @@ body {
   flex-shrink: 0;
   padding: 8px 0 12px;
   background: rgba(0,0,0,0.25);
+  overflow: visible; /* 允许牌放大时超出容器 */
 }
 
 .hand-label {
@@ -635,13 +638,16 @@ body {
   padding: 0 14px;
   margin-bottom: 6px;
   letter-spacing: 0.5px;
+  position: relative;
+  z-index: 0; /* 低于手牌，不遮挡放大的牌 */
 }
 
 .hand-scroll {
   display: flex;
   gap: 6px;
-  padding: 0 16px 4px;
+  padding: 16px 16px 4px; /* 顶部留 16px 给牌向上放大 */
   overflow-x: auto;
+  overflow-y: visible;    /* 竖向不裁切 */
   scrollbar-width: none;
   scroll-behavior: smooth;
 }
