@@ -798,8 +798,7 @@ body {
   z-index: 999;
   border-radius: 12px;
   will-change: transform, opacity;
-  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity   0.38s ease;
+  /* transition 由 JS 在飞行时动态设置，初始无过渡防止闪跳 */
 }
 
 /* 弃牌堆顶牌入场动画 */

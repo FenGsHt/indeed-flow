@@ -379,66 +379,72 @@ function canPlayCard(card, state) {
 }
 
 // ─── 飞牌动画 ────────────────────────────────────────────────
+const FLIGHT_MS = 340; // 飞行时长
+
 function flyCardToDiscard(sourceEl) {
   const srcRect  = sourceEl.getBoundingClientRect();
-  const destEl   = $('discard-top');
-  const destRect = destEl.getBoundingClientRect();
+  const destRect = $('discard-top').getBoundingClientRect();
 
   const clone = sourceEl.cloneNode(true);
   clone.classList.remove('playable', 'not-playable');
   clone.classList.add('flying-card');
-  clone.style.left   = srcRect.left + 'px';
-  clone.style.top    = srcRect.top  + 'px';
-  clone.style.width  = srcRect.width  + 'px';
-  clone.style.height = srcRect.height + 'px';
-  clone.style.transform = '';
-  clone.style.opacity   = '1';
+  clone.style.cssText += `
+    left:${srcRect.left}px; top:${srcRect.top}px;
+    width:${srcRect.width}px; height:${srcRect.height}px;
+    transform:rotate(0deg); opacity:1;
+  `;
   document.body.appendChild(clone);
-
-  // 隐藏原始元素
   sourceEl.style.visibility = 'hidden';
 
-  const dx = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
-  const dy = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+  const dx    = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
+  const dy    = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
   const scale = destRect.width / srcRect.width;
+  const rot   = (Math.random() - 0.5) * 22; // 随机轻微旋转，增加手抛感
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
-      clone.style.opacity   = '0';
-    });
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    clone.style.transition = `transform ${FLIGHT_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+    clone.style.transform  = `translate(${dx}px,${dy}px) scale(${scale}) rotate(${rot}deg)`;
+  }));
 
-  setTimeout(() => clone.remove(), 420);
+  // 落地后快速消隐（实际牌堆 card-land 动画接替）
+  setTimeout(() => {
+    clone.style.transition = 'opacity 80ms ease';
+    clone.style.opacity    = '0';
+    setTimeout(() => clone.remove(), 100);
+  }, FLIGHT_MS + 10);
 }
 
 function flyCardFromDeck() {
-  const srcEl  = $('btn-draw');
-  const destEl = $('hand-scroll');
-  const srcRect  = srcEl.getBoundingClientRect();
-  const destRect = destEl.getBoundingClientRect();
+  const srcRect  = $('btn-draw').getBoundingClientRect();
+  const destRect = $('hand-scroll').getBoundingClientRect();
+
+  const W = 72, H = 100;
+  const startX = srcRect.left + srcRect.width  / 2 - W / 2;
+  const startY = srcRect.top  + srcRect.height / 2 - H / 2;
 
   const clone = makeCardBack();
   clone.classList.add('flying-card');
-  clone.style.left   = (srcRect.left + srcRect.width  / 2 - 40) + 'px';
-  clone.style.top    = (srcRect.top  + srcRect.height / 2 - 56) + 'px';
-  clone.style.width  = '80px';
-  clone.style.height = '112px';
-  clone.style.transform = '';
-  clone.style.opacity   = '1';
+  clone.style.cssText += `
+    left:${startX}px; top:${startY}px;
+    width:${W}px; height:${H}px;
+    transform:rotate(0deg); opacity:1;
+  `;
   document.body.appendChild(clone);
 
-  const dx = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
-  const dy = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+  const dx  = destRect.left + destRect.width  / 2 - (startX + W / 2);
+  const dy  = destRect.top  + destRect.height / 2 - (startY + H / 2);
+  const rot = (Math.random() - 0.5) * 18;
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.85)`;
-      clone.style.opacity   = '0';
-    });
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    clone.style.transition = `transform ${FLIGHT_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+    clone.style.transform  = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+  }));
 
-  setTimeout(() => clone.remove(), 420);
+  setTimeout(() => {
+    clone.style.transition = 'opacity 80ms ease';
+    clone.style.opacity    = '0';
+    setTimeout(() => clone.remove(), 100);
+  }, FLIGHT_MS + 10);
 }
 
 function onCardClick(card) {
