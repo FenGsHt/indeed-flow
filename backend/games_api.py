@@ -6,6 +6,7 @@
 import json
 import uuid
 import re
+import time
 import urllib.request
 import urllib.parse
 import os
@@ -22,6 +23,11 @@ except ImportError:
     pass
 
 games_bp = Blueprint('games', __name__)
+
+# ============ Steam 评分后端缓存 ============
+# { cache_key: {'data': {...}, 'ts': timestamp} }
+_steam_rating_cache = {}
+STEAM_RATING_CACHE_TTL = 24 * 3600  # 24 小时
 
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
@@ -65,6 +71,7 @@ def init_db():
             ("priority", "INT DEFAULT 100"),
             ("recommender", "VARCHAR(100)"),
             ("notes", "TEXT"),
+            ("steam_appid", "VARCHAR(20)"),
         ]
         cursor.execute("SELECT DATABASE()")
         db_name = cursor.fetchone()[0]
@@ -547,63 +554,138 @@ def get_game_news():
 
 # ============ Steam 游戏好评率 ============
 
+def _do_fetch_steam_rating(app_id=None, game_name=None):
+    """实际请求 Steam API 获取好评率，返回 dict（不含缓存逻辑）"""
+    # 如果没有 app_id，先搜索
+    if not app_id and game_name:
+        search_url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
+        )
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as response:
+            data = json.loads(response.read().decode())
+            items = data.get('items', [])
+            if items:
+                app_id = str(items[0].get('id', ''))
+
+    if not app_id:
+        return {'success': False, 'error': '未找到游戏'}
+
+    reviews_url = f"https://store.steampowered.com/appreviews/{app_id}?json=1&language=all"
+    req = urllib.request.Request(reviews_url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=8) as response:
+        data = json.loads(response.read().decode())
+
+    if not data.get('success'):
+        return {'success': False, 'error': '无法获取游戏评价'}
+
+    qs = data.get('query_summary', {})
+    total_positive = qs.get('total_positive', 0)
+    total_reviews  = qs.get('total_reviews', 0)
+    rating_percent = round((total_positive / total_reviews) * 100, 1) if total_reviews > 0 else 0
+
+    return {
+        'success': True,
+        'app_id': app_id,
+        'rating_percent': rating_percent,
+        'review_score': qs.get('review_score', 0),
+        'review_score_desc': qs.get('review_score_desc', ''),
+        'total_positive': total_positive,
+        'total_negative': qs.get('total_negative', 0),
+        'total_reviews': total_reviews,
+        'url': f"https://store.steampowered.com/app/{app_id}"
+    }
+
+
+def _save_steam_appid(game_id, app_id):
+    """把通过搜索得到的 appid 写回数据库，避免下次再搜索"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE games SET steam_appid = %s WHERE id = %s AND (steam_appid IS NULL OR steam_appid = "")',
+            (str(app_id), game_id)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Save steam_appid error: {e}")
+
+
+def _get_steam_rating_cached(app_id=None, game_name=None, game_id=None):
+    """
+    带 24h 缓存的评分获取：
+    - 缓存命中且未过期 → 直接返回
+    - 缓存过期 → 尝试刷新，失败则返回旧数据
+    - 无缓存 → 请求，失败返回 error
+    """
+    cache_key = str(app_id) if app_id else (game_name or '')
+    if not cache_key:
+        return {'success': False, 'error': '需要提供 appid 或 name'}
+
+    now = time.time()
+    cached = _steam_rating_cache.get(cache_key)
+
+    # 缓存命中且未过期
+    if cached and (now - cached['ts']) < STEAM_RATING_CACHE_TTL:
+        return cached['data']
+
+    stale = cached['data'] if cached else None  # 过期的旧数据备用
+
+    try:
+        result = _do_fetch_steam_rating(app_id=app_id, game_name=game_name)
+        _steam_rating_cache[cache_key] = {'data': result, 'ts': now}
+
+        # 顺带把搜索到的 appid 存库（只在通过名字搜索时）
+        if result.get('success') and not app_id and game_id:
+            _save_steam_appid(game_id, result['app_id'])
+            # 同时以 appid 为 key 写一份缓存
+            _steam_rating_cache[str(result['app_id'])] = {'data': result, 'ts': now}
+
+        return result
+    except Exception as e:
+        print(f"Steam rating fetch error: {e}")
+        if stale:
+            print(f"  → using stale cache for {cache_key}")
+            return stale
+        return {'success': False, 'error': str(e)}
+
+
 @games_bp.route('/api/steam/rating', methods=['GET'])
 def get_steam_rating():
-    """获取 Steam 游戏好评率 - 使用 appreviews API"""
-    app_id = request.args.get('appid', '')
-    game_name = request.args.get('name', '')
-    
+    """获取单个游戏 Steam 好评率（带 24h 缓存）"""
+    app_id    = request.args.get('appid', '').strip() or None
+    game_name = request.args.get('name', '').strip()  or None
+    game_id   = request.args.get('game_id', '').strip() or None
+
     if not app_id and not game_name:
         return jsonify({'success': False, 'error': '需要提供 appid 或 name'})
-    
-    try:
-        # 如果没有 app_id，先搜索获取
-        if not app_id and game_name:
-            search_url = f"https://store.steampowered.com/api/storesearch/?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
-            req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode())
-                items = data.get('items', [])
-                if items:
-                    app_id = items[0].get('id')
-        
-        if not app_id:
-            return jsonify({'success': False, 'error': '未找到游戏'})
-        
-        # 使用 appreviews API 获取评价数据
-        reviews_url = f"https://store.steampowered.com/appreviews/{app_id}?json=1&language=all"
-        req = urllib.request.Request(reviews_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode())
-            
-            if data.get('success'):
-                query_summary = data.get('query_summary', {})
-                
-                total_positive = query_summary.get('total_positive', 0)
-                total_negative = query_summary.get('total_negative', 0)
-                total_reviews = query_summary.get('total_reviews', 0)
-                review_score = query_summary.get('review_score', 0)  # 0-10
-                review_score_desc = query_summary.get('review_score_desc', '')
-                
-                # 计算好评率
-                rating_percent = round((total_positive / total_reviews) * 100, 1) if total_reviews > 0 else 0
-                
-                return jsonify({
-                    'success': True,
-                    'app_id': app_id,
-                    'rating_percent': rating_percent,
-                    'review_score': review_score,
-                    'review_score_desc': review_score_desc,
-                    'total_positive': total_positive,
-                    'total_negative': total_negative,
-                    'total_reviews': total_reviews,
-                    'url': f"https://store.steampowered.com/app/{app_id}"
-                })
-            
-        return jsonify({'success': False, 'error': '无法获取游戏评价'})
-    except Exception as e:
-        print(f"Steam rating error: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+
+    result = _get_steam_rating_cached(app_id=app_id, game_name=game_name, game_id=game_id)
+    return jsonify(result)
+
+
+@games_bp.route('/api/steam/ratings', methods=['POST'])
+def get_steam_ratings_batch():
+    """
+    批量获取多个游戏 Steam 好评率（带 24h 缓存）
+    Body: { "items": [{"id": "...", "name": "...", "appid": "..."}, ...] }
+    Response: { "<game_id>": { rating data } }
+    """
+    data  = request.json or {}
+    items = data.get('items', [])
+    results = {}
+
+    for item in items:
+        gid    = item.get('id', '')
+        name   = item.get('name', '') or None
+        appid  = item.get('appid', '') or None
+        if not gid:
+            continue
+        results[gid] = _get_steam_rating_cached(app_id=appid, game_name=name, game_id=gid)
+
+    return jsonify(results)
 
 
 # ============ 游戏 CRUD ============
@@ -632,6 +714,7 @@ def get_games():
         game['avg_rating'] = sum(ratings.values()) / len(ratings) if ratings else 0
         game['rating_count'] = len(ratings)
         game['status'] = game.get('status') or 'todo'
+        game['steam_appid'] = game.get('steam_appid') or ''
 
     games.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
     return jsonify(games)

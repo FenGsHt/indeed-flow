@@ -1006,64 +1006,78 @@
       }, 3000);
     }
 
-    // ============ Steam 评分缓存 ============
+    // ============ Steam 评分（后端统一缓存 24h）============
+
+    // 页面内会话缓存（避免同一页面重复请求，后端已做持久缓存）
     const steamRatingCache = {};
 
     // 从 Steam 链接提取 appid
     function extractAppId(source) {
       if (!source) return null;
-      // 匹配 store.steampowered.com/app/数字
       const match = source.match(/steampowered\.com\/app\/(\d+)/);
       return match ? match[1] : null;
     }
 
-    // 获取 Steam 好评率
-    async function getSteamRating(gameName, appId) {
+    // 获取单个游戏 Steam 好评率（用于详情弹窗 / 刷新）
+    async function getSteamRating(gameName, appId, gameId) {
       const cacheKey = appId || gameName;
-      
-      // 检查缓存
-      if (steamRatingCache[cacheKey]) {
-        return steamRatingCache[cacheKey];
-      }
+      if (steamRatingCache[cacheKey]) return steamRatingCache[cacheKey];
 
       try {
         let url = API_BASE + '/api/steam/rating';
-        if (appId) {
-          url += '?appid=' + appId;
-        } else {
-          url += '?name=' + encodeURIComponent(gameName);
-        }
-        
-        const res = await fetch(url);
+        const params = new URLSearchParams();
+        if (appId)    params.set('appid', appId);
+        if (gameName) params.set('name', gameName);
+        if (gameId)   params.set('game_id', gameId);
+        url += '?' + params.toString();
+
+        const res  = await fetch(url);
         const data = await res.json();
-        
-        if (data.success) {
-          steamRatingCache[cacheKey] = data;
-          return data;
-        } else {
-          // 如果游戏未发售，尝试搜索 demo
-          if (appId && !data.appid_found) {
-            return await getSteamRating(gameName + ' demo', null);
-          }
-          // 如果没找到，尝试用游戏名搜索
-          if (!appId) {
-            // 缓存失败结果，避免重复请求
-            steamRatingCache[cacheKey] = { success: false, error: data.error };
-          }
-          return data;
+        steamRatingCache[cacheKey] = data;
+        // 如果后端搜到了 appid，也以 appid 为 key 存一份
+        if (data.success && data.app_id && !appId) {
+          steamRatingCache[String(data.app_id)] = data;
         }
+        return data;
       } catch(e) {
         console.log('获取Steam好评率失败:', e);
-        steamRatingCache[cacheKey] = { success: false, error: e.message };
         return { success: false, error: e.message };
       }
     }
 
-    // 刷新单个游戏的 Steam 评分
-    async function refreshSteamRating(gameName, appId, onComplete) {
+    // 批量获取多个游戏的 Steam 好评率（游戏列表用）
+    async function getSteamRatingsBatch(games) {
+      const items = games.map(g => ({
+        id:    g.id,
+        name:  g.name,
+        appid: extractAppId(g.source || g.url) || g.steam_appid || ''
+      }));
+
+      try {
+        const res  = await fetch(API_BASE + '/api/steam/ratings', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ items })
+        });
+        const map = await res.json();
+        // 填充页面缓存
+        for (const [gid, data] of Object.entries(map)) {
+          if (data && data.success && data.app_id) {
+            steamRatingCache[String(data.app_id)] = data;
+          }
+        }
+        return map;  // { game_id: ratingData }
+      } catch(e) {
+        console.log('批量获取Steam评分失败:', e);
+        return {};
+      }
+    }
+
+    // 刷新单个游戏的 Steam 评分（强制绕过页面缓存，后端缓存仍有效）
+    async function refreshSteamRating(gameName, appId, onComplete, gameId) {
       const cacheKey = appId || gameName;
-      delete steamRatingCache[cacheKey]; // 清除缓存
-      const result = await getSteamRating(gameName, appId);
+      delete steamRatingCache[cacheKey];
+      const result = await getSteamRating(gameName, appId, gameId);
       if (onComplete) onComplete(result);
       return result;
     }
@@ -1251,39 +1265,35 @@
           </div>`;
         }).join('');
         
-        // 异步加载 Steam 评分并更新显示
-        games.slice(0, 12).forEach(async (g, i) => {
-          const appId = extractAppId(g.source || g.url);
-          const ratingData = await getSteamRating(g.name, appId);
-          
-          // 找到对应的卡片元素
+        // 批量获取 Steam 评分（单次请求，后端有 24h 缓存）
+        const visibleGames = games.slice(0, 12);
+        getSteamRatingsBatch(visibleGames).then(ratingsMap => {
           const cards = list.querySelectorAll('.game-card');
-          if (cards[i]) {
+          visibleGames.forEach((g, i) => {
+            if (!cards[i]) return;
             const metaEl = cards[i].querySelector('.game-meta');
-            if (metaEl) {
-              const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
-              if (ratingData && ratingData.success && ratingData.total_reviews > 0) {
-                const percent = ratingData.rating_percent;
-                const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
-                metaEl.innerHTML = `
-                  <span>${recommenderText}</span>
-                  <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
-                `;
-              } else if (ratingData && ratingData.success && ratingData.total_reviews === 0) {
-                // 游戏存在但没有评价
-                metaEl.innerHTML = `
-                  <span>${recommenderText}</span>
-                  <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>
-                `;
-              } else {
-                // API 查询失败（超时等），显示暂无
-                metaEl.innerHTML = `
-                  <span>${recommenderText}</span>
-                  <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
-                `;
-              }
+            if (!metaEl) return;
+            const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
+            const ratingData = ratingsMap[g.id];
+            if (ratingData && ratingData.success && ratingData.total_reviews > 0) {
+              const percent = ratingData.rating_percent;
+              const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
+              metaEl.innerHTML = `
+                <span>${recommenderText}</span>
+                <span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>
+              `;
+            } else if (ratingData && ratingData.success && ratingData.total_reviews === 0) {
+              metaEl.innerHTML = `
+                <span>${recommenderText}</span>
+                <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>
+              `;
+            } else {
+              metaEl.innerHTML = `
+                <span>${recommenderText}</span>
+                <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
+              `;
             }
-          }
+          });
         });
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
@@ -1820,8 +1830,8 @@
       descEl.textContent = '加载中...';
       messageEl.textContent = '';
       
-      const appId = extractAppId(game.source || game.url);
-      const ratingData = await getSteamRating(game.name, appId);
+      const appId = extractAppId(game.source || game.url) || game.steam_appid || null;
+      const ratingData = await getSteamRating(game.name, appId, game.id);
       
       if (ratingData && ratingData.success) {
         const percent = ratingData.rating_percent;
@@ -1863,7 +1873,7 @@
       messageEl.textContent = '';
       
       try {
-        const appId = extractAppId(currentGame.source || currentGame.url);
+        const appId = extractAppId(currentGame.source || currentGame.url) || currentGame.steam_appid || null;
         await refreshSteamRating(currentGame.name, appId, (result) => {
           if (result && result.success) {
             const percent = result.rating_percent;
