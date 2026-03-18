@@ -695,6 +695,11 @@ function onCardClick(card) {
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
   if (el) flyCardToDiscard(el);
 
+  // 出牌后短暂屏蔽 hover，避免重绘后相邻牌误触选中状态
+  const scroll = $('hand-scroll');
+  scroll.classList.add('no-hover');
+  setTimeout(() => scroll.classList.remove('no-hover'), FLIGHT_MS + 300);
+
   const isWild = card.type === 'wild' || card.type === 'wild_draw4';
   SoundEngine.playCard(isWild);
 

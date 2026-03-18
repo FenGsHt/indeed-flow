@@ -789,6 +789,8 @@ body {
   margin-left: 0;
 }
 .hand-scroll::-webkit-scrollbar { display: none; }
+/* 出牌后短暂屏蔽 hover，防止重绘后相邻牌误触选中态 */
+.hand-scroll.no-hover .uno-card { pointer-events: none !important; }
 
 /* ── 底部按钮栏 ────────────────────────── */
 .game-actions {
@@ -995,6 +997,114 @@ body {
 @keyframes pile-glow {
   from { filter: drop-shadow(0 0 6px rgba(30,136,229,0.4)); }
   to   { filter: drop-shadow(0 0 14px rgba(30,136,229,0.9)); }
+}
+
+/* ══ 音量控制 ════════════════════════════════ */
+.vol-panel {
+  position: fixed;
+  bottom: 72px;
+  right: 14px;
+  z-index: 600;
+}
+.vol-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.vol-toggle:hover { background: rgba(255,255,255,0.18); }
+.vol-sliders {
+  position: absolute;
+  bottom: 44px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 190px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.vol-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: default;
+}
+.vol-row:last-child { margin-bottom: 0; }
+.vol-row span { width: 46px; font-size: 11px; color: var(--muted); }
+.vol-row input[type=range] { flex: 1; accent-color: #4ECDC4; }
+
+/* ══ 视觉特效 ════════════════════════════════ */
+.vfx-particle {
+  position: fixed;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1000;
+  transition: transform 0.55s ease-out, opacity 0.55s ease-out;
+}
+.vfx-rainbow {
+  position: fixed;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 6px solid transparent;
+  background: conic-gradient(#ef5350, #fdd835, #43a047, #1e88e5, #ab47bc, #ef5350) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 999;
+  transform: translate(-50%, -50%) scale(0);
+  animation: vfx-rainbow-expand 0.65s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+}
+@keyframes vfx-rainbow-expand {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+}
+.vfx-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 990;
+  animation: vfx-flash-fade 0.4s ease-out forwards;
+}
+@keyframes vfx-flash-fade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+.vfx-confetti {
+  position: fixed;
+  top: -12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1001;
+  animation: vfx-fall linear forwards;
+}
+@keyframes vfx-fall {
+  0%   { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(105vh) rotate(600deg); opacity: 0; }
+}
+.vfx-turn-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: inset 0 0 60px 20px rgba(255, 215, 0, 0.25);
+  animation: vfx-flash-fade 0.8s ease-out forwards;
 }
 
 /* ── Toast 通知 ─────────────────────────────── */
