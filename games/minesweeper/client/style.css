@@ -709,6 +709,18 @@ body.in-game #game-screen {
   color: #FF6B6B;
 }
 
+/* ====== 返回按钮 ====== */
+.btn-back {
+  text-decoration: none;
+  border-color: rgba(150,150,200,0.5);
+  color: rgba(200,200,255,0.7);
+}
+
+.btn-back:hover {
+  background: rgba(150,150,200,0.2);
+  color: #aaaaff;
+}
+
 /* ====== 右侧面板容器 ====== */
 .game-right-panel {
   display: flex;
