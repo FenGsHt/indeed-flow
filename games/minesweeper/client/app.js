@@ -43,6 +43,10 @@ const roomListDiv = document.getElementById('room-list');
 const leaderboardDiv = document.getElementById('leaderboard');
 const ingameLb = document.getElementById('ingame-leaderboard');
 const ingameHistoryDiv = document.getElementById('ingame-history');
+const historyDetailModal = document.getElementById('history-detail-modal');
+const historyModalTitle = document.getElementById('history-modal-title');
+const historyModalBoard = document.getElementById('history-modal-board');
+const historyModalClose = document.getElementById('history-modal-close');
 
 // 名字弹窗
 const nameModal = document.getElementById('name-modal');
@@ -226,7 +230,7 @@ function renderHistory(data) {
   ingameHistoryDiv.innerHTML = '';
   data.forEach(entry => {
     const row = document.createElement('div');
-    row.className = 'history-row';
+    row.className = 'history-row' + (entry.board ? ' history-row-clickable' : '');
     const icon = entry.result === 'won' ? '🎉' : '💥';
     const resultText = entry.result === 'won' ? '赢了' : '暴雷';
     const resultClass = entry.result === 'won' ? 'history-won' : 'history-lost';
@@ -238,7 +242,61 @@ function renderHistory(data) {
       <span class="history-board">${entry.width}×${entry.height}</span>
       <span class="history-time">${timeStr}</span>
     `;
+    if (entry.board) {
+      row.addEventListener('click', () => showHistoryDetail(entry));
+    }
     ingameHistoryDiv.appendChild(row);
+  });
+}
+
+// 展示历史棋盘详情弹窗
+function showHistoryDetail(entry) {
+  const icon = entry.result === 'won' ? '🎉' : '💥';
+  const resultText = entry.result === 'won' ? '赢了' : '暴雷';
+  historyModalTitle.textContent = `${icon} ${entry.player} ${resultText} · ${entry.width}×${entry.height}/${entry.mines}雷`;
+  renderHistoryBoard(entry.board, entry.width);
+  historyDetailModal.classList.remove('hidden');
+}
+
+// 渲染历史棋盘（只读，显示所有雷/旗/数字）
+function renderHistoryBoard(board, width) {
+  if (!historyModalBoard || !board) return;
+  const CELL = 18;
+  historyModalBoard.style.gridTemplateColumns = `repeat(${width}, ${CELL}px)`;
+  historyModalBoard.innerHTML = '';
+
+  board.forEach(row => {
+    row.forEach(cell => {
+      const el = document.createElement('div');
+      el.className = 'cell revealed history-cell';
+      el.style.width = CELL + 'px';
+      el.style.height = CELL + 'px';
+      el.style.fontSize = '11px';
+
+      if (cell.isMine) {
+        el.classList.add('mine');
+        if (cell.isFlagged) {
+          // 旗帜标对了
+          el.textContent = '🚩';
+          el.classList.add('history-flag-correct');
+        } else {
+          el.textContent = '💣';
+        }
+      } else if (cell.isFlagged) {
+        // 旗帜标错了（非雷但插旗）
+        el.classList.remove('revealed');
+        el.textContent = '🚩';
+        el.classList.add('history-flag-wrong');
+      } else if (!cell.isRevealed) {
+        el.classList.remove('revealed');
+        el.classList.add('history-unrevealed');
+      } else if (cell.neighborMines > 0) {
+        el.textContent = cell.neighborMines;
+        el.classList.add(`num-${cell.neighborMines}`);
+      }
+
+      historyModalBoard.appendChild(el);
+    });
   });
 }
 
@@ -662,6 +720,12 @@ restartBtn.addEventListener('click', () => {
 
 playerNameInput?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') createRoom();
+});
+
+// 历史弹窗关闭
+historyModalClose?.addEventListener('click', () => historyDetailModal.classList.add('hidden'));
+historyDetailModal?.addEventListener('click', (e) => {
+  if (e.target === historyDetailModal) historyDetailModal.classList.add('hidden');
 });
 
 // 初始化

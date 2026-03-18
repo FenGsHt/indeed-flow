@@ -129,6 +129,19 @@
     </div>
   </div>
 
+  <!-- 历史记录详情弹窗 -->
+  <div id="history-detail-modal" class="modal hidden">
+    <div class="modal-content history-modal-content">
+      <div class="history-modal-header">
+        <h3 id="history-modal-title">棋盘回放</h3>
+        <button id="history-modal-close" class="btn-small btn-leave">✕</button>
+      </div>
+      <div id="history-modal-board-wrapper" class="history-board-wrapper">
+        <div id="history-modal-board" class="board history-board"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 名字输入弹窗 -->
   <div id="name-modal" class="modal hidden">
     <div class="modal-content">
@@ -141,6 +154,6 @@
   </div>
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script src="app.js?v=20260318e"></script>
+  <script src="app.js?v=20260318f"></script>
 </body>
 </html>

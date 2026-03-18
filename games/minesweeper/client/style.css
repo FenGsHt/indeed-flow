@@ -878,6 +878,81 @@ body.in-game #game-screen {
   text-align: right;
 }
 
+.history-row-clickable {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.history-row-clickable:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* 历史棋盘弹窗 */
+.history-modal-content {
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+}
+
+.history-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-modal-header h3 {
+  font-size: 14px;
+  color: #fff;
+  margin: 0;
+  font-weight: bold;
+}
+
+.history-board-wrapper {
+  overflow: auto;
+}
+
+.history-board-wrapper::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.history-board-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+}
+
+.history-board {
+  margin: 0 auto;
+}
+
+/* 历史棋盘格子 */
+.history-cell {
+  cursor: default !important;
+}
+
+.history-cell:active,
+.history-cell:hover {
+  filter: none !important;
+  transform: none !important;
+}
+
+.history-flag-correct {
+  background: rgba(85,239,196,0.2) !important;
+}
+
+.history-flag-wrong {
+  background: rgba(255,118,117,0.15) !important;
+}
+
+.history-unrevealed {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.05) !important;
+}
+
 .lb-row-sm {
   padding: 7px 12px;
   font-size: 12px;

@@ -127,9 +127,9 @@ function getMineLeaderboard() {
     .slice(0, 20);
 }
 
-// 记录历史并广播
-function recordHistory(playerName, result, width, height, mines) {
-  gameHistory.unshift({ time: Date.now(), player: playerName, result, width, height, mines });
+// 记录历史并广播（含棋盘快照）
+function recordHistory(playerName, result, width, height, mines, board) {
+  gameHistory.unshift({ time: Date.now(), player: playerName, result, width, height, mines, board });
   if (gameHistory.length > MAX_HISTORY) gameHistory.length = MAX_HISTORY;
   io.emit('history-update', gameHistory);
 }
@@ -258,13 +258,13 @@ io.on('connection', (socket) => {
         if (room.game.gameStatus === 'won') {
           // 赢得一局，给踩出最后一步的玩家 +1 分
           recordScore(currentPlayer.name);
-          recordHistory(currentPlayer.name, 'won', room.game.width, room.game.height, room.game.mines);
+          recordHistory(currentPlayer.name, 'won', room.game.width, room.game.height, room.game.mines, room.game.getState().board);
           saveState();
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
         } else if (room.game.gameStatus === 'lost') {
           // 踩雷，记录暴雷榜
           recordMineHit(currentPlayer.name);
-          recordHistory(currentPlayer.name, 'lost', room.game.width, room.game.height, room.game.mines);
+          recordHistory(currentPlayer.name, 'lost', room.game.width, room.game.height, room.game.mines, room.game.getState().board);
           saveState();
           io.to(currentRoom).emit('game-over', {
             won: false,
