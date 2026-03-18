@@ -579,52 +579,54 @@ body {
 .uno-card.playable {
   box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 4px 16px rgba(255,255,255,0.3);
 }
-.uno-card.playable::after {
-  content: '▲ 出牌';
-  position: absolute;
-  bottom: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 700;
-  color: #ffd700;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.uno-card.playable:hover::after {
-  opacity: 1;
-}
-.uno-card.playable:hover {
-  /* translateX 纯视觉移动，不影响布局，不推动相邻牌 */
-  transform: translateY(-18px) translateX(-6px) scale(1.07);
-  box-shadow: 0 0 0 3px #ffd700, 0 20px 36px rgba(0,0,0,0.7);
-  z-index: 100 !important;
+/* 悬停效果仅在有真实指针设备（鼠标）时生效，触摸屏不触发 */
+@media (hover: hover) {
+  .uno-card.playable::after {
+    content: '▲ 出牌';
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    color: #ffd700;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .uno-card.playable:hover::after {
+    opacity: 1;
+  }
+  .uno-card.playable:hover {
+    transform: translateY(-18px) translateX(-6px) scale(1.07);
+    box-shadow: 0 0 0 3px #ffd700, 0 20px 36px rgba(0,0,0,0.7);
+    z-index: 100 !important;
+  }
+
+  /* 不可出牌悬停：略微抬起预览，保持暗色 */
+  .hand-scroll .uno-card.not-playable:hover {
+    transform: translateY(-10px) translateX(-4px) scale(0.98);
+    filter: brightness(0.55) saturate(0.35);
+    z-index: 100 !important;
+    cursor: default;
+  }
+
+  /* 非自己回合（无 playable/not-playable 类）：悬停预览 */
+  .hand-scroll .uno-card:not(.playable):not(.not-playable):hover {
+    transform: translateY(-12px) translateX(-4px) scale(1.04);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+    z-index: 100 !important;
+  }
 }
 
-/* 不可出牌：深度暗化 + 锁定感 */
+/* 不可出牌：深度暗化 + 锁定感（所有设备） */
 .uno-card.not-playable {
   filter: brightness(0.38) saturate(0.25);
   cursor: not-allowed;
   transform: translateY(0) scale(0.93);
   box-shadow: none;
   border-color: rgba(255,255,255,0.2);
-}
-
-/* 不可出牌悬停：略微抬起预览，保持暗色 */
-.hand-scroll .uno-card.not-playable:hover {
-  transform: translateY(-10px) translateX(-4px) scale(0.98);
-  filter: brightness(0.55) saturate(0.35);
-  z-index: 100 !important;
-  cursor: default;
-}
-
-/* 非自己回合（无 playable/not-playable 类）：悬停预览 */
-.hand-scroll .uno-card:not(.playable):not(.not-playable):hover {
-  transform: translateY(-12px) translateX(-4px) scale(1.04);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
-  z-index: 100 !important;
 }
 
 .uno-card.selected {

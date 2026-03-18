@@ -699,9 +699,13 @@ function onCardClick(card) {
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
   if (el) flyCardToDiscard(el);
 
-  // 出牌后短暂屏蔽 hover，避免重绘后相邻牌误触选中状态
+  // 出牌后屏蔽 hover（移动端 sticky-hover 修复：移出/移回 DOM 断开悬停状态）
   const scroll = $('hand-scroll');
   scroll.classList.add('no-hover');
+  const parent = scroll.parentNode;
+  const next   = scroll.nextSibling;
+  parent.removeChild(scroll);
+  parent.insertBefore(scroll, next); // 重新插入 DOM，强制浏览器清除 sticky hover
   setTimeout(() => scroll.classList.remove('no-hover'), FLIGHT_MS + 300);
 
   const isWild = card.type === 'wild' || card.type === 'wild_draw4';
