@@ -1,5 +1,13 @@
 'use strict';
 
+// ─── 本地存储名字 ─────────────────────────────────────────────
+const SAVED_NAME = localStorage.getItem('uno_player_name') || '';
+if (SAVED_NAME) {
+  document.addEventListener('DOMContentLoaded', () => {
+    $('player-name').value = SAVED_NAME;
+  });
+}
+
 // ─── Socket 连接 ─────────────────────────────────────────────
 const PROXY  = { url: window.location.origin, path: '/uno-ws/socket.io' };
 const DIRECT = { url: 'http://150.158.110.168:3004', path: '/socket.io' };
@@ -112,9 +120,15 @@ $('create-toggle').addEventListener('click', () => {
 
 $('btn-refresh').addEventListener('click', () => socket.emit('get-rooms'));
 
+$('player-name').addEventListener('input', () => {
+  const v = $('player-name').value.trim();
+  if (v) localStorage.setItem('uno_player_name', v);
+});
+
 $('btn-create').addEventListener('click', () => {
   const name = $('player-name').value.trim();
   if (!name) { toast('请输入你的名字'); return; }
+  localStorage.setItem('uno_player_name', name);
   const rid = randomRoomName();
   socket.emit('join-room', {
     roomId: rid,
@@ -355,18 +369,78 @@ function canPlayCard(card, state) {
   return false;
 }
 
+// ─── 飞牌动画 ────────────────────────────────────────────────
+function flyCardToDiscard(sourceEl) {
+  const srcRect  = sourceEl.getBoundingClientRect();
+  const destEl   = $('discard-top');
+  const destRect = destEl.getBoundingClientRect();
+
+  const clone = sourceEl.cloneNode(true);
+  clone.classList.remove('playable', 'not-playable');
+  clone.classList.add('flying-card');
+  clone.style.left   = srcRect.left + 'px';
+  clone.style.top    = srcRect.top  + 'px';
+  clone.style.width  = srcRect.width  + 'px';
+  clone.style.height = srcRect.height + 'px';
+  clone.style.transform = '';
+  clone.style.opacity   = '1';
+  document.body.appendChild(clone);
+
+  // 隐藏原始元素
+  sourceEl.style.visibility = 'hidden';
+
+  const dx = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
+  const dy = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+  const scale = destRect.width / srcRect.width;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+      clone.style.opacity   = '0';
+    });
+  });
+
+  setTimeout(() => clone.remove(), 420);
+}
+
+function flyCardFromDeck() {
+  const srcEl  = $('btn-draw');
+  const destEl = $('hand-scroll');
+  const srcRect  = srcEl.getBoundingClientRect();
+  const destRect = destEl.getBoundingClientRect();
+
+  const clone = makeCardBack();
+  clone.classList.add('flying-card');
+  clone.style.left   = (srcRect.left + srcRect.width  / 2 - 40) + 'px';
+  clone.style.top    = (srcRect.top  + srcRect.height / 2 - 56) + 'px';
+  clone.style.width  = '80px';
+  clone.style.height = '112px';
+  clone.style.transform = '';
+  clone.style.opacity   = '1';
+  document.body.appendChild(clone);
+
+  const dx = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
+  const dy = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.85)`;
+      clone.style.opacity   = '0';
+    });
+  });
+
+  setTimeout(() => clone.remove(), 420);
+}
+
 function onCardClick(card) {
-  // 出牌动画
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
-  if (el) {
-    el.classList.add('playing');
-    setTimeout(() => el.remove(), 350);
-  }
+  if (el) flyCardToDiscard(el);
 
   const needsColor = card.type === 'wild' || card.type === 'wild_draw4';
   if (needsColor) {
     pendingCard = card.id;
-    $('color-picker').classList.remove('hidden');
+    // 略微延迟，等飞牌动画开始后再弹颜色选择
+    setTimeout(() => $('color-picker').classList.remove('hidden'), 80);
   } else {
     socket.emit('play-card', { cardId: card.id });
   }
@@ -388,6 +462,7 @@ $('color-picker').querySelectorAll('.color-btn').forEach(btn => {
 function doDraw() {
   if (!gameState) return;
   if (gameState.currentPlayerId !== myId) return;
+  flyCardFromDeck();
   socket.emit('draw-card');
 }
 $('btn-draw').addEventListener('click', doDraw);
