@@ -179,11 +179,18 @@ jobs:
           scp -i ~/.ssh/id_rsa scripts/nginx_add_snake_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_snake_proxy.py
           ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "python3 /tmp/nginx_add_snake_proxy.py && rm -f /tmp/nginx_add_snake_proxy.py; \
-             sudo docker exec 1Panel-openresty-EfE4 nginx -t && \
-             sudo docker exec 1Panel-openresty-EfE4 nginx -s reload && \
-             echo 'nginx reloaded OK' || \
-             echo 'WARNING: nginx reload failed'"
+            "sudo python3 /tmp/nginx_add_snake_proxy.py; \
+             rm -f /tmp/nginx_add_snake_proxy.py; \
+             echo '--- nginx config tail ---'; \
+             sudo tail -30 /opt/1panel/www/conf.d/indeed.com.conf; \
+             echo '--- reloading nginx ---'; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload \
+               && echo 'nginx reloaded OK (no sudo)') \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload \
+               && echo 'nginx reloaded OK (sudo)') \
+             || echo 'WARNING: nginx reload failed'"
 
       - name: Deploy backend
         uses: nick-fields/retry@v2
