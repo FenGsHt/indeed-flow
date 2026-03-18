@@ -368,9 +368,10 @@ function renderHand(hand, state) {
     return (a.value ?? 99) - (b.value ?? 99);
   });
 
-  sorted.forEach(card => {
+  sorted.forEach((card, i) => {
     const canPlay = isMyTurn && canPlayCard(card, state);
     const el = makeCard(card, { playable: isMyTurn ? canPlay : null });
+    el.style.zIndex = i + 1; // 从左到右层叠，右边的牌在上
     if (isMyTurn && canPlay) {
       el.addEventListener('click', () => onCardClick(card));
     }

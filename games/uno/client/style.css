@@ -578,10 +578,10 @@ body {
   opacity: 1;
 }
 .uno-card.playable:hover {
-  transform: translateY(-16px) scale(1.07);
+  transform: translateY(-18px) scale(1.07);
   box-shadow: 0 0 0 3px #ffd700, 0 20px 36px rgba(0,0,0,0.7);
-  z-index: 10;
-  position: relative;
+  z-index: 100 !important; /* 覆盖 JS 设的位置 z-index */
+  margin-left: 4px !important; /* 悬停时微微展开，不遮挡自己 */
 }
 
 /* 不可出牌：深度暗化 + 锁定感 */
@@ -738,12 +738,21 @@ body {
 
 .hand-scroll {
   display: flex;
-  gap: 6px;
-  padding: 16px 16px 4px; /* 顶部留 16px 给牌向上放大 */
+  /* 不用 gap，改用负 margin 叠放 */
+  padding: 20px 16px 8px; /* 顶部留空给牌抬升 */
   overflow-x: auto;
-  overflow-y: visible;    /* 竖向不裁切 */
+  overflow-y: visible;
   scrollbar-width: none;
   scroll-behavior: smooth;
+}
+
+/* 叠放：每张牌向右偏移，露出约 60% */
+.hand-scroll .uno-card {
+  margin-left: -28px;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s, margin-left 0.15s;
+}
+.hand-scroll .uno-card:first-child {
+  margin-left: 0;
 }
 .hand-scroll::-webkit-scrollbar { display: none; }
 
