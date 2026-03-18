@@ -1044,9 +1044,22 @@
       }, 3000);
     }
 
-    // ============ Steam 评分（后端统一缓存 24h）============
+    // ============ Steam 评分 / 价格缓存（localStorage + 后端双层）============
 
-    // 页面内会话缓存（避免同一页面重复请求，后端已做持久缓存）
+    // localStorage 工具
+    const LS_RATING_KEY = 'sf_ratings_v1';
+    const LS_PRICE_KEY  = 'sf_prices_v1';
+    const LS_RATING_TTL = 24 * 3600 * 1000;  // 24h
+    const LS_PRICE_TTL  =  6 * 3600 * 1000;  //  6h
+
+    function lsGet(key) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
+    }
+    function lsSet(key, val) {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+    }
+
+    // 内存缓存（同一页面内不重复请求）
     const steamRatingCache = {};
 
     // 从 Steam 链接提取 appid
@@ -1056,7 +1069,7 @@
       return match ? match[1] : null;
     }
 
-    // 获取单个游戏 Steam 好评率（用于详情弹窗 / 刷新）
+    // 获取单个游戏 Steam 好评率（详情弹窗 / 刷新用）
     async function getSteamRating(gameName, appId, gameId) {
       const cacheKey = appId || gameName;
       if (steamRatingCache[cacheKey]) return steamRatingCache[cacheKey];
@@ -1072,7 +1085,6 @@
         const res  = await fetch(url);
         const data = await res.json();
         steamRatingCache[cacheKey] = data;
-        // 如果后端搜到了 appid，也以 appid 为 key 存一份
         if (data.success && data.app_id && !appId) {
           steamRatingCache[String(data.app_id)] = data;
         }
@@ -1083,48 +1095,92 @@
       }
     }
 
-    // 批量获取多个游戏的 Steam 好评率（游戏列表用）
+    // 批量获取 Steam 好评率（localStorage → 后端，只请求未命中的）
     async function getSteamRatingsBatch(games) {
-      const items = games.map(g => ({
-        id:    g.id,
-        name:  g.name,
-        appid: extractAppId(g.source || g.url) || g.steam_appid || ''
-      }));
+      const now    = Date.now();
+      const stored = lsGet(LS_RATING_KEY) || {};
+      const result = {};
+      const missing = [];
+
+      for (const g of games) {
+        const entry = stored[g.id];
+        if (entry && (now - entry.ts) < LS_RATING_TTL && entry.data && entry.data.success) {
+          result[g.id] = entry.data;
+          if (entry.data.app_id) steamRatingCache[String(entry.data.app_id)] = entry.data;
+        } else {
+          missing.push({
+            id:    g.id,
+            name:  g.name,
+            appid: extractAppId(g.source || g.url) || g.steam_appid || ''
+          });
+        }
+      }
+
+      if (missing.length === 0) return result;
 
       try {
-        const res  = await fetch(API_BASE + '/api/steam/ratings', {
+        const res = await fetch(API_BASE + '/api/steam/ratings', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ items })
+          body:    JSON.stringify({ items: missing })
         });
         const map = await res.json();
-        // 填充页面缓存
+        const toStore = { ...stored };
         for (const [gid, data] of Object.entries(map)) {
-          if (data && data.success && data.app_id) {
-            steamRatingCache[String(data.app_id)] = data;
+          result[gid] = data;
+          if (data && data.success) {
+            toStore[gid] = { data, ts: now };
+            if (data.app_id) steamRatingCache[String(data.app_id)] = data;
           }
         }
-        return map;  // { game_id: ratingData }
+        lsSet(LS_RATING_KEY, toStore);
       } catch(e) {
         console.log('批量获取Steam评分失败:', e);
-        return {};
       }
+
+      return result;
     }
 
-    // 批量获取 Steam 价格（需要已知 appid）
+    // 批量获取 Steam 价格（localStorage → 后端，只请求未命中的）
     async function getSteamPricesBatch(items) {
       if (!items || items.length === 0) return {};
+
+      const now    = Date.now();
+      const stored = lsGet(LS_PRICE_KEY) || {};
+      const result = {};
+      const missing = [];
+
+      for (const item of items) {
+        const entry = stored[item.id];
+        if (entry && (now - entry.ts) < LS_PRICE_TTL && entry.data && entry.data.success) {
+          result[item.id] = entry.data;
+        } else {
+          missing.push(item);
+        }
+      }
+
+      if (missing.length === 0) return result;
+
       try {
         const res = await fetch(API_BASE + '/api/steam/prices', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ items })
+          body:    JSON.stringify({ items: missing })
         });
-        return await res.json();
+        const map = await res.json();
+        const toStore = { ...stored };
+        for (const [gid, data] of Object.entries(map)) {
+          result[gid] = data;
+          if (data && data.success) {
+            toStore[gid] = { data, ts: now };
+          }
+        }
+        lsSet(LS_PRICE_KEY, toStore);
       } catch(e) {
         console.log('批量获取Steam价格失败:', e);
-        return {};
       }
+
+      return result;
     }
 
     // 在详情弹窗中加载单个游戏价格
