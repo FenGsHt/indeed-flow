@@ -29,6 +29,10 @@ games_bp = Blueprint('games', __name__)
 _steam_rating_cache = {}
 STEAM_RATING_CACHE_TTL = 24 * 3600  # 24 小时
 
+# ============ Steam 价格后端缓存 ============
+_steam_price_cache = {}
+STEAM_PRICE_CACHE_TTL = 6 * 3600  # 6 小时（价格变动比评分频繁）
+
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', '3306')),
@@ -684,6 +688,85 @@ def get_steam_ratings_batch():
         if not gid:
             continue
         results[gid] = _get_steam_rating_cached(app_id=appid, game_name=name, game_id=gid)
+
+    return jsonify(results)
+
+
+# ============ Steam 价格 ============
+
+def _fetch_steam_price_data(app_id):
+    """调用 Steam appdetails 只取 price_overview，返回价格 dict"""
+    url = (
+        f"https://store.steampowered.com/api/appdetails"
+        f"?appids={app_id}&cc=CN&filters=price_overview"
+    )
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        data = json.loads(resp.read().decode())
+
+    app_data = data.get(str(app_id), {})
+    if not app_data.get('success'):
+        return {'success': False, 'error': '无价格信息'}
+
+    price = app_data.get('data', {}).get('price_overview')
+    if not price:
+        # 免费游戏没有 price_overview 字段
+        return {'success': True, 'free': True, 'final_price': 0,
+                'original_price': 0, 'discount': 0}
+
+    return {
+        'success':          True,
+        'free':             False,
+        'final_price':      price.get('final',            0) / 100,
+        'original_price':   price.get('initial',          0) / 100,
+        'discount':         price.get('discount_percent', 0),
+        'currency':         price.get('currency',         'CNY'),
+        'final_formatted':  price.get('final_formatted',  ''),
+        'initial_formatted':price.get('initial_formatted',''),
+    }
+
+
+def _get_steam_price_cached(app_id):
+    """带 6h 缓存的价格获取，失败时返回旧数据"""
+    if not app_id:
+        return {'success': False, 'error': '需要提供 appid'}
+
+    cache_key = str(app_id)
+    now = time.time()
+    cached = _steam_price_cache.get(cache_key)
+
+    if cached and (now - cached['ts']) < STEAM_PRICE_CACHE_TTL:
+        return cached['data']
+
+    stale = cached['data'] if cached else None
+    try:
+        result = _fetch_steam_price_data(app_id)
+        _steam_price_cache[cache_key] = {'data': result, 'ts': now}
+        return result
+    except Exception as e:
+        print(f"Steam price fetch error for {app_id}: {e}")
+        if stale:
+            return stale
+        return {'success': False, 'error': str(e)}
+
+
+@games_bp.route('/api/steam/prices', methods=['POST'])
+def get_steam_prices_batch():
+    """
+    批量获取游戏 Steam 价格（带 6h 缓存）
+    Body: { "items": [{"id": "...", "appid": "..."}, ...] }
+    Response: { "<id>": { price data } }
+    """
+    data  = request.json or {}
+    items = data.get('items', [])
+    results = {}
+
+    for item in items:
+        gid   = item.get('id', '')
+        appid = item.get('appid', '') or None
+        if not gid or not appid:
+            continue
+        results[gid] = _get_steam_price_cached(appid)
 
     return jsonify(results)
 

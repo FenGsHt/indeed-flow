@@ -819,24 +819,35 @@
         <!-- Steam 评分显示 -->
         <div id="steam-rating-display" style="background:rgba(0,212,255,0.1);padding:1rem;border-radius:10px;margin-bottom:1rem;">
           <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-            <div style="flex:1;min-width:120px;">
+            <div style="flex:1;min-width:90px;">
               <div style="font-size:2rem;font-weight:700;" id="steam-rating-percent">--%</div>
               <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">好评率</div>
             </div>
-            <div style="flex:1;min-width:120px;">
+            <div style="flex:1;min-width:90px;">
               <div style="font-size:1.2rem;font-weight:600;" id="steam-review-count">--</div>
               <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">评价总数</div>
+            </div>
+            <div style="flex:1;min-width:90px;">
+              <div style="font-size:1.2rem;font-weight:600;" id="steam-price-text">--</div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">当前价格</div>
             </div>
           </div>
           <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.1);font-size:0.85rem;color:rgba(255,255,255,0.7);" id="steam-rating-desc">
             加载中...
           </div>
         </div>
-        <!-- 刷新按钮 -->
-        <button id="refresh-steam-rating" class="btn btn-steam" onclick="refreshSteamRatingInDetail()" style="width:100%;padding:0.8rem;">
-          🔄 刷新 Steam 评分
-        </button>
-        <div id="steam-rating-message" style="font-size:0.8rem;color:#00d4ff;min-height:1.2rem;margin-top:0.5rem;text-align:center;"></div>
+        <!-- 刷新按钮 + Steam 商店链接 -->
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+          <button id="refresh-steam-rating" class="btn btn-steam" onclick="refreshSteamRatingInDetail()" style="flex:1;padding:0.8rem;">
+            🔄 刷新评分
+          </button>
+          <a id="steam-store-link" href="#" target="_blank" rel="noopener noreferrer"
+             class="btn btn-steam" onclick="event.stopPropagation()"
+             style="flex:1;padding:0.8rem;text-align:center;text-decoration:none;display:none;">
+            🛒 Steam 商店
+          </a>
+        </div>
+        <div id="steam-rating-message" style="font-size:0.8rem;color:#00d4ff;min-height:1.2rem;margin-top:0.3rem;text-align:center;"></div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="updateGame()">保存</button>
@@ -1076,6 +1087,49 @@
       }
     }
 
+    // 批量获取 Steam 价格（需要已知 appid）
+    async function getSteamPricesBatch(items) {
+      if (!items || items.length === 0) return {};
+      try {
+        const res = await fetch(API_BASE + '/api/steam/prices', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ items })
+        });
+        return await res.json();
+      } catch(e) {
+        console.log('批量获取Steam价格失败:', e);
+        return {};
+      }
+    }
+
+    // 在详情弹窗中加载单个游戏价格
+    async function loadSteamPrice(appId) {
+      const priceEl = document.getElementById('steam-price-text');
+      if (!priceEl || !appId) return;
+      priceEl.textContent = '获取中...';
+      try {
+        const map = await getSteamPricesBatch([{ id: 'detail', appid: String(appId) }]);
+        const pd  = map['detail'];
+        if (pd && pd.success) {
+          if (pd.free) {
+            priceEl.innerHTML = `<span style="color:#4caf50">免费</span>`;
+          } else if (pd.discount > 0) {
+            priceEl.innerHTML =
+              `<span style="color:#ff9800;font-weight:700">-${pd.discount}%</span> ` +
+              `<span style="font-weight:600">¥${pd.final_price.toFixed(0)}</span> ` +
+              `<span style="text-decoration:line-through;color:rgba(255,255,255,0.35);font-size:0.85em">¥${pd.original_price.toFixed(0)}</span>`;
+          } else {
+            priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.7)">¥${pd.final_price.toFixed(0)}</span>`;
+          }
+        } else {
+          priceEl.textContent = '暂无价格';
+        }
+      } catch(e) {
+        priceEl.textContent = '暂无价格';
+      }
+    }
+
     // 刷新单个游戏的 Steam 评分（强制绕过页面缓存，后端缓存仍有效）
     async function refreshSteamRating(gameName, appId, onComplete, gameId) {
       const cacheKey = appId || gameName;
@@ -1264,13 +1318,14 @@
                 <span>${recommenderText}</span>
                 <span class="steam-rating-tag" style="font-size:0.75rem;">${ratingHtml}</span>
               </div>
+              <div class="game-price-row" style="font-size:0.72rem;margin-top:0.2rem;min-height:1rem;color:rgba(255,255,255,0.4);"></div>
             </div>
           </div>`;
         }).join('');
         
         // 批量获取 Steam 评分（单次请求，后端有 24h 缓存）
         const visibleGames = games.slice(0, 12);
-        getSteamRatingsBatch(visibleGames).then(ratingsMap => {
+        getSteamRatingsBatch(visibleGames).then(async ratingsMap => {
           const cards = list.querySelectorAll('.game-card');
           visibleGames.forEach((g, i) => {
             if (!cards[i]) return;
@@ -1295,6 +1350,36 @@
                 <span>${recommenderText}</span>
                 <span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>
               `;
+            }
+          });
+
+          // 批量获取价格（用评分中已解析的 appid，优先级最高）
+          const priceItems = visibleGames.map(g => {
+            const rd    = ratingsMap[g.id];
+            const appid = (rd && rd.app_id)
+              || extractAppId(g.source || g.url)
+              || g.steam_appid || '';
+            return appid ? { id: g.id, appid: String(appid) } : null;
+          }).filter(Boolean);
+
+          if (priceItems.length === 0) return;
+          const pricesMap = await getSteamPricesBatch(priceItems);
+
+          visibleGames.forEach((g, i) => {
+            if (!cards[i]) return;
+            const priceEl = cards[i].querySelector('.game-price-row');
+            if (!priceEl) return;
+            const pd = pricesMap[g.id];
+            if (!pd || !pd.success) return;
+            if (pd.free) {
+              priceEl.innerHTML = `<span style="color:rgba(100,220,100,0.6)">免费</span>`;
+            } else if (pd.discount > 0) {
+              priceEl.innerHTML =
+                `<span style="color:#ff9800;font-weight:600">-${pd.discount}%</span> ` +
+                `<span style="color:rgba(255,255,255,0.85)">¥${pd.final_price.toFixed(0)}</span> ` +
+                `<span style="text-decoration:line-through;color:rgba(255,255,255,0.3)">¥${pd.original_price.toFixed(0)}</span>`;
+            } else {
+              priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.35)">¥${pd.final_price.toFixed(0)}</span>`;
             }
           });
         });
@@ -1788,45 +1873,55 @@
 
     // 加载 Steam 好评率
     async function loadSteamRating(game) {
-      const percentEl = document.getElementById('steam-rating-percent');
-      const countEl = document.getElementById('steam-review-count');
-      const descEl = document.getElementById('steam-rating-desc');
-      const messageEl = document.getElementById('steam-rating-message');
-      
+      const percentEl   = document.getElementById('steam-rating-percent');
+      const countEl     = document.getElementById('steam-review-count');
+      const descEl      = document.getElementById('steam-rating-desc');
+      const messageEl   = document.getElementById('steam-rating-message');
+      const priceEl     = document.getElementById('steam-price-text');
+      const storeLinkEl = document.getElementById('steam-store-link');
+
       percentEl.textContent = '--%';
-      countEl.textContent = '--';
-      descEl.textContent = '加载中...';
+      countEl.textContent   = '--';
+      descEl.textContent    = '加载中...';
       messageEl.textContent = '';
-      
+      if (priceEl) priceEl.textContent = '--';
+      if (storeLinkEl) storeLinkEl.style.display = 'none';
+
       const appId = extractAppId(game.source || game.url) || game.steam_appid || null;
       const ratingData = await getSteamRating(game.name, appId, game.id);
-      
+
+      // 确定最终 appid（评分接口会通过名字搜索解析出 appid）
+      const finalAppId = (ratingData && ratingData.app_id) || appId;
+
+      // 更新 Steam 商店链接
+      if (storeLinkEl && finalAppId) {
+        storeLinkEl.href = `https://store.steampowered.com/app/${finalAppId}`;
+        storeLinkEl.style.display = '';
+      }
+
       if (ratingData && ratingData.success) {
         const percent = ratingData.rating_percent;
-        const total = ratingData.total_reviews || 0;
-        const desc = ratingData.review_score_desc || '';
-        
-        // 设置好评率颜色
+        const total   = ratingData.total_reviews || 0;
+        const desc    = ratingData.review_score_desc || '';
+
         let colorStyle = '';
-        if (percent >= 70) {
-          colorStyle = 'color: #4caf50;';
-        } else if (percent >= 40) {
-          colorStyle = 'color: #ff9800;';
-        } else {
-          colorStyle = 'color: #f44336;';
-        }
-        
+        if (percent >= 70)      colorStyle = 'color: #4caf50;';
+        else if (percent >= 40) colorStyle = 'color: #ff9800;';
+        else                    colorStyle = 'color: #f44336;';
+
         percentEl.innerHTML = `<span style="${colorStyle}">${percent}%</span>`;
         countEl.textContent = total.toLocaleString();
-        descEl.textContent = desc || (percent >= 70 ? '好评如潮' : (percent >= 40 ? '褒贬不一' : '差评居多'));
-        
-        // 保存到 currentGame 以便刷新时使用
+        descEl.textContent  = desc || (percent >= 70 ? '好评如潮' : (percent >= 40 ? '褒贬不一' : '差评居多'));
+
         currentGame.steamRating = ratingData;
       } else {
         percentEl.textContent = '--%';
-        countEl.textContent = '0';
-        descEl.textContent = ratingData?.error || '暂无评价';
+        countEl.textContent   = '0';
+        descEl.textContent    = ratingData?.error || '暂无评价';
       }
+
+      // 获取价格（有 appid 时）
+      if (finalAppId) loadSteamPrice(finalAppId);
     }
 
     // 刷新详情页的 Steam 评分
