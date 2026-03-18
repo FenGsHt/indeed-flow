@@ -1126,4 +1126,29 @@ body.in-game #game-screen {
   body.in-game h1 {
     display: none;
   }
+
+  /* 隐藏右侧榜单面板，让棋盘占满 */
+  .game-right-panel {
+    display: none;
+  }
+
+  /* 压缩头部 */
+  .game-header {
+    padding: 4px 8px;
+    margin-bottom: 4px;
+  }
+
+  .game-info {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .player-badge {
+    font-size: 11px;
+    padding: 3px 7px;
+  }
+
+  #game-status {
+    font-size: 12px;
+  }
 }
