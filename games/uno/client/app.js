@@ -366,9 +366,10 @@ $('btn-create').addEventListener('click', () => {
     roomId: rid,
     playerName: name,
     settings: {
-      stackDraw:  $('opt-stack').checked,
-      sevensZero: $('opt-sevens').checked,
-      forcePlay:  $('opt-force').checked,
+      stackDraw:   $('opt-stack').checked,
+      sevensZero:  $('opt-sevens').checked,
+      forcePlay:   $('opt-force').checked,
+      targetScore: parseInt($('opt-target').value) || 0,
     },
   });
 });
@@ -383,7 +384,7 @@ socket.on('room-list', rooms => {
     <div class="room-card">
       <div class="room-card-info">
         <div class="room-card-name">${r.roomId}</div>
-        <div class="room-card-meta">${r.playerCount} 名玩家</div>
+        <div class="room-card-meta">${r.playerCount} 名玩家${r.targetScore > 0 ? ` · 目标 ${r.targetScore} 分` : ''}</div>
       </div>
       <div class="room-card-right">
         <span class="badge badge-${r.status}">${r.status === 'waiting' ? '等待中' : r.status === 'playing' ? '游戏中' : '已结束'}</span>
@@ -417,9 +418,11 @@ socket.on('lobby-state', state => {
 
   renderWaitingPlayers(state.players);
 
+  const target = state.settings?.targetScore || 0;
+  const targetHint = target > 0 ? ` · 系列赛目标：${target} 分` : '';
   const hint = state.canStart
-    ? '所有人已准备，即将开始！'
-    : `等待玩家准备… (${state.players.filter(p => p.ready).length}/${state.players.length})`;
+    ? `所有人已准备，即将开始！${targetHint}`
+    : `等待玩家准备… (${state.players.filter(p => p.ready).length}/${state.players.length})${targetHint}`;
   $('waiting-hint-text').textContent = hint;
 });
 
@@ -777,9 +780,19 @@ socket.on('game-over', winner => {
   if (isWinner) { SoundEngine.playWin(); VFX.confetti(); }
   else          { SoundEngine.playLose(); }
   const pts = winner.roundPoints ?? 0;
-  $('game-over-msg').textContent = isWinner
-    ? `🎉 恭喜你赢得了这局！获得 ${pts} 分`
-    : `🏆 ${winner.name} 赢了！获得 ${pts} 分`;
+  const target = gameState?.settings?.targetScore || 0;
+
+  if (winner.seriesOver) {
+    $('game-over-msg').textContent = isWinner
+      ? `🏆 恭喜！你率先达到 ${target} 分，赢得系列赛！`
+      : `🏆 ${winner.name} 达到 ${target} 分，赢得系列赛！`;
+    $('btn-play-again').textContent = '新一系列';
+  } else {
+    $('game-over-msg').textContent = isWinner
+      ? `🎉 恭喜你赢得了这局！获得 ${pts} 分${target > 0 ? `（目标：${target} 分）` : ''}`
+      : `🏆 ${winner.name} 赢了！获得 ${pts} 分${target > 0 ? `（目标：${target} 分）` : ''}`;
+    $('btn-play-again').textContent = '再来一局';
+  }
 
   // 积分榜：按累计分数排序
   if (gameState) {
@@ -797,7 +810,8 @@ socket.on('game-over', winner => {
 });
 
 $('btn-play-again').addEventListener('click', () => {
-  socket.emit('play-again');
+  const resetScores = $('btn-play-again').textContent === '新一系列';
+  socket.emit('play-again', { resetScores });
   $('game-over-modal').classList.add('hidden');
   isReady = false;
   $('btn-ready').textContent = '准备';

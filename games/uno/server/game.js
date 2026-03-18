@@ -95,9 +95,10 @@ class UnoGame {
     this.winner = null;
     this.roundCount = 0;
     this.settings = {
-      stackDraw:  true,   // 叠加 +2/+4
-      sevensZero: false,  // 7换牌/0传递
-      forcePlay:  true,   // 摸到的牌若能出必须出
+      stackDraw:   true,   // 叠加 +2/+4
+      sevensZero:  false,  // 7换牌/0传递
+      forcePlay:   true,   // 摸到的牌若能出必须出
+      targetScore: 0,      // 系列赛目标分（0=无限局）
       ...settings,
     };
     this.eventLog = [];
@@ -252,7 +253,9 @@ class UnoGame {
         .filter(p => p.id !== player.id)
         .reduce((sum, p) => sum + p.hand.reduce((s, c) => s + cardPoints(c), 0), 0);
       player.points = (player.points || 0) + roundPoints;
-      return { ok: true, finished: true, winner: { id: player.id, name: player.name, roundPoints } };
+      const target = this.settings.targetScore;
+      const seriesOver = target > 0 && player.points >= target;
+      return { ok: true, finished: true, seriesOver, winner: { id: player.id, name: player.name, roundPoints } };
     }
 
     this._applyEffect(card, chosenColor);

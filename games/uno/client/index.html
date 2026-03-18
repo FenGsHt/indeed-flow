@@ -75,6 +75,14 @@
                 <div class="toggle-track"></div>
               </label>
             </div>
+            <div class="setting-item">
+              <div>
+                <div>系列赛目标分</div>
+                <span>0 = 无限局，达标即赢得系列赛</span>
+              </div>
+              <input type="number" id="opt-target" min="0" max="9999" value="200"
+                style="width:64px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:13px;padding:4px 8px;text-align:center;outline:none;">
+            </div>
           </div>
           <button class="btn btn-primary btn-full" id="btn-create">创建并加入</button>
         </div>
@@ -219,6 +227,25 @@
 
 <!-- ══ Toast ══════════════════════════════════════════════ -->
 <div id="toast-container"></div>
+
+<!-- ══ 音量控制（全局悬浮）════════════════════════════════ -->
+<div class="vol-panel" id="vol-panel">
+  <button class="vol-toggle" id="btn-vol" title="音量设置">🔊</button>
+  <div class="vol-sliders hidden" id="vol-sliders">
+    <label class="vol-row">
+      <span>🎵 音乐</span>
+      <input type="range" id="vol-bgm" min="0" max="1" step="0.05" value="0.2">
+    </label>
+    <label class="vol-row">
+      <span>🔔 音效</span>
+      <input type="range" id="vol-sfx" min="0" max="1" step="0.05" value="1">
+    </label>
+    <label class="vol-row">
+      <span>🔊 总量</span>
+      <input type="range" id="vol-master" min="0" max="1" step="0.05" value="0.7">
+    </label>
+  </div>
+</div>
 
 <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
 <script src="app.js"></script>

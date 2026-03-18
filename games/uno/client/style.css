@@ -288,6 +288,7 @@ body {
 }
 .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
+.btn:disabled:hover { filter: none; transform: none; }
 
 .btn-primary { background: linear-gradient(135deg, #4ECDC4, #45B7D1); color: #fff; }
 .btn-danger  { background: linear-gradient(135deg, #e53935, #c62828); color: #fff; }
@@ -574,10 +575,9 @@ body {
   overflow: hidden;
 }
 
-/* 可出牌：白色光晕 + 上移提示 */
+/* 可出牌：白色光晕（不永久上移，避免看起来像选中） */
 .uno-card.playable {
   box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 4px 16px rgba(255,255,255,0.3);
-  transform: translateY(-6px);
 }
 .uno-card.playable::after {
   content: '▲ 出牌';
@@ -836,12 +836,17 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
+  top: auto;           /* 不全屏覆盖 */
   background: none;
   backdrop-filter: none;
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 8px;
   z-index: 200;
+  pointer-events: none; /* 透明区域不拦截鼠标事件 */
+}
+.color-picker-box {
+  pointer-events: auto; /* 仅选色框本身响应交互 */
 }
 
 .color-picker-box {
@@ -994,6 +999,9 @@ body {
   will-change: transform, opacity;
   /* transition 由 JS 在飞行时动态设置，初始无过渡防止闪跳 */
 }
+
+/* 弃牌堆顶牌不可交互 */
+#discard-top .uno-card { pointer-events: none; cursor: default; }
 
 /* 弃牌堆顶牌入场动画 */
 @keyframes card-land {

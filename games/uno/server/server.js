@@ -16,8 +16,28 @@ const io     = new Server(server, {
 app.use(express.static(path.join(__dirname, '../client')));
 
 // ─── Room Manager ────────────────────────────────────────────
-const rooms          = new Map(); // roomId → UnoGame
+const rooms           = new Map(); // roomId → UnoGame
 const pendingRemovals = new Map(); // `${roomId}:${name}` → { timer }
+const emptyRoomTimers = new Map(); // roomId → deletion timer
+
+// 房间空置 10 分钟后自动删除
+function scheduleRoomDeletion(roomId) {
+  if (emptyRoomTimers.has(roomId)) return;
+  const timer = setTimeout(() => {
+    emptyRoomTimers.delete(roomId);
+    const g = rooms.get(roomId);
+    if (g && g.players.length === 0) {
+      rooms.delete(roomId);
+      broadcastRoomList();
+    }
+  }, 10 * 60_000);
+  emptyRoomTimers.set(roomId, timer);
+}
+
+function cancelRoomDeletion(roomId) {
+  const t = emptyRoomTimers.get(roomId);
+  if (t) { clearTimeout(t); emptyRoomTimers.delete(roomId); }
+}
 
 function getOrCreateRoom(roomId, settings) {
   if (!rooms.has(roomId)) rooms.set(roomId, new UnoGame(settings));
@@ -29,7 +49,8 @@ function getRoomList() {
     roomId:      id,
     playerCount: game.players.length,
     status:      game.status,
-    canJoin:     game.status === 'waiting' && game.players.length < 10,
+    targetScore: game.settings.targetScore || 0,
+    canJoin:     (game.status === 'waiting' || game.status === 'finished') && game.players.length < 10,
   }));
 }
 
@@ -68,8 +89,14 @@ io.on('connection', socket => {
   socket.on('join-room', ({ roomId: rid, playerName, settings }) => {
     if (!rid || !playerName) return;
     doLeave();
+    cancelRoomDeletion(rid);
 
     const game = getOrCreateRoom(rid, settings || {});
+    // 如果房间已结束，重置为等待状态（保留玩家的累计分数）
+    if (game.status === 'finished') {
+      game.status = 'waiting';
+      for (const p of game.players) { p.ready = false; p.hand = []; }
+    }
     if (game.status !== 'waiting') {
       socket.emit('error', { message: '房间游戏已开始，无法加入' });
       return;
@@ -117,7 +144,7 @@ io.on('connection', socket => {
     broadcastGame(roomId);
     if (result.finished) {
       stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
-      io.to(roomId).emit('game-over', result.winner);
+      io.to(roomId).emit('game-over', { ...result.winner, seriesOver: !!result.seriesOver });
       io.emit('leaderboard', stats.getLeaderboard()); // 全局刷新榜单
       broadcastRoomList();
     }
@@ -169,12 +196,16 @@ io.on('connection', socket => {
   });
 
   // ── 再来一局 ──────────────────────────────
-  socket.on('play-again', () => {
+  socket.on('play-again', ({ resetScores } = {}) => {
     if (!roomId) return;
     const game = rooms.get(roomId);
     if (!game || game.status !== 'finished') return;
     game.status = 'waiting';
-    for (const p of game.players) { p.ready = false; p.hand = []; }
+    for (const p of game.players) {
+      p.ready = false;
+      p.hand  = [];
+      if (resetScores) { p.score = 0; p.points = 0; }
+    }
     broadcastLobby(roomId);
     broadcastRoomList();
   });
@@ -229,7 +260,7 @@ io.on('connection', socket => {
             if (!g) return;
             g.removePlayerByName(playerName);
             if (g.players.length === 0) {
-              rooms.delete(savedRoom);
+              scheduleRoomDeletion(savedRoom);
             } else {
               broadcastLobby(savedRoom);
               broadcastGame(savedRoom);
@@ -241,11 +272,12 @@ io.on('connection', socket => {
           broadcastRoomList();
         }
       } else {
-        // 等待室断线或主动离开 → 立即移除
+        // 等待室断线或主动离开 → 立即移除玩家
         game.removePlayer(socket.id);
         socket.leave(roomId);
         if (game.players.length === 0) {
-          rooms.delete(roomId);
+          // 房间空置后延迟删除（10分钟），期间可重新加入
+          scheduleRoomDeletion(roomId);
         } else {
           broadcastLobby(roomId);
           broadcastGame(roomId);
