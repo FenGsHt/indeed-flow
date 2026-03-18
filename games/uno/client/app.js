@@ -1,5 +1,225 @@
 'use strict';
 
+// ══════════════════════════════════════════════════════════════
+// 音频引擎（Web Audio API，全程无外部文件）
+// ══════════════════════════════════════════════════════════════
+const SoundEngine = (() => {
+  let ctx, masterGain, sfxGain, bgmGain;
+  let bgmTimer = null;
+  let bgmOscs  = [];
+  let chordIdx = 0;
+
+  // C Am F G 和弦（低八度，轻柔背景）
+  const CHORDS = [
+    [130.8, 164.8, 196.0],
+    [110.0, 138.6, 164.8],
+    [ 87.3, 110.0, 130.8],
+    [ 98.0, 123.5, 146.8],
+  ];
+
+  function _init() {
+    if (ctx) return;
+    ctx        = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = ctx.createGain(); masterGain.gain.value = +(_load('vol-master') ?? 0.7);
+    sfxGain    = ctx.createGain(); sfxGain.gain.value    = +(_load('vol-sfx')    ?? 1.0);
+    bgmGain    = ctx.createGain(); bgmGain.gain.value    = +(_load('vol-bgm')    ?? 0.2);
+    sfxGain.connect(masterGain);
+    bgmGain.connect(masterGain);
+    masterGain.connect(ctx.destination);
+    // 同步滑块初值
+    _syncSliders();
+  }
+  function _resume() { ctx?.state === 'suspended' && ctx.resume(); }
+  function _load(k)  { try { return localStorage.getItem('uno_' + k); } catch { return null; } }
+  function _save(k, v){ try { localStorage.setItem('uno_' + k, v); } catch {} }
+
+  function _syncSliders() {
+    const s = id => document.getElementById(id);
+    if (s('vol-master')) s('vol-master').value = masterGain.gain.value;
+    if (s('vol-sfx'))    s('vol-sfx').value    = sfxGain.gain.value;
+    if (s('vol-bgm'))    s('vol-bgm').value    = bgmGain.gain.value;
+  }
+
+  // ── SFX 基础工具 ─────────────────────────────
+  function _osc(type, freq, dur, vol, dest, startFreq) {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(dest ?? sfxGain);
+    osc.type = type;
+    const t = ctx.currentTime;
+    if (startFreq) {
+      osc.frequency.setValueAtTime(startFreq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + dur);
+    } else {
+      osc.frequency.value = freq;
+    }
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t); osc.stop(t + dur);
+  }
+  function _noise(dur, filterFreq, vol) {
+    const buf  = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src    = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const g      = ctx.createGain();
+    src.buffer = buf;
+    filter.type = 'bandpass'; filter.frequency.value = filterFreq; filter.Q.value = 1;
+    src.connect(filter); filter.connect(g); g.connect(sfxGain);
+    g.gain.value = vol;
+    src.start(); src.stop(ctx.currentTime + dur);
+  }
+
+  // ── 公开 SFX ─────────────────────────────────
+  function playCard(isWild) {
+    _init(); _resume();
+    if (isWild) _osc('sine', 900, 0.32, 0.45, sfxGain, 150);
+    else        _osc('sawtooth', 160, 0.18, 0.35, sfxGain, 520);
+  }
+  function drawCard() {
+    _init(); _resume();
+    _noise(0.09, 1100, 0.4);
+  }
+  function playSkip() {
+    _init(); _resume();
+    _osc('square', 250, 0.15, 0.25, sfxGain, 400);
+  }
+  function playDraw2() {
+    _init(); _resume();
+    [0, 1].forEach(i => setTimeout(() => _osc('sawtooth', 220 + i * 80, 0.18, 0.35), i * 90));
+  }
+  function sayUno() {
+    _init(); _resume();
+    [700, 1050].forEach((f, i) => setTimeout(() => _osc('sine', f, 0.35, 0.5), i * 110));
+  }
+  function yourTurn() {
+    _init(); _resume();
+    [440, 554].forEach((f, i) => setTimeout(() => _osc('sine', f, 0.28, 0.3), i * 80));
+  }
+  function playWin() {
+    _init(); _resume();
+    [523, 659, 784, 988, 1319].forEach((f, i) =>
+      setTimeout(() => _osc('triangle', f, 0.45, 0.4), i * 100));
+  }
+  function playLose() {
+    _init(); _resume();
+    [494, 392, 311, 261].forEach((f, i) =>
+      setTimeout(() => _osc('sine', f, 0.4, 0.3), i * 120));
+  }
+
+  // ── BGM ──────────────────────────────────────
+  function _playChord() {
+    bgmOscs.forEach(({ osc, g }) => {
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+      osc.stop(t + 1.8);
+    });
+    bgmOscs = [];
+    const chord = CHORDS[chordIdx++ % CHORDS.length];
+    chord.forEach((freq, i) => {
+      const osc    = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const g      = ctx.createGain();
+      filter.type = 'lowpass'; filter.frequency.value = 500;
+      osc.connect(filter); filter.connect(g); g.connect(bgmGain);
+      osc.type = i === 0 ? 'triangle' : 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.14, t + 1.2);
+      osc.start(t);
+      bgmOscs.push({ osc, g });
+    });
+  }
+  function startBgm() {
+    _init(); _resume();
+    if (bgmTimer) return;
+    _playChord();
+    bgmTimer = setInterval(_playChord, 4000);
+  }
+  function stopBgm() {
+    if (bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
+    bgmOscs.forEach(({ osc, g }) => {
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1);
+      osc.stop(t + 1);
+    });
+    bgmOscs = [];
+  }
+
+  // ── 音量控制 ─────────────────────────────────
+  function setMaster(v) { _init(); masterGain.gain.value = v; _save('vol-master', v); }
+  function setSfx(v)    { _init(); sfxGain.gain.value    = v; _save('vol-sfx',    v); }
+  function setBgm(v)    { _init(); bgmGain.gain.value    = v; _save('vol-bgm',    v); }
+
+  return { playCard, drawCard, playSkip, playDraw2, sayUno, yourTurn, playWin, playLose,
+           startBgm, stopBgm, setMaster, setSfx, setBgm };
+})();
+
+// ══════════════════════════════════════════════════════════════
+// 视觉特效模块
+// ══════════════════════════════════════════════════════════════
+const VFX = {
+  _COLORS: { red:'#ef5350', green:'#66bb6a', blue:'#42a5f5', yellow:'#fdd835', wild:'#fff' },
+
+  particles(x, y, color, count = 10) {
+    const c = this._COLORS[color] || '#fff';
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'vfx-particle';
+      p.style.cssText = `left:${x}px;top:${y}px;background:${c};`;
+      document.body.appendChild(p);
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+      const dist  = 35 + Math.random() * 45;
+      requestAnimationFrame(() => {
+        p.style.transform = `translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px) scale(0)`;
+        p.style.opacity   = '0';
+      });
+      setTimeout(() => p.remove(), 620);
+    }
+  },
+
+  rainbowBurst(x, y) {
+    const el = document.createElement('div');
+    el.className = 'vfx-rainbow';
+    el.style.cssText = `left:${x}px;top:${y}px;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  },
+
+  screenFlash(color) {
+    const el = document.createElement('div');
+    el.className = 'vfx-flash';
+    el.style.background = color;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 420);
+  },
+
+  turnGlow() {
+    const el = document.createElement('div');
+    el.className = 'vfx-turn-glow';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 850);
+  },
+
+  confetti() {
+    const cols = ['#ef5350','#fdd835','#43a047','#1e88e5','#ab47bc','#ff7043'];
+    for (let i = 0; i < 70; i++) {
+      setTimeout(() => {
+        const p = document.createElement('div');
+        p.className = 'vfx-confetti';
+        const dur = 900 + Math.random() * 700;
+        p.style.cssText = `left:${Math.random()*100}vw;background:${cols[i%cols.length]};animation-duration:${dur}ms;animation-delay:${Math.random()*400}ms;`;
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), dur + 450);
+      }, Math.random() * 300);
+    }
+  },
+};
+
 // ─── 本地存储名字 ─────────────────────────────────────────────
 const SAVED_NAME = localStorage.getItem('uno_player_name') || '';
 if (SAVED_NAME) {
@@ -30,6 +250,7 @@ let myRoomId    = null;
 let isReady     = false;
 let gameState   = null;
 let pendingCard = null; // 等待选色的卡牌 id
+let wasMyTurn   = false; // 用于检测回合切换
 
 // ─── 重连存档 ────────────────────────────────────────────────
 function getSavedGame() {
@@ -315,6 +536,13 @@ function renderGame(state) {
   const canDraw = isMyTurn && !state.drawnThisTurn;
   $('btn-draw').style.opacity = canDraw ? '1' : '0.35';
   $('btn-draw').style.cursor  = canDraw ? 'pointer' : 'default';
+
+  // 回合切换音效 + 视效
+  if (isMyTurn && !wasMyTurn) {
+    SoundEngine.yourTurn();
+    VFX.turnGlow();
+  }
+  wasMyTurn = isMyTurn;
 }
 
 function renderOtherPlayers(state) {
@@ -467,8 +695,20 @@ function onCardClick(card) {
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
   if (el) flyCardToDiscard(el);
 
-  const needsColor = card.type === 'wild' || card.type === 'wild_draw4';
-  if (needsColor) {
+  const isWild = card.type === 'wild' || card.type === 'wild_draw4';
+  SoundEngine.playCard(isWild);
+
+  // 落地后触发粒子特效
+  setTimeout(() => {
+    const dest = $('discard-top').getBoundingClientRect();
+    const cx = dest.left + dest.width / 2;
+    const cy = dest.top  + dest.height / 2;
+    VFX.particles(cx, cy, card.color);
+    if (isWild) VFX.rainbowBurst(cx, cy);
+    if (card.type === 'draw2' || card.type === 'wild_draw4') VFX.screenFlash('rgba(239,83,80,0.25)');
+  }, FLIGHT_MS + 50);
+
+  if (isWild) {
     pendingCard = card.id;
     // 略微延迟，等飞牌动画开始后再弹颜色选择
     setTimeout(() => $('color-picker').classList.remove('hidden'), 80);
@@ -495,6 +735,7 @@ function doDraw() {
   if (gameState.currentPlayerId !== myId) return;
   if (gameState.drawnThisTurn) return; // 本回合已摸过，不能再摸
   flyCardFromDeck();
+  SoundEngine.drawCard();
   socket.emit('draw-card');
 }
 $('btn-draw').addEventListener('click', doDraw);
@@ -527,6 +768,8 @@ $('btn-leave-game').addEventListener('click', () => {
 // ─── 游戏结束 ────────────────────────────────────────────────
 socket.on('game-over', winner => {
   const isWinner = winner.id === myId;
+  if (isWinner) { SoundEngine.playWin(); VFX.confetti(); }
+  else          { SoundEngine.playLose(); }
   const pts = winner.roundPoints ?? 0;
   $('game-over-msg').textContent = isWinner
     ? `🎉 恭喜你赢得了这局！获得 ${pts} 分`
@@ -568,6 +811,7 @@ $('btn-back-lobby').addEventListener('click', () => {
 // ─── 广播事件 ────────────────────────────────────────────────
 socket.on('uno-called', ({ playerName }) => {
   toast(`🔔 ${playerName} 喊了 UNO！`, 3000);
+  SoundEngine.sayUno();
 });
 
 socket.on('uno-caught', ({ targetName }) => {
@@ -628,3 +872,21 @@ socket.on('reconnect-failed', ({ reason }) => {
   toast(`重连失败：${reason}`);
   showScreen('lobby');
 });
+
+// ─── 音量控制 ────────────────────────────────────────────────
+$('btn-vol').addEventListener('click', () => {
+  $('vol-sliders').classList.toggle('hidden');
+});
+
+$('vol-master').addEventListener('input', e => SoundEngine.setMaster(+e.target.value));
+$('vol-sfx').addEventListener('input',    e => SoundEngine.setSfx(+e.target.value));
+$('vol-bgm').addEventListener('input',    e => SoundEngine.setBgm(+e.target.value));
+
+// 首次用户交互后启动 BGM（浏览器自动播放限制）
+let bgmStarted = false;
+document.addEventListener('click', () => {
+  if (!bgmStarted) {
+    bgmStarted = true;
+    SoundEngine.startBgm();
+  }
+}, { once: false, capture: true });
