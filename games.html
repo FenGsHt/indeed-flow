@@ -156,6 +156,12 @@
       background: radial-gradient(circle at 50% 0%, rgba(123, 47, 247, 0.12) 0%, transparent 70%);
     }
 
+    .game-card.uno-card::before {
+      background: radial-gradient(circle at 50% 0%, rgba(229, 57, 53, 0.15) 0%, transparent 70%);
+    }
+
+    .uno-card .game-card-title { color: #ff7043; }
+
     .game-card:hover {
       transform: translateY(-4px);
       border-color: rgba(255,255,255,0.2);
@@ -328,6 +334,24 @@
           <span class="tag">协作模式</span>
         </div>
         <a href="./games/minesweeper/client/index.html" class="enter-btn">开始游戏 →</a>
+      </div>
+
+      <!-- UNO -->
+      <div class="game-card uno-card">
+        <div class="online-badge">多人实时</div>
+        <span class="game-card-emoji">🃏</span>
+        <div class="game-card-title">UNO 对战</div>
+        <div class="game-card-desc">
+          经典 UNO 多人联机对战<br>
+          +2/+4 叠加、喊 UNO 抓人<br>
+          最先出完手牌的玩家获胜！
+        </div>
+        <div class="game-tags">
+          <span class="tag">2~10人</span>
+          <span class="tag">回合制</span>
+          <span class="tag">房间系统</span>
+        </div>
+        <a href="./games/uno/client/index.html" class="enter-btn">开始游戏 →</a>
       </div>
 
     </div>
