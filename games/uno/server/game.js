@@ -249,6 +249,7 @@ class UnoGame {
   drawCard(playerId) {
     if (this.status !== 'playing')         return { ok: false, reason: 'not_playing' };
     if (this.currentPlayer.id !== playerId) return { ok: false, reason: 'not_your_turn' };
+    if (this.drawnThisTurn && !this.pendingDraw) return { ok: false, reason: 'already_drawn' };
 
     const player = this.currentPlayer;
     const count = this.pendingDraw || 1;

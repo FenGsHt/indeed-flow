@@ -312,9 +312,10 @@ function renderGame(state) {
     unoBtn.classList.remove('show');
   }
 
-  // 摸牌区域高亮
-  $('btn-draw').style.opacity = isMyTurn ? '1' : '0.5';
-  $('btn-draw').style.cursor  = isMyTurn ? 'pointer' : 'default';
+  // 摸牌区域高亮（本回合已摸则变暗）
+  const canDraw = isMyTurn && !state.drawnThisTurn;
+  $('btn-draw').style.opacity = canDraw ? '1' : '0.35';
+  $('btn-draw').style.cursor  = canDraw ? 'pointer' : 'default';
 }
 
 function renderOtherPlayers(state) {
@@ -492,6 +493,7 @@ $('color-picker').querySelectorAll('.color-btn').forEach(btn => {
 function doDraw() {
   if (!gameState) return;
   if (gameState.currentPlayerId !== myId) return;
+  if (gameState.drawnThisTurn) return; // 本回合已摸过，不能再摸
   flyCardFromDeck();
   socket.emit('draw-card');
 }
