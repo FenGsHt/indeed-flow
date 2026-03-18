@@ -131,6 +131,31 @@ function tick() {
     }
   }
 
+  // 2b. Resolve head-on collisions: mutual kills → longer snake survives
+  //  If A killed B AND B killed A, it's a pure head-on. The longer snake wins;
+  //  equal length → both die (classic rule).
+  const resolved = new Set();
+  for (const [victimId, killerId] of Object.entries(deathMap)) {
+    if (resolved.has(victimId) || !killerId) continue;
+    if (deathMap[killerId] === victimId) {
+      // Mutual — head-on collision between victimId and killerId
+      const a = players[victimId];
+      const b = players[killerId];
+      const lenA = a ? a.snake.length : 0;
+      const lenB = b ? b.snake.length : 0;
+      if (lenA > lenB) {
+        // victimId (A) is longer → A survives, remove from deathMap
+        delete deathMap[victimId];
+      } else if (lenB > lenA) {
+        // killerId (B) is longer → B survives, remove from deathMap
+        delete deathMap[killerId];
+      }
+      // equal length: both stay in deathMap (both die)
+      resolved.add(victimId);
+      resolved.add(killerId);
+    }
+  }
+
   // 3. Apply deaths
   for (const [victimId, killerId] of Object.entries(deathMap)) {
     const victim = players[victimId];
