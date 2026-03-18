@@ -1104,9 +1104,9 @@
 
       for (const g of games) {
         const entry = stored[g.id];
-        if (entry && (now - entry.ts) < LS_RATING_TTL && entry.data && entry.data.success) {
+        if (entry && (now - entry.ts) < LS_RATING_TTL && entry.data !== undefined) {
           result[g.id] = entry.data;
-          if (entry.data.app_id) steamRatingCache[String(entry.data.app_id)] = entry.data;
+          if (entry.data && entry.data.app_id) steamRatingCache[String(entry.data.app_id)] = entry.data;
         } else {
           missing.push({
             id:    g.id,
@@ -1128,10 +1128,8 @@
         const toStore = { ...stored };
         for (const [gid, data] of Object.entries(map)) {
           result[gid] = data;
-          if (data && data.success) {
-            toStore[gid] = { data, ts: now };
-            if (data.app_id) steamRatingCache[String(data.app_id)] = data;
-          }
+          toStore[gid] = { data, ts: now };
+          if (data && data.success && data.app_id) steamRatingCache[String(data.app_id)] = data;
         }
         lsSet(LS_RATING_KEY, toStore);
       } catch(e) {
@@ -1152,7 +1150,7 @@
 
       for (const item of items) {
         const entry = stored[item.id];
-        if (entry && (now - entry.ts) < LS_PRICE_TTL && entry.data && entry.data.success) {
+        if (entry && (now - entry.ts) < LS_PRICE_TTL && entry.data !== undefined) {
           result[item.id] = entry.data;
         } else {
           missing.push(item);
@@ -1171,9 +1169,7 @@
         const toStore = { ...stored };
         for (const [gid, data] of Object.entries(map)) {
           result[gid] = data;
-          if (data && data.success) {
-            toStore[gid] = { data, ts: now };
-          }
+          toStore[gid] = { data, ts: now };
         }
         lsSet(LS_PRICE_KEY, toStore);
       } catch(e) {
