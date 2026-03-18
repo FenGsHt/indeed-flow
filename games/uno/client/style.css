@@ -24,9 +24,11 @@ body {
   overflow-x: hidden;
 }
 
+/* ── 通用隐藏工具类 ─────────────────────────────── */
+.hidden { display: none !important; }
+
 /* ── 屏幕切换 ─────────────────────────────────── */
 .screen { width: 100%; max-width: 960px; }
-.screen.hidden { display: none !important; }
 
 /* ── 大厅 ────────────────────────────────────── */
 .lobby-header {
