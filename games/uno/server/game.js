@@ -29,6 +29,14 @@ const CardRegistry = {
   },
 };
 
+// 牌面分值（标准 UNO 计分）
+function cardPoints(card) {
+  if (card.type === 'number')  return card.value ?? 0;
+  if (card.type === 'skip' || card.type === 'reverse' || card.type === 'draw2') return 20;
+  if (card.type === 'wild' || card.type === 'wild_draw4') return 50;
+  return 0;
+}
+
 // 标准牌型注册
 CardRegistry.register('number',      { symbol: c => String(c.value) });
 CardRegistry.register('skip',        { symbol: () => '⊘' });
@@ -100,7 +108,7 @@ class UnoGame {
     if (this.status !== 'waiting') return false;
     if (this.players.find(p => p.id === id)) return false;
     if (this.players.length >= 10) return false;
-    this.players.push({ id, name, hand: [], saidUno: false, ready: false, score: 0, connected: true });
+    this.players.push({ id, name, hand: [], saidUno: false, ready: false, score: 0, points: 0, connected: true });
     return true;
   }
 
@@ -239,7 +247,12 @@ class UnoGame {
       this.status = 'finished';
       this.winner = player;
       player.score = (player.score || 0) + 1;
-      return { ok: true, finished: true, winner: { id: player.id, name: player.name } };
+      // 结算：其他玩家手牌分值之和归赢家
+      const roundPoints = this.players
+        .filter(p => p.id !== player.id)
+        .reduce((sum, p) => sum + p.hand.reduce((s, c) => s + cardPoints(c), 0), 0);
+      player.points = (player.points || 0) + roundPoints;
+      return { ok: true, finished: true, winner: { id: player.id, name: player.name, roundPoints } };
     }
 
     this._applyEffect(card, chosenColor);
@@ -381,7 +394,8 @@ class UnoGame {
         cardCount: p.hand.length,
         saidUno:   p.saidUno,
         ready:     p.ready,
-        score:     p.score || 0,
+        score:     p.score  || 0,
+        points:    p.points || 0,
         connected: p.connected,
         isYou:     p.id === playerId,
         hand:      p.id === playerId ? p.hand : null,
@@ -396,7 +410,7 @@ class UnoGame {
       canStart:    this.canStart(),
       settings:    this.settings,
       players:     this.players.map(p => ({
-        id: p.id, name: p.name, ready: p.ready, score: p.score || 0,
+        id: p.id, name: p.name, ready: p.ready, score: p.score || 0, points: p.points || 0,
       })),
     };
   }

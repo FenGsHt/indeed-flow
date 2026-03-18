@@ -341,7 +341,7 @@ function renderOtherPlayers(state) {
       ${!p.connected ? '<span class="disconnected-tag">断线中…</span>' : ''}
       <div class="other-player-name">${p.name}</div>
       <div class="other-player-cards">${miniCards}</div>
-      <div class="other-player-score">🏆 ${p.score} 胜</div>
+      <div class="other-player-score">🏆 ${p.score}胜 &nbsp;·&nbsp; ${p.points}分</div>
     `;
 
     // 点击抓 UNO（对方有1张且未喊）
@@ -528,18 +528,19 @@ $('btn-leave-game').addEventListener('click', () => {
 // ─── 游戏结束 ────────────────────────────────────────────────
 socket.on('game-over', winner => {
   const isWinner = winner.id === myId;
+  const pts = winner.roundPoints ?? 0;
   $('game-over-msg').textContent = isWinner
-    ? `🎉 恭喜你赢得了这局！`
-    : `🏆 ${winner.name} 赢得了这局！`;
+    ? `🎉 恭喜你赢得了这局！获得 ${pts} 分`
+    : `🏆 ${winner.name} 赢了！获得 ${pts} 分`;
 
-  // 积分榜
+  // 积分榜：按累计分数排序
   if (gameState) {
-    const sorted = [...gameState.players].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const sorted = [...gameState.players].sort((a, b) => (b.points || 0) - (a.points || 0));
     $('score-list').innerHTML = sorted.map((p, i) => `
       <div class="score-row ${p.id === winner.id ? 'winner' : ''}">
-        <span class="score-rank">${['🥇','🥈','🥉'][i] || (i+1)}</span>
+        <span class="score-rank">${['🥇','🥈','🥉'][i] || (i + 1)}</span>
         <span class="score-name">${p.name}${p.id === myId ? ' (你)' : ''}</span>
-        <span class="score-val">${p.score || 0} 胜</span>
+        <span class="score-val">${p.score || 0}胜 &nbsp; ${p.points || 0}分</span>
       </div>
     `).join('');
   }
