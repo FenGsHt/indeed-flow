@@ -376,6 +376,30 @@
       background: #4caf50;
     }
 
+    .steam-card-link {
+      position: absolute;
+      bottom: 7px;
+      right: 7px;
+      background: rgba(23, 26, 33, 0.82);
+      border: 1px solid rgba(102, 192, 244, 0.45);
+      border-radius: 6px;
+      color: #66c0f4;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 2px 7px;
+      text-decoration: none;
+      line-height: 1.5;
+      backdrop-filter: blur(4px);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      z-index: 2;
+    }
+    .steam-card-link:hover {
+      background: rgba(23, 26, 33, 0.97);
+      border-color: #66c0f4;
+      color: #fff;
+    }
+
     .status-badge {
       position: absolute;
       top: 8px;
@@ -1307,10 +1331,16 @@
           // 好评率显示（放在推荐人右边）- 初始显示加载动画
           let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
           
+          const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
+          const steamCardBtn = knownAppid
+            ? `<a class="steam-card-link" href="https://store.steampowered.com/app/${knownAppid}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Steam</a>`
+            : `<a class="steam-card-link" style="display:none" data-pending-steam></a>`;
+
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover; background-position: center center; background-repeat: no-repeat;">
               <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
+              ${steamCardBtn}
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
@@ -1361,10 +1391,18 @@
               metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>`;
             }
 
-            // 收集通过名字搜索才发现的 appid（之前未知的），用于补充拉取价格
-            const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
-            const newAppid   = rd && rd.app_id && !knownAppid ? String(rd.app_id) : '';
-            if (newAppid) newlyDiscovered.push({ idx: i, id: g.id, appid: newAppid });
+            // 收集通过名字搜索才发现的 appid（之前未知的），用于补充拉取价格和显示 Steam 按钮
+            const knownAppidRating = extractAppId(g.source || g.url) || g.steam_appid || '';
+            const newAppid = rd && rd.app_id && !knownAppidRating ? String(rd.app_id) : '';
+            if (newAppid) {
+              newlyDiscovered.push({ idx: i, id: g.id, appid: newAppid });
+              // 把隐藏的 Steam 按钮补充显示出来
+              const steamBtn = cards[i] && cards[i].querySelector('.steam-card-link');
+              if (steamBtn) {
+                steamBtn.href = `https://store.steampowered.com/app/${newAppid}`;
+                steamBtn.style.display = '';
+              }
+            }
           });
 
           // 对新发现 appid 的游戏补充拉取价格
