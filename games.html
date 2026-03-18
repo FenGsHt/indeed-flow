@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INDEED - 贪吃蛇</title>
+  <title>INDEED - 游戏中心</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -48,7 +48,7 @@
     .container {
       position: relative;
       z-index: 1;
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 1.5rem;
     }
@@ -58,7 +58,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 0 2rem;
+      padding: 1rem 0 2.5rem;
     }
 
     .logo {
@@ -99,698 +99,238 @@
       transform: translateX(-3px);
     }
 
-    /* 游戏选择器 */
-    .game-selector {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      margin: 1rem 0 2rem;
-    }
-
-    .selector-btn {
-      padding: 0.6rem 1.5rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 2px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      border-radius: 50px;
-      transition: all 0.3s;
-    }
-
-    .selector-btn:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.4);
-    }
-
-    .selector-btn.active {
-      background: linear-gradient(90deg, #7b2ff7, #00d4ff);
-      border-color: transparent;
-      box-shadow: 0 4px 20px rgba(123, 47, 247, 0.4);
-    }
-
-    /* 游戏标题区 */
-    .game-title {
+    /* 页面标题 */
+    .page-title {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
     }
 
-    .game-title h1 {
-      font-size: clamp(2rem, 6vw, 3rem);
+    .page-title h1 {
+      font-size: clamp(2rem, 6vw, 2.8rem);
       font-weight: 900;
       margin-bottom: 0.5rem;
-      background: linear-gradient(90deg, #00ff88, #00d4ff);
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    .game-title p {
+    .page-title p {
       color: rgba(255,255,255,0.5);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
     }
 
-    /* 游戏信息栏 */
-    .game-stats {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
+    /* 游戏卡片网格 */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
     }
 
-    .stat-item {
+    /* 游戏卡片 */
+    .game-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 2rem;
       text-align: center;
-      padding: 1rem 2rem;
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .game-card.snake-card::before {
+      background: radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.12) 0%, transparent 70%);
+    }
+
+    .game-card.mine-card::before {
+      background: radial-gradient(circle at 50% 0%, rgba(123, 47, 247, 0.12) 0%, transparent 70%);
+    }
+
+    .game-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+    }
+
+    .game-card:hover::before {
+      opacity: 1;
+    }
+
+    .game-card-emoji {
+      font-size: 3.5rem;
+      line-height: 1;
+      margin-bottom: 1rem;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+    }
+
+    .game-card-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .snake-card .game-card-title { color: #00ff88; }
+    .mine-card .game-card-title  { color: #c084fc; }
+
+    .game-card-desc {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    /* 标签 */
+    .game-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tag {
+      padding: 0.2rem 0.7rem;
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.6);
       border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .stat-label {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.3rem;
-    }
+    .snake-card .tag { color: #00ff88; background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.2); }
+    .mine-card  .tag { color: #c084fc; background: rgba(192,132,252,0.08); border-color: rgba(192,132,252,0.2); }
 
-    .stat-value {
-      font-size: 1.8rem;
+    /* 进入按钮 */
+    .enter-btn {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      border-radius: 50px;
+      font-size: 0.95rem;
       font-weight: 700;
-      color: #00ff88;
-    }
-
-    .stat-value.score {
-      color: #ffd700;
-    }
-
-    /* 游戏画布 */
-    .game-wrapper {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .game-canvas-container {
-      position: relative;
-      background: rgba(0,0,0,0.3);
-      border-radius: 16px;
-      padding: 10px;
-      border: 2px solid rgba(0,212,255,0.3);
-      box-shadow: 0 0 40px rgba(0,212,255,0.2);
-    }
-
-    #gameCanvas {
-      display: block;
-      border-radius: 8px;
-      background: #0a0a15;
-    }
-
-    /* 控制按钮 */
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .ctrl-btn {
-      padding: 0.8rem 2rem;
-      font-size: 1rem;
-      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
       cursor: pointer;
       border: none;
-      border-radius: 50px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .ctrl-btn.primary {
+    .snake-card .enter-btn {
       background: linear-gradient(90deg, #00ff88, #00d4ff);
       color: #0a0a15;
     }
 
-    .ctrl-btn.primary:hover {
+    .snake-card .enter-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(0,255,136,0.4);
+      box-shadow: 0 6px 24px rgba(0,255,136,0.4);
     }
 
-    .ctrl-btn.secondary {
-      background: rgba(255,255,255,0.1);
+    .mine-card .enter-btn {
+      background: linear-gradient(90deg, #7b2ff7, #c084fc);
       color: #fff;
-      border: 1px solid rgba(255,255,255,0.2);
     }
 
-    .ctrl-btn.secondary:hover {
-      background: rgba(255,255,255,0.2);
+    .mine-card .enter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(123,47,247,0.4);
     }
 
-    /* 移动端方向键 */
-    .mobile-controls {
-      display: none;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .mobile-btn {
-      width: 60px;
-      height: 60px;
-      font-size: 1.5rem;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 12px;
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .mobile-btn:active {
-      background: rgba(0,212,255,0.3);
-      transform: scale(0.95);
-    }
-
-    .mobile-dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 60px);
-      grid-template-rows: repeat(3, 60px);
-      gap: 5px;
-    }
-
-    .mobile-dpad .mobile-btn:nth-child(2) { grid-column: 2; }
-    .mobile-dpad .mobile-btn:nth-child(4) { grid-column: 1; grid-row: 2; }
-    .mobile-dpad .mobile-btn:nth-child(5) { grid-column: 2; grid-row: 2; }
-    .mobile-dpad .mobile-btn:nth-child(6) { grid-column: 3; grid-row: 2; }
-    .mobile-dpad .mobile-btn:nth-child(8) { grid-column: 2; grid-row: 3; }
-
-    /* 游戏说明 */
-    .game-info {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      background: rgba(255,255,255,0.03);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .game-info h3 {
-      font-size: 1rem;
-      margin-bottom: 0.8rem;
-      color: rgba(255,255,255,0.8);
-    }
-
-    .game-info ul {
-      list-style: none;
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.5);
-      line-height: 1.8;
-    }
-
-    .game-info li::before {
-      content: '▸';
+    /* 玩家数指示 */
+    .online-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 50px;
+      background: rgba(0,255,136,0.12);
       color: #00ff88;
-      margin-right: 0.5rem;
-    }
-
-    /* 游戏结束弹窗 */
-    .game-over-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .game-over-modal.show {
-      display: flex;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .modal-content {
-      background: linear-gradient(135deg, #1a1a3e, #16213e);
-      padding: 2.5rem;
-      border-radius: 24px;
-      text-align: center;
-      border: 2px solid rgba(255,0,110,0.5);
-      box-shadow: 0 0 60px rgba(255,0,110,0.3);
-      animation: popIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes popIn {
-      from { transform: scale(0.8); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .modal-content h2 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      color: #ff006e;
-    }
-
-    .final-score {
-      font-size: 3rem;
-      font-weight: 900;
-      color: #ffd700;
-      margin-bottom: 1.5rem;
-    }
-
-    .modal-content .ctrl-btn {
-      margin: 0 0.5rem;
+      border: 1px solid rgba(0,255,136,0.25);
     }
 
     /* 响应式 */
     @media (max-width: 600px) {
       .container { padding: 1rem; }
-      
+
       .header {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
       }
 
-      .game-stats { gap: 1rem; }
-      
-      .stat-item {
-        padding: 0.8rem 1.2rem;
-        min-width: 100px;
-      }
-
-      .stat-value { font-size: 1.4rem; }
-
-      .mobile-controls { display: flex; }
-
-      .game-info { padding: 1rem; }
-    }
-
-    @media (max-width: 400px) {
-      #gameCanvas {
-        width: 280px;
-        height: 280px;
+      .games-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
   <div class="bg-effect"></div>
-  
+
   <div class="container">
     <!-- 头部 -->
     <div class="header">
-      <a href="index.html" class="back-btn">
-        ← 返回首页
-      </a>
+      <a href="index.html" class="back-btn">← 返回首页</a>
       <div class="logo">INDEED</div>
       <div style="width: 100px;"></div>
     </div>
 
-    <!-- 游戏选择器 -->
-    <div class="game-selector">
-      <button class="selector-btn active" onclick="switchGame('snake')">🐍 贪吃蛇</button>
-      <button class="selector-btn" onclick="switchGame('minesweeper')">💣 多人扫雷</button>
+    <!-- 页面标题 -->
+    <div class="page-title">
+      <h1>🎮 游戏中心</h1>
+      <p>多人实时对战 · 选择你的战场</p>
     </div>
 
-    <!-- 游戏标题 -->
-    <div class="game-title" id="gameTitle">
-      <h1>🐍 贪吃蛇</h1>
-      <p>经典怀旧 • 挑战极限</p>
-    </div>
+    <!-- 游戏卡片网格 -->
+    <div class="games-grid">
 
-    <!-- 多人扫雷入口 -->
-    <div id="minesweeperEntrance" style="display:none; text-align:center; padding: 2rem;">
-      <div style="background: linear-gradient(135deg, #1a1a3e, #2d2d5a); border-radius: 16px; padding: 2rem; max-width: 400px; margin: 0 auto;">
-        <div style="font-size: 4rem; margin-bottom: 1rem;">💣</div>
-        <h2 style="margin-bottom: 0.5rem;">多人扫雷</h2>
-        <p style="color: #888; margin-bottom: 1.5rem;">实时多人联机 • 排行榜挑战</p>
-        <a href="./games/minesweeper/client/index.html" 
-           style="display: inline-block; padding: 0.8rem 2rem; background: linear-gradient(90deg, #7b2ff7, #00d4ff); border-radius: 50px; text-decoration: none; font-weight: 600; color: #fff;">
-          开始游戏 →
-        </a>
+      <!-- 多人贪吃蛇 -->
+      <div class="game-card snake-card">
+        <div class="online-badge">多人实时</div>
+        <span class="game-card-emoji">🐍</span>
+        <div class="game-card-title">多人贪吃蛇</div>
+        <div class="game-card-desc">
+          吃豆子变长，碰到对手即死亡<br>
+          死亡后自动在空旷地复活<br>
+          智斗对手，争夺积分榜第一！
+        </div>
+        <div class="game-tags">
+          <span class="tag">实时多人</span>
+          <span class="tag">积分榜</span>
+          <span class="tag">方向键 / 滑动</span>
+        </div>
+        <a href="./games/snake/client/index.html" class="enter-btn">开始游戏 →</a>
       </div>
-    </div>
 
-    <!-- 游戏信息 -->
-    <div class="game-stats">
-      <div class="stat-item">
-        <div class="stat-label">当前分数</div>
-        <div class="stat-value score" id="score">0</div>
+      <!-- 多人扫雷 -->
+      <div class="game-card mine-card">
+        <span class="game-card-emoji">💣</span>
+        <div class="game-card-title">多人扫雷</div>
+        <div class="game-card-desc">
+          实时多人联机扫雷<br>
+          协作排雷，赢得荣耀<br>
+          挑战排行榜，成为扫雷大师！
+        </div>
+        <div class="game-tags">
+          <span class="tag">实时多人</span>
+          <span class="tag">排行榜</span>
+          <span class="tag">协作模式</span>
+        </div>
+        <a href="./games/minesweeper/client/index.html" class="enter-btn">开始游戏 →</a>
       </div>
-      <div class="stat-item">
-        <div class="stat-label">最高分</div>
-        <div class="stat-value" id="highScore">0</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">速度等级</div>
-        <div class="stat-value" id="level">1</div>
-      </div>
-    </div>
 
-    <!-- 游戏画布 -->
-    <div class="game-wrapper">
-      <div class="game-canvas-container">
-        <canvas id="gameCanvas" width="360" height="360"></canvas>
-      </div>
-    </div>
-
-    <!-- 控制按钮 -->
-    <div class="controls">
-      <button class="ctrl-btn primary" id="startBtn" onclick="startGame()">开始游戏</button>
-      <button class="ctrl-btn secondary" onclick="resetGame()">重新开始</button>
-      <button class="ctrl-btn secondary" onclick="togglePause()" id="pauseBtn">暂停</button>
-    </div>
-
-    <!-- 移动端方向键 -->
-    <div class="mobile-controls">
-      <div class="mobile-dpad">
-        <div></div>
-        <button class="mobile-btn" onclick="changeDirection('up')">↑</button>
-        <div></div>
-        <button class="mobile-btn" onclick="changeDirection('left')">←</button>
-        <button class="mobile-btn" onclick="togglePause()">⏸</button>
-        <button class="mobile-btn" onclick="changeDirection('right')">→</button>
-        <div></div>
-        <button class="mobile-btn" onclick="changeDirection('down')">↓</button>
-        <div></div>
-      </div>
-    </div>
-
-    <!-- 游戏说明 -->
-    <div class="game-info">
-      <h3>🎮 操作说明</h3>
-      <ul>
-        <li>使用方向键 或 WASD 控制蛇的移动方向</li>
-        <li>吃到食物得分，每次吃完速度会略微提升</li>
-        <li>撞到墙壁或自己的身体则游戏结束</li>
-        <li>手机端可以使用屏幕下方的虚拟方向键</li>
-      </ul>
     </div>
   </div>
-
-  <!-- 游戏结束弹窗 -->
-  <div class="game-over-modal" id="gameOverModal">
-    <div class="modal-content">
-      <h2>游戏结束!</h2>
-      <div class="final-score" id="finalScore">0</div>
-      <button class="ctrl-btn primary" onclick="startGame()">再来一局</button>
-      <button class="ctrl-btn secondary" onclick="closeModal()">关闭</button>
-    </div>
-  </div>
-
-  <script>
-    // 游戏切换函数
-    function switchGame(game) {
-      const btns = document.querySelectorAll('.selector-btn');
-      const title = document.getElementById('gameTitle');
-      const entrance = document.getElementById('minesweeperEntrance');
-      const canvasContainer = document.querySelector('.game-canvas-container');
-      const stats = document.querySelector('.game-stats');
-      const controls = document.querySelector('.controls');
-      const mobileControls = document.querySelector('.mobile-controls');
-      
-      btns.forEach(btn => btn.classList.remove('active'));
-      
-      if (game === 'minesweeper') {
-        btns[1].classList.add('active');
-        title.style.display = 'none';
-        entrance.style.display = 'block';
-        canvasContainer.style.display = 'none';
-        stats.style.display = 'none';
-        controls.style.display = 'none';
-        if (mobileControls) mobileControls.style.display = 'none';
-        if (gameLoop) clearInterval(gameLoop);
-        isRunning = false;
-      } else {
-        btns[0].classList.add('active');
-        title.style.display = 'block';
-        entrance.style.display = 'none';
-        canvasContainer.style.display = 'block';
-        stats.style.display = 'flex';
-        controls.style.display = 'flex';
-        if (mobileControls) mobileControls.style.display = 'flex';
-      }
-    }
-
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // 游戏配置
-    const GRID_SIZE = 20;
-    const GRID_COUNT = 18;
-    canvas.width = GRID_COUNT * GRID_SIZE;
-    canvas.height = GRID_COUNT * GRID_SIZE;
-    
-    // 游戏状态
-    let snake = [];
-    let food = { x: 0, y: 0 };
-    let direction = { x: 1, y: 0 };
-    let nextDirection = { x: 1, y: 0 };
-    let score = 0;
-    let highScore = localStorage.getItem('snakeHighScore') || 0;
-    let level = 1;
-    let gameLoop = null;
-    let gameSpeed = 150;
-    let isPaused = false;
-    let isRunning = false;
-    
-    // 初始化显示
-    document.getElementById('highScore').textContent = highScore;
-    
-    // 初始化蛇和食物
-    function initGame() {
-      snake = [
-        { x: 5, y: 10 },
-        { x: 4, y: 10 },
-        { x: 3, y: 10 }
-      ];
-      direction = { x: 1, y: 0 };
-      nextDirection = { x: 1, y: 0 };
-      score = 0;
-      level = 1;
-      gameSpeed = 150;
-      isPaused = false;
-      isRunning = true;
-      
-      document.getElementById('score').textContent = score;
-      document.getElementById('level').textContent = level;
-      document.getElementById('pauseBtn').textContent = '暂停';
-      
-      spawnFood();
-      draw();
-    }
-    
-    // 生成食物
-    function spawnFood() {
-      let valid = false;
-      while (!valid) {
-        food.x = Math.floor(Math.random() * GRID_COUNT);
-        food.y = Math.floor(Math.random() * GRID_COUNT);
-        valid = !snake.some(seg => seg.x === food.x && seg.y === food.y);
-      }
-    }
-    
-    // 绘制游戏
-    function draw() {
-      // 背景
-      ctx.fillStyle = '#0a0a15';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // 网格线
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      for (let i = 0; i <= GRID_COUNT; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * GRID_SIZE, 0);
-        ctx.lineTo(i * GRID_SIZE, canvas.height);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i * GRID_SIZE);
-        ctx.lineTo(canvas.width, i * GRID_SIZE);
-        ctx.stroke();
-      }
-      
-      // 食物
-      const foodGradient = ctx.createRadialGradient(
-        food.x * GRID_SIZE + GRID_SIZE/2, food.y * GRID_SIZE + GRID_SIZE/2, 0,
-        food.x * GRID_SIZE + GRID_SIZE/2, food.y * GRID_SIZE + GRID_SIZE/2, GRID_SIZE/2
-      );
-      foodGradient.addColorStop(0, '#ff6b6b');
-      foodGradient.addColorStop(1, '#ee5a5a');
-      ctx.fillStyle = foodGradient;
-      ctx.beginPath();
-      ctx.arc(food.x * GRID_SIZE + GRID_SIZE/2, food.y * GRID_SIZE + GRID_SIZE/2, GRID_SIZE/2 - 2, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 食物光晕
-      ctx.shadowColor = '#ff6b6b';
-      ctx.shadowBlur = 10;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      // 蛇
-      snake.forEach((seg, i) => {
-        const isHead = i === 0;
-        const alpha = 1 - (i / snake.length) * 0.5;
-        
-        if (isHead) {
-          ctx.fillStyle = '#00ff88';
-          ctx.shadowColor = '#00ff88';
-          ctx.shadowBlur = 15;
-        } else {
-          const green = Math.floor(255 - (i / snake.length) * 100);
-          ctx.fillStyle = `rgba(0, ${green}, 136, ${alpha})`;
-          ctx.shadowBlur = 0;
-        }
-        
-        const radius = isHead ? 6 : 4;
-        ctx.beginPath();
-        ctx.roundRect(seg.x * GRID_SIZE + 1, seg.y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2, radius);
-        ctx.fill();
-      });
-      ctx.shadowBlur = 0;
-    }
-    
-    // 游戏更新
-    function update() {
-      if (isPaused || !isRunning) return;
-      
-      direction = { ...nextDirection };
-      
-      // 计算新头部位置
-      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-      
-      // 碰撞检测 - 墙壁
-      if (head.x < 0 || head.x >= GRID_COUNT || head.y < 0 || head.y >= GRID_COUNT) {
-        gameOver();
-        return;
-      }
-      
-      // 碰撞检测 - 自身
-      if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-        gameOver();
-        return;
-      }
-      
-      // 移动蛇
-      snake.unshift(head);
-      
-      // 吃到食物
-      if (head.x === food.x && head.y === food.y) {
-        score += 10;
-        document.getElementById('score').textContent = score;
-        
-        // 每50分升一级
-        if (score >= level * 50) {
-          level++;
-          document.getElementById('level').textContent = level;
-          gameSpeed = Math.max(50, 150 - (level - 1) * 15);
-          clearInterval(gameLoop);
-          gameLoop = setInterval(update, gameSpeed);
-        }
-        
-        spawnFood();
-      } else {
-        snake.pop();
-      }
-      
-      draw();
-    }
-    
-    // 开始游戏
-    function startGame() {
-      if (gameLoop) clearInterval(gameLoop);
-      initGame();
-      gameLoop = setInterval(update, gameSpeed);
-      document.getElementById('startBtn').textContent = '游戏中...';
-    }
-    
-    // 重新开始
-    function resetGame() {
-      if (gameLoop) clearInterval(gameLoop);
-      initGame();
-      gameLoop = setInterval(update, gameSpeed);
-      document.getElementById('gameOverModal').classList.remove('show');
-    }
-    
-    // 暂停/继续
-    function togglePause() {
-      if (!isRunning) return;
-      isPaused = !isPaused;
-      document.getElementById('pauseBtn').textContent = isPaused ? '继续' : '暂停';
-    }
-    
-    // 游戏结束
-    function gameOver() {
-      isRunning = false;
-      clearInterval(gameLoop);
-      
-      // 更新最高分
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('snakeHighScore', highScore);
-        document.getElementById('highScore').textContent = highScore;
-      }
-      
-      document.getElementById('finalScore').textContent = score;
-      document.getElementById('gameOverModal').classList.add('show');
-      document.getElementById('startBtn').textContent = '开始游戏';
-    }
-    
-    // 关闭弹窗
-    function closeModal() {
-      document.getElementById('gameOverModal').classList.remove('show');
-    }
-    
-    // 改变方向
-    function changeDirection(dir) {
-      const dirMap = {
-        'up': { x: 0, y: -1 },
-        'down': { x: 0, y: 1 },
-        'left': { x: -1, y: 0 },
-        'right': { x: 1, y: 0 }
-      };
-      
-      const newDir = dirMap[dir];
-      if (!newDir) return;
-      
-      // 防止直接反向
-      if (newDir.x !== -direction.x || newDir.y !== -direction.y) {
-        nextDirection = newDir;
-      }
-    }
-    
-    // 键盘控制
-    document.addEventListener('keydown', (e) => {
-      const keyMap = {
-        'ArrowUp': 'up', 'KeyW': 'up', 'w': 'up', 'W': 'up',
-        'ArrowDown': 'down', 'KeyS': 'down', 's': 'down', 'S': 'down',
-        'ArrowLeft': 'left', 'KeyA': 'left', 'a': 'left', 'A': 'left',
-        'ArrowRight': 'right', 'KeyD': 'right', 'd': 'right', 'D': 'right',
-        'Space': 'togglePause'
-      };
-      
-      if (keyMap[e.code] || keyMap[e.key]) {
-        e.preventDefault();
-        const action = keyMap[e.code] || keyMap[e.key];
-        if (action === 'togglePause') {
-          togglePause();
-        } else {
-          changeDirection(action);
-        }
-      }
-    });
-    
-    // 初始绘制
-    draw();
-  </script>
 </body>
 </html>

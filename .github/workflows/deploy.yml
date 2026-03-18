@@ -60,6 +60,8 @@ jobs:
             "mkdir -p ${{ secrets.SERVER_PATH }}/games/minesweeper/client \
                       ${{ secrets.SERVER_PATH }}/games/minesweeper/scripts \
                       ${{ secrets.SERVER_PATH }}/games/minesweeper/server \
+                      ${{ secrets.SERVER_PATH }}/games/snake/client \
+                      ${{ secrets.SERVER_PATH }}/games/snake/server \
                       ${{ secrets.SERVER_PATH }}/backend && \
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
@@ -126,6 +128,50 @@ jobs:
                pm2 delete minesweeper-server 2>/dev/null; \
                fuser -k 3002/tcp 2>/dev/null || true; \
                pm2 start server.js --name minesweeper-server && \
+               pm2 save"
+
+      - name: Deploy snake client
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa \
+              games/snake/client/index.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/snake/client/
+            scp -i ~/.ssh/id_rsa \
+              games/snake/ecosystem.config.js \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/snake/
+
+      - name: Deploy snake server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r games/snake/server/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/snake/server/
+
+      - name: Start snake server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+               cd ${{ secrets.SERVER_PATH }}/games/snake/server && \
+               ([ ! -d node_modules ] && npm install --no-audit || \
+                (md5sum package.json > /tmp/snake_pkg_hash_new && \
+                 (diff -q /tmp/snake_pkg_hash_new /tmp/snake_pkg_hash_old > /dev/null 2>&1 || \
+                  (npm install --no-audit && cp /tmp/snake_pkg_hash_new /tmp/snake_pkg_hash_old)))) && \
+               pm2 stop snake-server 2>/dev/null; \
+               pm2 delete snake-server 2>/dev/null; \
+               fuser -k 3003/tcp 2>/dev/null || true; \
+               pm2 start server.js --name snake-server && \
                pm2 save"
 
       - name: Deploy backend
