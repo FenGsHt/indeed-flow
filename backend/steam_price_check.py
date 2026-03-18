@@ -157,7 +157,7 @@ def main():
     print(f"\n打折游戏数：{len(discounted)}")
 
     if not discounted:
-        print("本次无打折游戏，不发送通知。")
+        send_bark("🎮 Steam 折扣检测", f"检测 {len(games)} 款游戏，本次无打折")
     else:
         # 按折扣力度从大到小排序
         discounted.sort(key=lambda x: x['discount'], reverse=True)
