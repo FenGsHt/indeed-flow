@@ -224,8 +224,9 @@ class UnoGame {
     if (def.requiresColor && !chosenColor) return { ok: false, reason: 'needs_color' };
 
     player.hand.splice(cardIdx, 1);
-    player.saidUno = false;
     this.drawnThisTurn = false;
+    // 打完后若剩 1 张（UNO 状态），保留预喊标记；否则重置
+    if (player.hand.length !== 1) player.saidUno = false;
     this.discardPile.push(card);
     if (!def.isWild) this.currentColor = card.color;
 
@@ -279,7 +280,8 @@ class UnoGame {
   // ── UNO 喊叫 / 抓人 ──────────────────────
   sayUno(playerId) {
     const p = this.players.find(p => p.id === playerId);
-    if (p && p.hand.length === 1) { p.saidUno = true; return true; }
+    // 手里 1~2 张时均可喊（2张时预喊，打出倒二张后标记保留）
+    if (p && p.hand.length >= 1 && p.hand.length <= 2) { p.saidUno = true; return true; }
     return false;
   }
 

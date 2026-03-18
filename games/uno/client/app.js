@@ -306,7 +306,8 @@ function renderGame(state) {
 
   // UNO 按钮
   const unoBtn = $('btn-uno');
-  if (isMyTurn && me.hand && me.hand.length === 1 && !me.saidUno) {
+  // 手里 1~2 张且未喊时显示（2张时可预喊，打出倒二张后标记保留）
+  if (isMyTurn && me.hand && me.hand.length <= 2 && me.hand.length >= 1 && !me.saidUno) {
     unoBtn.classList.add('show');
   } else {
     unoBtn.classList.remove('show');
