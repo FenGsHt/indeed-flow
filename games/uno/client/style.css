@@ -30,9 +30,28 @@ body {
 
 /* ── 大厅 ────────────────────────────────────── */
 .lobby-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 28px;
+  text-align: center;
 }
+
+.lobby-header > div { flex: 1; }
+
+.lobby-back {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  transition: color 0.15s, border-color 0.15s;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.lobby-back:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
 
 .lobby-header h1 {
   font-size: 3rem;
@@ -578,10 +597,10 @@ body {
   opacity: 1;
 }
 .uno-card.playable:hover {
-  transform: translateY(-18px) scale(1.07);
+  /* translateX 纯视觉移动，不影响布局，不推动相邻牌 */
+  transform: translateY(-18px) translateX(-6px) scale(1.07);
   box-shadow: 0 0 0 3px #ffd700, 0 20px 36px rgba(0,0,0,0.7);
-  z-index: 100 !important; /* 覆盖 JS 设的位置 z-index */
-  margin-left: 4px !important; /* 悬停时微微展开，不遮挡自己 */
+  z-index: 100 !important;
 }
 
 /* 不可出牌：深度暗化 + 锁定感 */
@@ -591,6 +610,21 @@ body {
   transform: translateY(0) scale(0.93);
   box-shadow: none;
   border-color: rgba(255,255,255,0.2);
+}
+
+/* 不可出牌悬停：略微抬起预览，保持暗色 */
+.hand-scroll .uno-card.not-playable:hover {
+  transform: translateY(-10px) translateX(-4px) scale(0.98);
+  filter: brightness(0.55) saturate(0.35);
+  z-index: 100 !important;
+  cursor: default;
+}
+
+/* 非自己回合（无 playable/not-playable 类）：悬停预览 */
+.hand-scroll .uno-card:not(.playable):not(.not-playable):hover {
+  transform: translateY(-12px) translateX(-4px) scale(1.04);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+  z-index: 100 !important;
 }
 
 .uno-card.selected {
