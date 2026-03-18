@@ -287,12 +287,10 @@ function renderGame(state) {
   // 摸牌 / 结束回合 按钮（底部）
   const drawBtn = $('btn-draw-action');
   const passBtn = $('btn-pass-turn');
-  if (isMyTurn && !state.drawnThisTurn) {
+  if (isMyTurn) {
     drawBtn.classList.remove('hidden');
-    passBtn.classList.add('hidden');
-  } else if (isMyTurn && state.drawnThisTurn) {
-    drawBtn.classList.add('hidden');
-    passBtn.classList.remove('hidden');
+    drawBtn.disabled = state.drawnThisTurn;
+    passBtn.classList.toggle('hidden', !state.drawnThisTurn);
   } else {
     drawBtn.classList.add('hidden');
     passBtn.classList.add('hidden');
