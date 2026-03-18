@@ -34,6 +34,11 @@ DB_CONFIG = {
 
 BARK_KEY = os.getenv('BARK_KEY', '')
 
+# OpenClaw webhook（转发到 QQ 群）
+OPENCLAW_WEBHOOK = 'http://150.158.110.168:18789/hooks/agent'
+OPENCLAW_TOKEN   = 'Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY'
+OPENCLAW_GROUP   = 'group:859294429'
+
 
 # ── 数据库 ──────────────────────────────────────────────────────────────
 
@@ -111,6 +116,35 @@ def send_bark(title, body, jump_url=None):
         print(f"  [ERROR] Bark 推送失败：{e}")
 
 
+# ── OpenClaw webhook 推送 ─────────────────────────────────────────────────
+
+def send_openclaw(message):
+    """发送到 OpenClaw webhook，由 work-agent 转发到 QQ 群"""
+    payload = json.dumps({
+        'message':  message,
+        'agentId':  'work-agent',
+        'channel':  'qq',
+        'to':       OPENCLAW_GROUP,
+        'deliver':  True,
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        OPENCLAW_WEBHOOK,
+        data=payload,
+        headers={
+            'Content-Type':  'application/json',
+            'Authorization': OPENCLAW_TOKEN,
+        },
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read().decode())
+            print(f"  [OK] OpenClaw 推送成功：{result}")
+    except Exception as e:
+        print(f"  [ERROR] OpenClaw 推送失败：{e}")
+
+
 # ── 主流程 ────────────────────────────────────────────────────────────────
 
 def main():
@@ -158,6 +192,7 @@ def main():
 
     if not discounted:
         send_bark("🎮 Steam 折扣检测", f"检测 {len(games)} 款游戏，本次无打折")
+        send_openclaw(f"🎮 Steam 折扣检测：检测 {len(games)} 款游戏，本次无打折")
     else:
         # 按折扣力度从大到小排序
         discounted.sort(key=lambda x: x['discount'], reverse=True)
@@ -169,9 +204,11 @@ def main():
                 f"¥{g['final_price']:.0f}（原¥{g['original_price']:.0f}）"
             )
 
-        title = f"🎮 Steam {len(discounted)} 款游戏打折"
-        body  = '\n'.join(lines)
+        title   = f"🎮 Steam {len(discounted)} 款游戏打折"
+        body    = '\n'.join(lines)
+        qq_msg  = f"{title}\n\n" + body + "\n\nhttps://store.steampowered.com/specials"
         send_bark(title, body, jump_url="https://store.steampowered.com/specials#p=0&tab=TopSellers")
+        send_openclaw(qq_msg)
 
     print("=" * 40)
     print("检测完成")
