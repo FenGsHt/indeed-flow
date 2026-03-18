@@ -82,6 +82,7 @@ class UnoGame {
     this.direction = 1;  // 1=顺时针 -1=逆时针
     this.currentColor = null;
     this.pendingDraw = 0;
+    this.drawnThisTurn = false; // 本回合已摸过1张牌
     this.status = 'waiting'; // waiting | playing | finished
     this.winner = null;
     this.roundCount = 0;
@@ -191,6 +192,7 @@ class UnoGame {
 
     player.hand.splice(cardIdx, 1);
     player.saidUno = false;
+    this.drawnThisTurn = false;
     this.discardPile.push(card);
     if (!def.isWild) this.currentColor = card.color;
 
@@ -229,15 +231,15 @@ class UnoGame {
     this.eventLog.push({ type: 'draw', playerId, playerName: player.name, count: drawn.length, ts: Date.now() });
 
     if (count > 1) {
-      // 惩罚摸牌，必须跳过
+      // 惩罚摸牌，直接跳过
       this._advance();
       return { ok: true, drawn, advanced: true };
     }
 
-    // 自愿摸1张，判断是否可以立即出
+    // 自愿摸1张：留在本回合，玩家可出牌或手动结束回合
+    this.drawnThisTurn = true;
     const canPlay = drawn.length > 0 && this.canPlay(drawn[0]);
-    if (!canPlay || !this.settings.forcePlay) this._advance();
-    return { ok: true, drawn, canPlay: canPlay && this.settings.forcePlay };
+    return { ok: true, drawn, canPlay };
   }
 
   // ── UNO 喊叫 / 抓人 ──────────────────────
@@ -245,6 +247,15 @@ class UnoGame {
     const p = this.players.find(p => p.id === playerId);
     if (p && p.hand.length === 1) { p.saidUno = true; return true; }
     return false;
+  }
+
+  // ── 结束回合（摸牌后手动跳过）────────────
+  passTurn(playerId) {
+    if (this.status !== 'playing') return false;
+    if (this.currentPlayer.id !== playerId) return false;
+    if (!this.drawnThisTurn) return false; // 必须先摸过牌
+    this._advance();
+    return true;
   }
 
   catchUno(catcherId, targetId) {
@@ -302,6 +313,7 @@ class UnoGame {
 
   _advance() {
     this.currentIdx = (this.currentIdx + this.direction + this.players.length) % this.players.length;
+    this.drawnThisTurn = false;
   }
 
   _reshuffle() {
@@ -322,6 +334,7 @@ class UnoGame {
       currentPlayerId: this.currentPlayer?.id,
       topCard:         this.topCard || null,
       pendingDraw:     this.pendingDraw,
+      drawnThisTurn:   this.currentPlayer?.id === playerId ? this.drawnThisTurn : false,
       direction:       this.direction,
       deckCount:       this.deck.length,
       winner:          this.winner ? { id: this.winner.id, name: this.winner.name } : null,

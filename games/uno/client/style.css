@@ -765,6 +765,16 @@ body {
   50%       { background: rgba(255,215,0,0.28); }
 }
 
+/* ── 结束回合按钮 ──────────────────────────── */
+.btn-pass {
+  background: linear-gradient(135deg, #757575, #424242);
+  color: #fff;
+  font-size: 14px;
+  padding: 10px 22px;
+  border-radius: 50px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
 /* ── 摸牌按钮 ───────────────────────────────── */
 .btn-draw-action {
   background: linear-gradient(135deg, #1e88e5, #0d47a1);

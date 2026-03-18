@@ -124,6 +124,15 @@ io.on('connection', socket => {
     broadcastGame(roomId);
   });
 
+  // ── 结束回合（摸牌后不出牌）──────────────
+  socket.on('pass-turn', () => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const ok = game.passTurn(socket.id);
+    if (ok) broadcastGame(roomId);
+  });
+
   // ── 喊 UNO ────────────────────────────────
   socket.on('say-uno', () => {
     if (!roomId) return;

@@ -271,10 +271,19 @@ function renderGame(state) {
   if (isMyTurn) drawStack.classList.add('my-turn');
   else          drawStack.classList.remove('my-turn');
 
-  // 摸牌按钮（底部）
+  // 摸牌 / 结束回合 按钮（底部）
   const drawBtn = $('btn-draw-action');
-  if (isMyTurn) drawBtn.classList.remove('hidden');
-  else          drawBtn.classList.add('hidden');
+  const passBtn = $('btn-pass-turn');
+  if (isMyTurn && !state.drawnThisTurn) {
+    drawBtn.classList.remove('hidden');
+    passBtn.classList.add('hidden');
+  } else if (isMyTurn && state.drawnThisTurn) {
+    drawBtn.classList.add('hidden');
+    passBtn.classList.remove('hidden');
+  } else {
+    drawBtn.classList.add('hidden');
+    passBtn.classList.add('hidden');
+  }
 
   // 其他玩家
   renderOtherPlayers(state);
@@ -467,6 +476,11 @@ function doDraw() {
 }
 $('btn-draw').addEventListener('click', doDraw);
 $('btn-draw-action').addEventListener('click', doDraw);
+
+// 结束回合（摸牌后不出牌）
+$('btn-pass-turn').addEventListener('click', () => {
+  socket.emit('pass-turn');
+});
 
 // 喊 UNO
 $('btn-uno').addEventListener('click', () => {
