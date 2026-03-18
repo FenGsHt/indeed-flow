@@ -176,53 +176,14 @@ jobs:
 
       - name: Configure nginx proxy for snake WebSocket
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'ENDSSH'
-          CONF=/opt/1panel/www/conf.d/indeed.com.conf
-          if grep -q "snake-ws" "$CONF"; then
-            echo "Snake proxy already configured, skipping"
-          else
-            cat > /tmp/add_snake_proxy.py << 'PYEOF'
-          import sys
-          path = '/opt/1panel/www/conf.d/indeed.com.conf'
-          with open(path) as f:
-              content = f.read()
-          if 'snake-ws' in content:
-              print('Already present')
-              sys.exit(0)
-          block = (
-              '\n    location /snake-ws/ {\n'
-              '        proxy_pass http://127.0.0.1:3003/;\n'
-              '        proxy_http_version 1.1;\n'
-              '        proxy_set_header Upgrade $http_upgrade;\n'
-              '        proxy_set_header Connection "upgrade";\n'
-              '        proxy_set_header Host $host;\n'
-              '        proxy_set_header X-Real-IP $remote_addr;\n'
-              '        proxy_cache_bypass $http_upgrade;\n'
-              '        proxy_read_timeout 86400;\n'
-              '    }\n'
-          )
-          depth = 0
-          last_close = -1
-          for i, ch in enumerate(content):
-              if ch == '{':
-                  depth += 1
-              elif ch == '}':
-                  depth -= 1
-                  if depth == 0:
-                      last_close = i
-          if last_close == -1:
-              print('ERROR: no server block found')
-              sys.exit(1)
-          new = content[:last_close] + block + content[last_close:]
-          with open(path, 'w') as f:
-              f.write(new)
-          print('nginx config updated with snake-ws proxy')
-          PYEOF
-            python3 /tmp/add_snake_proxy.py
-            rm -f /tmp/add_snake_proxy.py
-            docker exec 1Panel-openresty-EfE4 nginx -s reload && echo "nginx reloaded" || echo "nginx reload failed (check manually)"
-          fi
-          ENDSSH
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_snake_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_snake_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "python3 /tmp/nginx_add_snake_proxy.py && rm -f /tmp/nginx_add_snake_proxy.py; \
+             sudo docker exec 1Panel-openresty-EfE4 nginx -t && \
+             sudo docker exec 1Panel-openresty-EfE4 nginx -s reload && \
+             echo 'nginx reloaded OK' || \
+             echo 'WARNING: nginx reload failed'"
 
       - name: Deploy backend
         uses: nick-fields/retry@v2
