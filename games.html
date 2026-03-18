@@ -146,6 +146,7 @@
       border-radius: 20px;
       opacity: 0;
       transition: opacity 0.3s;
+      pointer-events: none;
     }
 
     .game-card.snake-card::before {
@@ -249,6 +250,16 @@
     .mine-card .enter-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(123,47,247,0.4);
+    }
+
+    .uno-card .enter-btn {
+      background: linear-gradient(90deg, #e53935, #ff7043);
+      color: #fff;
+    }
+
+    .uno-card .enter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(229,57,53,0.4);
     }
 
     /* 玩家数指示 */
