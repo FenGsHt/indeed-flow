@@ -34,3 +34,4 @@ test.yml
 # Runtime data / cache
 backend/data/
 games/minesweeper/server/state.json
+games/uno/server/stats.json

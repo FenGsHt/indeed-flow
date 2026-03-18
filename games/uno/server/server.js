@@ -5,6 +5,7 @@ const http    = require('http');
 const path    = require('path');
 const { Server } = require('socket.io');
 const { UnoGame } = require('./game');
+const stats       = require('./stats');
 
 const app    = express();
 const server = http.createServer(app);
@@ -56,6 +57,12 @@ io.on('connection', socket => {
   let roomId = null;
 
   socket.emit('room-list', getRoomList());
+  socket.emit('leaderboard', stats.getLeaderboard());
+
+  // ── 榜单查询 ──────────────────────────────
+  socket.on('get-leaderboard', () => {
+    socket.emit('leaderboard', stats.getLeaderboard());
+  });
 
   // ── 加入房间 ──────────────────────────────
   socket.on('join-room', ({ roomId: rid, playerName, settings }) => {
@@ -109,7 +116,9 @@ io.on('connection', socket => {
 
     broadcastGame(roomId);
     if (result.finished) {
+      stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
       io.to(roomId).emit('game-over', result.winner);
+      io.emit('leaderboard', stats.getLeaderboard()); // 全局刷新榜单
       broadcastRoomList();
     }
   });

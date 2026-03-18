@@ -591,6 +591,33 @@ socket.on('disconnect', () => {
   toast('连接断开，正在重连…');
 });
 
+// ─── 榜单 ────────────────────────────────────────────────────
+socket.on('leaderboard', ({ allTime, today }) => {
+  renderLb('lb-today',   today);
+  renderLb('lb-alltime', allTime);
+});
+
+function renderLb(tbodyId, entries) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  if (!entries || !entries.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="lb-empty">暂无数据</td></tr>';
+    return;
+  }
+  const medals = ['🥇', '🥈', '🥉'];
+  tbody.innerHTML = entries.slice(0, 10).map((e, i) => `
+    <tr class="${['lb-gold','lb-silver','lb-bronze'][i] || ''}">
+      <td>${medals[i] || (i + 1)}</td>
+      <td class="lb-name" title="${e.name}（${e.games}场）">${e.name}</td>
+      <td>${e.winRate}%</td>
+      <td>${e.avgPts}</td>
+      <td class="lb-score">${e.score}</td>
+    </tr>
+  `).join('');
+}
+
+$('btn-refresh-lb').addEventListener('click', () => socket.emit('get-leaderboard'));
+
 socket.on('reconnected', ({ roomId }) => {
   myRoomId = roomId;
   toast('✅ 重连成功！');

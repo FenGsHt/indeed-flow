@@ -78,6 +78,36 @@
       </div>
     </div>
   </div>
+
+  <!-- ══ 排行榜 ══════════════════════════════════════════════ -->
+  <div class="lb-panel panel">
+    <div class="panel-header">
+      <span>🏆 排行榜</span>
+      <button class="btn-icon" id="btn-refresh-lb" title="刷新">↺</button>
+    </div>
+    <div class="lb-cols">
+
+      <div class="lb-section">
+        <div class="lb-title">今日榜</div>
+        <table class="lb-table">
+          <thead><tr><th></th><th>玩家</th><th>胜率</th><th>均分</th><th>评分</th></tr></thead>
+          <tbody id="lb-today"><tr><td colspan="5" class="lb-empty">加载中…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="lb-section">
+        <div class="lb-title">历史总榜</div>
+        <table class="lb-table">
+          <thead><tr><th></th><th>玩家</th><th>胜率</th><th>均分</th><th>评分</th></tr></thead>
+          <tbody id="lb-alltime"><tr><td colspan="5" class="lb-empty">加载中…</td></tr></tbody>
+        </table>
+      </div>
+
+    </div>
+    <div class="lb-formula">
+      综合评分 = 胜率 × 60% + 均分/200 × 40%（满分 100）
+    </div>
+  </div>
 </div>
 
 <!-- ══ 等待室 ════════════════════════════════════════════════ -->
