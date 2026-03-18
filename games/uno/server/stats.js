@@ -15,9 +15,10 @@ function save(data) {
   catch (e) { console.error('[stats] save error:', e.message); }
 }
 
-// UTC+8 日期键
+// UTC+8 日期键，以凌晨4点为一天的分界线
+// 例：3月18日凌晨3:59 → 算 3月17日；3月18日凌晨4:00 → 算 3月18日
 function todayKey() {
-  const d = new Date(Date.now() + 8 * 3600_000);
+  const d = new Date(Date.now() + 8 * 3600_000 - 4 * 3600_000);
   return d.toISOString().slice(0, 10);
 }
 
