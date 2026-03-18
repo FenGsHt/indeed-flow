@@ -1,13 +1,17 @@
-// 多人扫雷前端逻辑 - 高级模式
+// 多人扫雷前端逻辑
 const SERVER_URL = '';
+const DEFAULT_ROOM = '游乐场';
+const PLAYER_NAME_KEY = 'minesweeper_player_name';
 
 // 游戏状态
 let socket = null;
 let currentRoom = null;
 let currentPlayer = null;
+let currentPlayerName = '';
 let players = [];
 let gameState = null;
-let leaderboardExpanded = true;
+let activeLeaderboardTab = 'score';
+let autoRestartTimer = null;
 
 // DOM 元素
 const joinScreen = document.getElementById('join-screen');
@@ -25,7 +29,6 @@ const boardMinesInput = document.getElementById('board-mines');
 const createToggle = document.getElementById('create-toggle');
 const createBody = document.getElementById('create-body');
 const boardSizeInfo = document.getElementById('board-size-info');
-const currentRoomSpan = document.getElementById('current-room');
 const playersListDiv = document.getElementById('players-list');
 const flagCountSpan = document.getElementById('flag-count');
 const mineCountSpan = document.getElementById('mine-count');
@@ -34,20 +37,36 @@ const boardDiv = document.getElementById('board');
 const gameOverModal = document.getElementById('game-over-modal');
 const gameOverTitle = document.getElementById('game-over-title');
 const gameOverMessage = document.getElementById('game-over-message');
+const gameOverHint = document.getElementById('game-over-hint');
 const roomListDiv = document.getElementById('room-list');
 const leaderboardDiv = document.getElementById('leaderboard');
-const ingameLeaderboardDiv = document.getElementById('ingame-leaderboard');
-const lbToggle = document.getElementById('lb-toggle');
-const ingameLbBody = document.getElementById('ingame-lb-body');
+const ingameScoreLb = document.getElementById('ingame-score-leaderboard');
+const ingameMineLb = document.getElementById('ingame-mine-leaderboard');
 
-// 生成随机房间号
-function generateRoomId() {
-  const adjectives = ['红色', '蓝色', '快速', '猛烈', '神秘', '闪亮', '暗黑', '极速'];
-  const nouns = ['炸弹', '猎人', '战士', '雷达', '扫雷', '勇士', '探险', '英雄'];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const num = Math.floor(Math.random() * 100);
-  return `${adj}${noun}${num}`;
+// 名字弹窗
+const nameModal = document.getElementById('name-modal');
+const playerNameModalInput = document.getElementById('player-name-modal-input');
+const startGameBtn = document.getElementById('start-game-btn');
+
+// 随机棋盘配置（多种尺寸和难度）
+function getRandomBoardConfig() {
+  const presets = [
+    { width: 9,  height: 9,  mines: 10 },
+    { width: 9,  height: 9,  mines: 15 },
+    { width: 12, height: 12, mines: 20 },
+    { width: 16, height: 12, mines: 30 },
+    { width: 16, height: 16, mines: 40 },
+    { width: 20, height: 16, mines: 55 },
+    { width: 25, height: 16, mines: 80 },
+    { width: 30, height: 16, mines: 99 },
+  ];
+  return presets[Math.floor(Math.random() * presets.length)];
+}
+
+// 加入默认房间
+function joinDefaultRoom() {
+  currentRoom = DEFAULT_ROOM;
+  socket.emit('join-room', { roomId: DEFAULT_ROOM, playerName: currentPlayerName });
 }
 
 // 初始化 Socket.io 连接
@@ -61,11 +80,8 @@ function initSocket() {
 
   socket.on('connect', () => {
     console.log('Connected to server:', socket.id);
-    if (currentRoom && currentPlayer) {
-      socket.emit('join-room', {
-        roomId: currentRoom,
-        playerName: currentPlayer.name
-      });
+    if (currentPlayerName) {
+      joinDefaultRoom();
     }
   });
 
@@ -73,57 +89,52 @@ function initSocket() {
     showGameStatus('连接断开，正在重连...');
   });
 
-  // 房间列表更新
   socket.on('room-list', (rooms) => {
     renderRoomList(rooms);
   });
 
-  // 榜单更新
   socket.on('leaderboard-update', (data) => {
-    renderLeaderboard(data);
+    renderMineLeaderboard(data);
   });
 
-  // 接收游戏状态
+  socket.on('score-leaderboard-update', (data) => {
+    renderScoreLeaderboard(data);
+  });
+
   socket.on('game-state', (state) => {
     updateGameState(state);
   });
 
-  // 接收玩家信息
   socket.on('player-info', (player) => {
     currentPlayer = player;
   });
 
-  // 游戏结束
   socket.on('game-over', (data) => {
     showGameOverModal(data.won, data.message);
   });
 
-  // 错误处理
   socket.on('error', (error) => {
-    joinError.textContent = error.message || '发生错误';
+    if (joinError) joinError.textContent = error.message || '发生错误';
   });
 }
 
-// 渲染房间列表
+// 渲染房间列表（大厅用，隐藏状态）
 function renderRoomList(rooms) {
+  if (!roomListDiv) return;
   if (!rooms || rooms.length === 0) {
     roomListDiv.innerHTML = '<div class="room-empty">暂无房间，创建一个吧！</div>';
     return;
   }
-
   roomListDiv.innerHTML = '';
   rooms.forEach(room => {
     const card = document.createElement('div');
     card.className = 'room-card';
-
     const statusClass = room.gameStatus === 'playing' ? 'status-playing' :
                         room.gameStatus === 'won' || room.gameStatus === 'lost' ? 'status-ended' : 'status-waiting';
     const statusText = room.gameStatus === 'playing' ? '游戏中' :
                        room.gameStatus === 'won' ? '已结束' :
                        room.gameStatus === 'lost' ? '已结束' : '等待中';
-
     const playerNames = room.players.slice(0, 3).join('、') + (room.players.length > 3 ? '...' : '');
-
     card.innerHTML = `
       <div class="room-card-info">
         <div class="room-card-name">${room.roomId}</div>
@@ -134,37 +145,38 @@ function renderRoomList(rooms) {
         <button class="btn-join">加入</button>
       </div>
     `;
-
     card.querySelector('.btn-join').addEventListener('click', () => joinRoom(room.roomId));
     roomListDiv.appendChild(card);
   });
 }
 
-// 渲染榜单（大厅版）
-function renderLeaderboard(data) {
-  // 大厅榜单
-  if (!data || data.length === 0) {
-    leaderboardDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
-  } else {
-    leaderboardDiv.innerHTML = '';
-    data.forEach((entry, index) => {
-      const row = document.createElement('div');
-      row.className = 'lb-row';
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-      row.innerHTML = `
-        <span class="lb-rank">${medal}</span>
-        <span class="lb-name">${entry.name}</span>
-        <span class="lb-hits">💥 ${entry.hits}</span>
-      `;
-      leaderboardDiv.appendChild(row);
-    });
+// 渲染暴雷榜
+function renderMineLeaderboard(data) {
+  // 大厅榜单（隐藏状态）
+  if (leaderboardDiv) {
+    if (!data || data.length === 0) {
+      leaderboardDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
+    } else {
+      leaderboardDiv.innerHTML = '';
+      data.forEach((entry, index) => {
+        const row = document.createElement('div');
+        row.className = 'lb-row';
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        row.innerHTML = `
+          <span class="lb-rank">${medal}</span>
+          <span class="lb-name">${entry.name}</span>
+          <span class="lb-hits">💥 ${entry.hits}</span>
+        `;
+        leaderboardDiv.appendChild(row);
+      });
+    }
   }
 
-  // 游戏内榜单
+  // 游戏内暴雷榜
   if (!data || data.length === 0) {
-    ingameLeaderboardDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
+    ingameMineLb.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
   } else {
-    ingameLeaderboardDiv.innerHTML = '';
+    ingameMineLb.innerHTML = '';
     data.slice(0, 10).forEach((entry, index) => {
       const row = document.createElement('div');
       row.className = 'lb-row lb-row-sm';
@@ -174,36 +186,62 @@ function renderLeaderboard(data) {
         <span class="lb-name">${entry.name}</span>
         <span class="lb-hits">💥 ${entry.hits}</span>
       `;
-      ingameLeaderboardDiv.appendChild(row);
+      ingameMineLb.appendChild(row);
     });
   }
 }
 
-// 加入房间
-function joinRoom(roomId) {
-  const playerName = playerNameInput.value.trim() || '匿名玩家';
-
-  if (!roomId) {
-    joinError.textContent = '请选择或创建一个房间';
+// 渲染得分榜
+function renderScoreLeaderboard(data) {
+  if (!data || data.length === 0) {
+    ingameScoreLb.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
     return;
   }
+  ingameScoreLb.innerHTML = '';
+  data.slice(0, 10).forEach((entry, index) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row lb-row-sm';
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+    row.innerHTML = `
+      <span class="lb-rank">${medal}</span>
+      <span class="lb-name">${entry.name}</span>
+      <span class="lb-score">⭐ ${entry.score}</span>
+    `;
+    ingameScoreLb.appendChild(row);
+  });
+}
 
-  joinError.textContent = '';
+// 加入房间（大厅用）
+function joinRoom(roomId) {
+  const playerName = playerNameInput?.value.trim() || currentPlayerName || '匿名玩家';
+  if (!roomId) {
+    if (joinError) joinError.textContent = '请选择或创建一个房间';
+    return;
+  }
+  if (joinError) joinError.textContent = '';
   currentRoom = roomId;
-
   socket.emit('join-room', { roomId, playerName });
 }
 
-// 创建新房间（含自定义尺寸）
+// 创建新房间（大厅用）
 function createRoom() {
-  const playerName = playerNameInput.value.trim() || '匿名玩家';
+  const playerName = playerNameInput?.value.trim() || currentPlayerName || '匿名玩家';
   const roomId = generateRoomId();
   const width = parseInt(boardWidthInput?.value) || 16;
   const height = parseInt(boardHeightInput?.value) || 16;
   const mines = parseInt(boardMinesInput?.value) || 40;
-  console.log('[createRoom] sending:', { roomId, width, height, mines });
   currentRoom = roomId;
   socket.emit('join-room', { roomId, playerName, width, height, mines });
+}
+
+// 生成随机房间号
+function generateRoomId() {
+  const adjectives = ['红色', '蓝色', '快速', '猛烈', '神秘', '闪亮', '暗黑', '极速'];
+  const nouns = ['炸弹', '猎人', '战士', '雷达', '扫雷', '勇士', '探险', '英雄'];
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  const num = Math.floor(Math.random() * 100);
+  return `${adj}${noun}${num}`;
 }
 
 // 更新游戏状态
@@ -217,10 +255,9 @@ function updateGameState(state) {
   updateGameStatus(state.gameStatus);
 
   // 切换到游戏界面
-  if (currentRoom && !joinScreen.classList.contains('hidden')) {
+  if (currentRoom && gameScreen.classList.contains('hidden')) {
     joinScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
-    currentRoomSpan.textContent = currentRoom;
     document.body.classList.add('in-game');
   }
 
@@ -275,7 +312,6 @@ function renderBoard(board) {
         cell.classList.add('game-over');
       }
 
-      // 长按标记（移动端）
       let longPressTimer = null;
       let longPressOccurred = false;
 
@@ -287,7 +323,6 @@ function renderBoard(board) {
         e.preventDefault();
         handleCellRightClick(x, y);
       });
-      // passive: true 保证 click 事件正常触发；长按通过计时器检测
       cell.addEventListener('touchstart', () => {
         longPressOccurred = false;
         longPressTimer = setTimeout(() => {
@@ -304,7 +339,6 @@ function renderBoard(board) {
     }
   }
 
-  // 渲染完成后更新边缘提示
   requestAnimationFrame(updateScrollHints);
 }
 
@@ -399,7 +433,7 @@ boardWrapper.addEventListener('touchend', () => {
 
 // 处理格子点击（揭开）
 function handleCellClick(x, y) {
-  if (hasDragged) return; // 拖动后忽略点击
+  if (hasDragged) return;
   if (!socket || !currentRoom) return;
   if (gameState && (gameState.gameStatus === 'won' || gameState.gameStatus === 'lost')) return;
   socket.emit('reveal-cell', { x, y });
@@ -469,35 +503,48 @@ function showGameOverModal(won, message) {
   gameOverTitle.textContent = won ? '🎉 恭喜获胜！' : '💥 游戏结束';
   gameOverMessage.textContent = message;
   gameOverModal.classList.remove('hidden');
+
+  if (!won) {
+    // 暴雷：2秒后自动开新局（随机尺寸）
+    gameOverHint.classList.remove('hidden');
+    gameOverHint.textContent = '2秒后自动开始新游戏...';
+    if (autoRestartTimer) clearTimeout(autoRestartTimer);
+    autoRestartTimer = setTimeout(() => {
+      autoRestartTimer = null;
+      hideGameOverModal();
+      socket.emit('new-game', getRandomBoardConfig());
+    }, 2000);
+  } else {
+    gameOverHint.classList.add('hidden');
+  }
 }
 
 function hideGameOverModal() {
   gameOverModal.classList.add('hidden');
 }
 
-// 离开房间
+// 离开房间（退出到名字界面）
 function leaveRoom() {
+  if (autoRestartTimer) {
+    clearTimeout(autoRestartTimer);
+    autoRestartTimer = null;
+  }
   if (socket) socket.emit('leave-room');
   currentRoom = null;
   currentPlayer = null;
   players = [];
   gameState = null;
+  currentPlayerName = '';
+  localStorage.removeItem(PLAYER_NAME_KEY);
 
-  joinScreen.classList.remove('hidden');
   gameScreen.classList.add('hidden');
   document.body.classList.remove('in-game');
   hideGameOverModal();
 
-  // 刷新房间列表
-  socket.emit('get-rooms');
-}
-
-// 新建游戏
-function startNewGame() {
-  if (socket && currentRoom) {
-    socket.emit('new-game');
-  }
-  hideGameOverModal();
+  // 显示名字输入弹窗
+  nameModal.classList.remove('hidden');
+  playerNameModalInput.value = '';
+  setTimeout(() => playerNameModalInput.focus(), 100);
 }
 
 // 显示游戏状态（临时）
@@ -508,45 +555,91 @@ function showGameStatus(message) {
   }, 3000);
 }
 
-// 创建面板展开/折叠
-let createExpanded = false;
-createBody.style.display = 'none';
-createToggle.addEventListener('click', () => {
-  createExpanded = !createExpanded;
-  createBody.style.display = createExpanded ? 'block' : 'none';
-  createToggle.querySelector('.create-arrow').textContent = createExpanded ? '▾' : '▸';
-});
+// 大厅：创建面板展开/折叠
+if (createBody) {
+  let createExpanded = false;
+  createBody.style.display = 'none';
+  createToggle?.addEventListener('click', () => {
+    createExpanded = !createExpanded;
+    createBody.style.display = createExpanded ? 'block' : 'none';
+    createToggle.querySelector('.create-arrow').textContent = createExpanded ? '▾' : '▸';
+  });
+}
 
-// 预设按钮
+// 大厅：预设按钮
 document.querySelectorAll('.btn-preset').forEach(btn => {
   btn.addEventListener('click', () => {
-    boardWidthInput.value = btn.dataset.w;
-    boardHeightInput.value = btn.dataset.h;
-    boardMinesInput.value = btn.dataset.m;
+    if (boardWidthInput) boardWidthInput.value = btn.dataset.w;
+    if (boardHeightInput) boardHeightInput.value = btn.dataset.h;
+    if (boardMinesInput) boardMinesInput.value = btn.dataset.m;
     document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   });
 });
 
-// 切换游戏内榜单展开/折叠
-lbToggle.addEventListener('click', () => {
-  leaderboardExpanded = !leaderboardExpanded;
-  ingameLbBody.style.display = leaderboardExpanded ? 'block' : 'none';
-  lbToggle.querySelector('.lb-arrow').textContent = leaderboardExpanded ? '▾' : '▸';
+// 榜单标签切换
+document.querySelectorAll('.lb-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const tabName = tab.dataset.tab;
+    activeLeaderboardTab = tabName;
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    ingameScoreLb.classList.toggle('hidden', tabName !== 'score');
+    ingameMineLb.classList.toggle('hidden', tabName !== 'mine');
+  });
 });
 
-// 事件监听
-createRoomBtn.addEventListener('click', createRoom);
-refreshBtn.addEventListener('click', () => socket.emit('get-rooms'));
-leaveBtn.addEventListener('click', leaveRoom);
-newGameBtn.addEventListener('click', startNewGame);
-restartBtn.addEventListener('click', startNewGame);
+// 名字弹窗：提交名字
+function submitName() {
+  const name = playerNameModalInput.value.trim();
+  if (!name) {
+    playerNameModalInput.focus();
+    return;
+  }
+  currentPlayerName = name.slice(0, 12);
+  localStorage.setItem(PLAYER_NAME_KEY, currentPlayerName);
+  nameModal.classList.add('hidden');
+  if (socket && socket.connected) {
+    joinDefaultRoom();
+  }
+}
 
-playerNameInput.addEventListener('keypress', (e) => {
+startGameBtn.addEventListener('click', submitName);
+playerNameModalInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') submitName();
+});
+
+// 按钮事件
+createRoomBtn?.addEventListener('click', createRoom);
+refreshBtn?.addEventListener('click', () => socket.emit('get-rooms'));
+leaveBtn.addEventListener('click', leaveRoom);
+newGameBtn.addEventListener('click', () => socket.emit('new-game', getRandomBoardConfig()));
+restartBtn.addEventListener('click', () => {
+  if (autoRestartTimer) {
+    clearTimeout(autoRestartTimer);
+    autoRestartTimer = null;
+  }
+  hideGameOverModal();
+  socket.emit('new-game', getRandomBoardConfig());
+});
+
+playerNameInput?.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') createRoom();
 });
 
 // 初始化
-initSocket();
+function init() {
+  const savedName = localStorage.getItem(PLAYER_NAME_KEY);
+  if (savedName) {
+    currentPlayerName = savedName;
+    nameModal.classList.add('hidden');
+  } else {
+    nameModal.classList.remove('hidden');
+    setTimeout(() => playerNameModalInput.focus(), 100);
+  }
+  initSocket();
+}
 
-console.log('Multiplayer Minesweeper (Expert Mode) client initialized');
+init();
+
+console.log('Multiplayer Minesweeper client initialized');

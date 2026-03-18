@@ -10,26 +10,20 @@
   <div class="container">
     <h1>💣 多人实时扫雷</h1>
 
-    <!-- 大厅界面 -->
-    <div id="join-screen" class="screen">
+    <!-- 大厅界面（功能保留，默认隐藏）-->
+    <div id="join-screen" class="screen hidden">
       <div class="lobby-layout">
-
-        <!-- 左侧：房间列表 -->
         <div class="lobby-left">
           <div class="name-row">
             <input type="text" id="player-name" placeholder="输入你的名字" maxlength="12" />
           </div>
-
           <div class="rooms-header">
             <h2>🚪 房间列表</h2>
             <button id="refresh-btn" class="btn-icon" title="刷新">🔄</button>
           </div>
-
           <div id="room-list" class="room-list">
             <div class="room-empty">暂无房间，创建一个吧！</div>
           </div>
-
-          <!-- 创建房间区域 -->
           <div class="create-area">
             <div class="create-header" id="create-toggle">
               <span>＋ 创建新房间</span>
@@ -59,11 +53,8 @@
               <button id="create-room-btn" class="btn create-btn">创建并加入</button>
             </div>
           </div>
-
           <p id="join-error" class="error"></p>
         </div>
-
-        <!-- 右侧：暴雷榜 -->
         <div class="lobby-right">
           <h2>💥 暴雷榜</h2>
           <p class="leaderboard-hint">踩雷次数越多，越光荣！</p>
@@ -71,7 +62,6 @@
             <div class="leaderboard-empty">暂无记录</div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -79,9 +69,8 @@
     <div id="game-screen" class="screen hidden">
       <div class="game-header">
         <div class="room-info">
-          <span>房间: <strong id="current-room"></strong></span>
           <span id="board-size-info" class="board-size-info"></span>
-          <button id="leave-btn" class="btn-small">离开房间</button>
+          <button id="leave-btn" class="btn-small btn-leave">✕ 退出</button>
         </div>
         <div class="players-list" id="players-list">
           <span class="players-title">在线玩家:</span>
@@ -103,13 +92,19 @@
           <div class="scroll-hint scroll-hint-top"><span>⌃</span></div>
         </div>
 
-        <!-- 游戏内暴雷榜 -->
+        <!-- 游戏内榜单（得分榜 + 暴雷榜） -->
         <div class="ingame-leaderboard">
-          <div class="ingame-lb-title" id="lb-toggle">
-            💥 暴雷榜 <span class="lb-arrow">▾</span>
+          <div class="lb-tabs">
+            <button class="lb-tab active" data-tab="score">🏆 得分榜</button>
+            <button class="lb-tab" data-tab="mine">💥 暴雷榜</button>
           </div>
           <div id="ingame-lb-body" class="ingame-lb-body">
-            <div id="ingame-leaderboard"></div>
+            <div id="ingame-score-leaderboard">
+              <div class="leaderboard-empty">暂无记录</div>
+            </div>
+            <div id="ingame-mine-leaderboard" class="hidden">
+              <div class="leaderboard-empty">暂无记录</div>
+            </div>
           </div>
         </div>
       </div>
@@ -119,9 +114,21 @@
         <div class="modal-content">
           <h2 id="game-over-title">游戏结束</h2>
           <p id="game-over-message"></p>
+          <p id="game-over-hint" class="game-over-hint hidden"></p>
           <button id="restart-btn" class="btn">再来一局</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- 名字输入弹窗 -->
+  <div id="name-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>💣 多人实时扫雷</h2>
+      <p>输入你的名字加入游戏</p>
+      <input type="text" id="player-name-modal-input" class="name-modal-input"
+             placeholder="输入名字（最多12字）" maxlength="12" autocomplete="off" />
+      <button id="start-game-btn" class="btn">开始游戏</button>
     </div>
   </div>
 

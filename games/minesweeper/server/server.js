@@ -15,8 +15,10 @@ const io = new Server(server, {
 
 const roomManager = new RoomManager();
 
-// 全局暴雷榜单 playerName -> { name, hits }
+// 全局暴雷榜 playerName -> { name, hits }
 const mineLeaderboard = new Map();
+// 全局得分榜 playerName -> { name, score }（揭开格子数累计）
+const scoreLeaderboard = new Map();
 
 app.use(express.static('../client'));
 
@@ -25,17 +27,32 @@ function broadcastRoomList() {
   io.emit('room-list', roomManager.getRoomList());
 }
 
-// 更新暴雷榜单并广播
+// 更新暴雷榜并广播
 function recordMineHit(playerName) {
   const entry = mineLeaderboard.get(playerName) || { name: playerName, hits: 0 };
   entry.hits++;
   mineLeaderboard.set(playerName, entry);
-  io.emit('leaderboard-update', getLeaderboard());
+  io.emit('leaderboard-update', getMineLeaderboard());
 }
 
-function getLeaderboard() {
+function getMineLeaderboard() {
   return Array.from(mineLeaderboard.values())
     .sort((a, b) => b.hits - a.hits)
+    .slice(0, 20);
+}
+
+// 更新得分榜并广播
+function recordScore(playerName, cells) {
+  if (!playerName || cells <= 0) return;
+  const entry = scoreLeaderboard.get(playerName) || { name: playerName, score: 0 };
+  entry.score += cells;
+  scoreLeaderboard.set(playerName, entry);
+  io.emit('score-leaderboard-update', getScoreLeaderboard());
+}
+
+function getScoreLeaderboard() {
+  return Array.from(scoreLeaderboard.values())
+    .sort((a, b) => b.score - a.score)
     .slice(0, 20);
 }
 
@@ -44,7 +61,8 @@ io.on('connection', (socket) => {
 
   // 连接时推送房间列表和榜单
   socket.emit('room-list', roomManager.getRoomList());
-  socket.emit('leaderboard-update', getLeaderboard());
+  socket.emit('leaderboard-update', getMineLeaderboard());
+  socket.emit('score-leaderboard-update', getScoreLeaderboard());
 
   let currentRoom = null;
   let currentPlayer = null;
@@ -56,7 +74,8 @@ io.on('connection', (socket) => {
 
   // 获取榜单
   socket.on('get-leaderboard', () => {
-    socket.emit('leaderboard-update', getLeaderboard());
+    socket.emit('leaderboard-update', getMineLeaderboard());
+    socket.emit('score-leaderboard-update', getScoreLeaderboard());
   });
 
   // 加入房间
@@ -84,7 +103,6 @@ io.on('connection', (socket) => {
     const w = Math.min(Math.max(parseInt(width) || 16, 5), 50);
     const h = Math.min(Math.max(parseInt(height) || 16, 5), 30);
     const m = Math.min(Math.max(parseInt(mines) || 40, 1), w * h - 9);
-    // 有自定义尺寸时强制用新参数（覆盖已有未开始的房间）
     const room = roomManager.createRoom(roomId, w, h, m, !!width);
     currentRoom = roomId;
     currentPlayer = roomManager.addPlayer(roomId, socket.id, playerName);
@@ -133,7 +151,9 @@ io.on('connection', (socket) => {
       room.game.placeMines(x, y);
     }
 
+    const beforeCount = room.game.revealedCount;
     const result = room.game.reveal(x, y);
+    const cellsRevealed = room.game.revealedCount - beforeCount;
 
     if (result.success) {
       io.to(currentRoom).emit('game-state', {
@@ -143,15 +163,20 @@ io.on('connection', (socket) => {
 
       if (result.gameOver) {
         if (room.game.gameStatus === 'won') {
+          // 胜利时记录最后揭开的格子得分
+          recordScore(currentPlayer.name, cellsRevealed);
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
         } else if (room.game.gameStatus === 'lost') {
-          // 记录暴雷玩家
+          // 暴雷不计分，记录暴雷榜
           recordMineHit(currentPlayer.name);
           io.to(currentRoom).emit('game-over', {
             won: false,
             message: `💥 ${currentPlayer.name} 踩到雷了！`
           });
         }
+      } else {
+        // 正常揭开，记录得分
+        recordScore(currentPlayer.name, cellsRevealed);
       }
     }
   });
@@ -172,19 +197,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 新建游戏（保持房间原有尺寸）
-  socket.on('new-game', () => {
+  // 新建游戏（支持传入新的随机尺寸）
+  socket.on('new-game', (data) => {
     if (!currentRoom) return;
 
     const room = roomManager.getRoom(currentRoom);
     if (!room) return;
 
-    // 沿用原来的尺寸和雷数
-    const { width, height, mines } = room.game;
+    // 支持指定新尺寸（用于随机重开），否则沿用原来的
+    const width = (data && data.width) ? Math.min(Math.max(parseInt(data.width), 5), 50) : room.game.width;
+    const height = (data && data.height) ? Math.min(Math.max(parseInt(data.height), 5), 30) : room.game.height;
+    const mines = (data && data.mines) ? Math.min(Math.max(parseInt(data.mines), 1), width * height - 9) : room.game.mines;
+
     room.game = new MinesweeperGame(width, height, mines);
     room.currentPlayer = room.players.keys().next().value;
 
-    console.log(`New game started in room ${currentRoom}`);
+    console.log(`New game in room ${currentRoom}: ${width}x${height}/${mines}mines`);
 
     io.to(currentRoom).emit('game-state', {
       ...room.game.getState(),
