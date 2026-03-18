@@ -124,6 +124,7 @@ jobs:
                   (npm install --no-audit && cp /tmp/pkg_hash_new /tmp/pkg_hash_old)))) && \
                pm2 stop minesweeper-server 2>/dev/null; \
                pm2 delete minesweeper-server 2>/dev/null; \
+               fuser -k 3002/tcp 2>/dev/null || true; \
                pm2 start server.js --name minesweeper-server && \
                pm2 save"
 
