@@ -289,32 +289,32 @@
 
     /* ── Sidebar ────────────────────────────────────────────────── */
     #sidebar {
-      width: 210px; min-width: 210px;
+      width: 220px; min-width: 220px;
       display: flex; flex-direction: column;
       background: var(--bg2);
       border-left: 1px solid var(--border);
       overflow: hidden;
     }
 
-    .sidebar-tabs {
-      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
-    }
-    .sidebar-tab {
-      flex: 1; padding: 10px 4px;
-      background: none; border: none;
-      font-family: var(--font); font-size: 7px;
-      color: var(--dim); cursor: pointer;
-      letter-spacing: 1px;
-      border-right: 1px solid var(--border);
-      transition: color 0.15s, background 0.15s;
-    }
-    .sidebar-tab:last-child { border-right: none; }
-    .sidebar-tab.active {
-      color: var(--green);
-      background: rgba(57,255,20,0.06);
+    .sidebar-header {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 7px; color: var(--green);
+      letter-spacing: 2px; flex-shrink: 0;
       text-shadow: 0 0 8px var(--green);
     }
-    .sidebar-tab:hover:not(.active) { color: var(--green2); }
+
+    .sidebar-col-labels {
+      display: flex; align-items: center;
+      padding: 4px 10px 4px 10px; gap: 7px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .col-rank  { font-size: 6px; width: 18px; color: var(--dim); flex-shrink:0; text-align:center; }
+    .col-dot   { width: 7px; flex-shrink:0; }
+    .col-name  { flex:1; font-size: 6px; color: var(--dim); min-width:0; }
+    .col-kills { font-size: 6px; color: var(--red);   flex-shrink:0; width:28px; text-align:right; letter-spacing:1px; }
+    .col-score { font-size: 6px; color: var(--amber); flex-shrink:0; width:32px; text-align:right; letter-spacing:1px; }
 
     .lb-list {
       flex: 1; overflow-y: auto; padding: 4px 0;
@@ -333,18 +333,15 @@
     }
     .lb-item.dead { opacity: 0.35; }
 
-    .lb-rank { font-size: 8px; width: 18px; text-align: center; flex-shrink: 0; color: var(--dim); }
-    .lb-dot { width: 7px; height: 7px; flex-shrink: 0; }
-    .lb-name {
-      flex: 1; font-size: 7px; color: rgba(255,255,255,0.7);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+    .lb-rank  { font-size: 8px; width: 18px; text-align:center; flex-shrink:0; color: var(--dim); }
+    .lb-dot   { width: 7px; height: 7px; flex-shrink:0; }
+    .lb-name  {
+      flex:1; font-size: 7px; color: rgba(255,255,255,0.7);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
       letter-spacing: 0.5px;
     }
-    .lb-val {
-      font-size: 9px; font-weight: 700; flex-shrink: 0; letter-spacing: 1px;
-    }
-    .lb-val.score { color: var(--amber); }
-    .lb-val.kills { color: var(--red); }
+    .lb-kills { font-size: 9px; flex-shrink:0; color: var(--red);   width:28px; text-align:right; letter-spacing:1px; }
+    .lb-score { font-size: 9px; flex-shrink:0; color: var(--amber); width:32px; text-align:right; letter-spacing:1px; }
 
     .sidebar-footer {
       padding: 8px 10px;
@@ -373,18 +370,6 @@
       flex-shrink: 0;
     }
     #mobile-lb-panel.open { display: flex; }
-
-    .mobile-lb-tabs {
-      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
-    }
-    .mobile-lb-tab {
-      flex: 1; padding: 8px; background: none; border: none;
-      font-family: var(--font); font-size: 7px;
-      color: var(--dim); cursor: pointer; letter-spacing: 1px;
-      border-right: 1px solid var(--border);
-    }
-    .mobile-lb-tab:last-child { border-right: none; }
-    .mobile-lb-tab.active { color: var(--green); background: rgba(57,255,20,0.05); }
 
     /* ── Toast ──────────────────────────────────────────────────── */
     #toast-container {
@@ -496,9 +481,13 @@
 
     <!-- Desktop sidebar -->
     <div id="sidebar">
-      <div class="sidebar-tabs">
-        <button class="sidebar-tab active" data-tab="score" onclick="switchTab('score')">◈ SCORE</button>
-        <button class="sidebar-tab" data-tab="kills" onclick="switchTab('kills')">⚔ KILLS</button>
+      <div class="sidebar-header">⚔ KILL BOARD</div>
+      <div class="sidebar-col-labels">
+        <span class="col-rank">#</span>
+        <span class="col-dot"></span>
+        <span class="col-name">NAME</span>
+        <span class="col-kills">KLL</span>
+        <span class="col-score">SCR</span>
       </div>
       <div class="lb-list" id="lb-list-desktop"></div>
       <div class="sidebar-footer">ARROWS / WASD · SWIPE</div>
@@ -507,13 +496,9 @@
 
   <!-- Mobile leaderboard -->
   <div id="mobile-lb-toggle" onclick="toggleMobileLb()">
-    <span id="mobile-lb-label">◈ LEADERBOARD ▲</span>
+    <span id="mobile-lb-label">⚔ KILL BOARD ▲</span>
   </div>
   <div id="mobile-lb-panel">
-    <div class="mobile-lb-tabs">
-      <button class="mobile-lb-tab active" data-tab="score" onclick="switchMobileTab('score')">◈ SCORE</button>
-      <button class="mobile-lb-tab" data-tab="kills" onclick="switchMobileTab('kills')">⚔ KILLS</button>
-    </div>
     <div class="lb-list" id="lb-list-mobile"></div>
   </div>
 </div>
@@ -552,8 +537,6 @@ let gameState    = null;
 let isConnected  = false;
 let isDead       = false;
 let mobileLbOpen = false;
-let activeTab    = 'score';   // desktop
-let mobileTab    = 'score';   // mobile
 
 // ──────────────────────────────────────────────────────────────────
 //  DOM refs
@@ -590,25 +573,6 @@ const toastContainer  = document.getElementById('toast-container');
 nameInput.addEventListener('input', () => {
   localStorage.setItem('snake_player_name', nameInput.value.trim());
 });
-
-// ──────────────────────────────────────────────────────────────────
-//  Leaderboard tab switching
-// ──────────────────────────────────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.sidebar-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
-  if (gameState) renderLeaderboard(lbDesktop, gameState, tab);
-}
-
-function switchMobileTab(tab) {
-  mobileTab = tab;
-  document.querySelectorAll('.mobile-lb-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
-  if (gameState) renderLeaderboard(lbMobile, gameState, tab);
-}
 
 // ──────────────────────────────────────────────────────────────────
 //  Socket connection
@@ -919,34 +883,29 @@ function updateHUD(state) {
 }
 
 // ──────────────────────────────────────────────────────────────────
-//  Leaderboard
+//  Leaderboard — ranked by kills, score as tiebreak
 // ──────────────────────────────────────────────────────────────────
 function updateLeaderboard(state) {
-  renderLeaderboard(lbDesktop, state, activeTab);
-  renderLeaderboard(lbMobile,  state, mobileTab);
+  const html = buildLeaderboardHtml(state);
+  lbDesktop.innerHTML = html;
+  lbMobile.innerHTML  = html;
 }
 
-function renderLeaderboard(container, state, tab) {
-  const sorted = [...state.players].sort((a, b) =>
-    tab === 'kills'
-      ? (b.kills - a.kills) || (b.score - a.score)
-      : (b.score - a.score)
+function buildLeaderboardHtml(state) {
+  const sorted = [...state.players].sort(
+    (a, b) => (b.kills - a.kills) || (b.score - a.score)
   );
-
   const RANK_CHARS = ['1', '2', '3'];
-
-  container.innerHTML = sorted.map((p, i) => {
-    const isMe  = p.id === myId;
-    const dead  = !p.alive;
-    const rank  = i < 3 ? RANK_CHARS[i] : String(i + 1);
-    const prefix= dead ? '✕' : '';
-    const val   = tab === 'kills' ? p.kills : p.score;
-    const cls   = tab === 'kills' ? 'kills' : 'score';
+  return sorted.map((p, i) => {
+    const isMe = p.id === myId;
+    const dead = !p.alive;
+    const rank = i < 3 ? RANK_CHARS[i] : String(i + 1);
     return `<div class="lb-item${isMe ? ' mine' : ''}${dead ? ' dead' : ''}">
       <span class="lb-rank">${rank}</span>
       <span class="lb-dot" style="background:${p.color};box-shadow:0 0 4px ${p.color}"></span>
-      <span class="lb-name">${prefix}${escapeHtml(p.name.toUpperCase())}</span>
-      <span class="lb-val ${cls}">${String(val).padStart(tab==='kills'?2:4,'0')}</span>
+      <span class="lb-name">${dead ? '✕' : ''}${escapeHtml(p.name.toUpperCase())}</span>
+      <span class="lb-kills">${String(p.kills).padStart(2,'0')}</span>
+      <span class="lb-score">${String(p.score).padStart(4,'0')}</span>
     </div>`;
   }).join('');
 }
@@ -987,7 +946,7 @@ function toggleMobileLb() {
   mobileLbOpen = !mobileLbOpen;
   mobileLbPanel.classList.toggle('open', mobileLbOpen);
   document.getElementById('mobile-lb-label').textContent =
-    mobileLbOpen ? '◈ LEADERBOARD ▼' : '◈ LEADERBOARD ▲';
+    mobileLbOpen ? '⚔ KILL BOARD ▼' : '⚔ KILL BOARD ▲';
 }
 
 // ──────────────────────────────────────────────────────────────────

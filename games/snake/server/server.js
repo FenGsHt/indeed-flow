@@ -10,7 +10,7 @@ const io = new Server(server, {
 
 const GRID        = 30;
 const FOOD_COUNT  = 12;
-const TICK_MS     = 100;
+const TICK_MS     = 150;
 const RESPAWN_MS  = 3000;
 const INIT_LEN    = 3;
 const COLORS = [
