@@ -213,13 +213,25 @@ function renderGame(state) {
   if (!me) return;
 
   const isMyTurn = state.currentPlayerId === myId;
+  const currentName = state.players.find(p => p.id === state.currentPlayerId)?.name || '';
 
   // 顶部信息
   $('game-room-name').textContent = myRoomId;
   $('game-direction').textContent  = state.direction === 1 ? '↻' : '↺';
-  const currentName = state.players.find(p => p.id === state.currentPlayerId)?.name || '';
   $('game-turn-label').textContent = isMyTurn ? '⚡ 你的回合' : `${currentName} 的回合`;
   $('game-turn-label').style.color  = isMyTurn ? '#ffd700' : 'var(--muted)';
+
+  // 回合横幅
+  const banner = $('turn-banner');
+  banner.classList.remove('hidden', 'my-turn', 'other-turn');
+  if (isMyTurn) {
+    const drawHint = state.pendingDraw > 0 ? `（需摸 +${state.pendingDraw} 或叠牌）` : '';
+    banner.textContent = `⚡ 你的回合！出一张牌或摸牌${drawHint}`;
+    banner.classList.add('my-turn');
+  } else {
+    banner.textContent = `等待 ${currentName} 出牌…`;
+    banner.classList.add('other-turn');
+  }
 
   // 颜色指示
   const dot = $('color-dot');
@@ -241,6 +253,14 @@ function renderGame(state) {
 
   // 摸牌堆
   $('deck-count').textContent = `${state.deckCount} 张`;
+  const drawStack = $('btn-draw');
+  if (isMyTurn) drawStack.classList.add('my-turn');
+  else          drawStack.classList.remove('my-turn');
+
+  // 摸牌按钮（底部）
+  const drawBtn = $('btn-draw-action');
+  if (isMyTurn) drawBtn.classList.remove('hidden');
+  else          drawBtn.classList.add('hidden');
 
   // 其他玩家
   renderOtherPlayers(state);
@@ -336,6 +356,13 @@ function canPlayCard(card, state) {
 }
 
 function onCardClick(card) {
+  // 出牌动画
+  const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
+  if (el) {
+    el.classList.add('playing');
+    setTimeout(() => el.remove(), 350);
+  }
+
   const needsColor = card.type === 'wild' || card.type === 'wild_draw4';
   if (needsColor) {
     pendingCard = card.id;
@@ -357,13 +384,14 @@ $('color-picker').querySelectorAll('.color-btn').forEach(btn => {
   });
 });
 
-// 摸牌
-$('btn-draw').addEventListener('click', () => {
+// 摸牌（牌堆 + 底部按钮都能触发）
+function doDraw() {
   if (!gameState) return;
-  const isMyTurn = gameState.currentPlayerId === myId;
-  if (!isMyTurn) return;
+  if (gameState.currentPlayerId !== myId) return;
   socket.emit('draw-card');
-});
+}
+$('btn-draw').addEventListener('click', doDraw);
+$('btn-draw-action').addEventListener('click', doDraw);
 
 // 喊 UNO
 $('btn-uno').addEventListener('click', () => {
