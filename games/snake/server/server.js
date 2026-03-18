@@ -161,6 +161,7 @@ function tick() {
     const victim = players[victimId];
     if (!victim) continue;
 
+    const victimLen  = victim.snake.length;   // capture before clearing
     victim.alive     = false;
     victim.snake     = [];
     victim.score     = 0;
@@ -168,8 +169,16 @@ function tick() {
 
     // Award kill (only if killer not also dying this tick)
     if (killerId && players[killerId] && !deathMap[killerId]) {
-      players[killerId].kills  = (players[killerId].kills  || 0) + 1;
-      players[killerId].score += 30;
+      const killer = players[killerId];
+      killer.kills  = (killer.kills  || 0) + 1;
+      killer.score += 30;
+
+      // Length bonus: gain half the victim's length (min 3 segments)
+      const bonus = Math.max(3, Math.floor(victimLen / 2));
+      const tail  = killer.snake[killer.snake.length - 1];
+      for (let i = 0; i < bonus; i++) {
+        killer.snake.push({ ...tail });
+      }
     }
 
     const killerName = killerId && players[killerId] ? players[killerId].name : null;
