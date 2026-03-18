@@ -3,647 +3,518 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>多人贪吃蛇 - INDEED</title>
+  <title>SNAKE ARENA · INDEED</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      --green:   #39ff14;
+      --green2:  #00c832;
+      --amber:   #ffb800;
+      --red:     #ff3131;
+      --cyan:    #00e5ff;
+      --bg:      #060806;
+      --bg2:     #0d120d;
+      --border:  #1e3020;
+      --dim:     rgba(57,255,20,0.25);
+      --font:    'Press Start 2P', monospace;
     }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       overflow: hidden;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--green);
+      font-family: var(--font);
+      image-rendering: pixelated;
     }
 
-    /* ── Join Screen ─────────────────────────────────────────────── */
+    /* ── CRT body noise ──────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 999;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px
+      );
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       JOIN SCREEN
+    ══════════════════════════════════════════════════════════════ */
     #join-screen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
       z-index: 100;
     }
-
-    #join-screen.hidden {
-      display: none;
-    }
+    #join-screen.hidden { display: none; }
 
     .join-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 20px;
-      padding: 48px 40px;
       width: 360px;
-      max-width: calc(100vw - 40px);
+      max-width: calc(100vw - 32px);
+      padding: 36px 28px;
+      background: var(--bg2);
+      border: 2px solid var(--green2);
+      box-shadow: 0 0 0 1px var(--bg), 0 0 24px rgba(57,255,20,0.15), inset 0 0 40px rgba(0,0,0,0.6);
       text-align: center;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
     }
 
     .join-logo {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      color: rgba(255, 255, 255, 0.4);
-      text-transform: uppercase;
-      margin-bottom: 20px;
+      font-size: 8px;
+      letter-spacing: 4px;
+      color: var(--dim);
+      margin-bottom: 24px;
     }
 
-    .join-emoji {
-      font-size: 56px;
-      line-height: 1;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .join-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #ffffff;
+    .join-ascii {
+      font-size: 9px;
+      line-height: 1.6;
+      color: var(--green);
       margin-bottom: 8px;
+      text-shadow: 0 0 8px var(--green);
     }
 
     .join-subtitle {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 32px;
-      line-height: 1.5;
+      font-size: 7px;
+      color: var(--dim);
+      margin-bottom: 28px;
+      line-height: 2;
+    }
+
+    .join-label {
+      font-size: 7px;
+      color: var(--green2);
+      text-align: left;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
     }
 
     .join-input {
       width: 100%;
-      padding: 13px 16px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 10px;
-      color: #ffffff;
-      font-size: 15px;
+      padding: 10px 12px;
+      background: #000;
+      border: 1px solid var(--green2);
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 10px;
       outline: none;
-      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 6px;
+      caret-color: var(--green);
+      letter-spacing: 1px;
+    }
+    .join-input::placeholder { color: rgba(57,255,20,0.2); }
+    .join-input:focus { border-color: var(--green); box-shadow: 0 0 8px rgba(57,255,20,0.3); }
+
+    .join-conn-status {
+      font-size: 7px;
+      color: var(--dim);
       margin-bottom: 16px;
+      min-height: 14px;
+      letter-spacing: 1px;
     }
-
-    .join-input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .join-input:focus {
-      border-color: rgba(0, 255, 136, 0.5);
-      background: rgba(255, 255, 255, 0.11);
-    }
+    .join-conn-status.connected { color: var(--green); }
 
     .join-btn {
       width: 100%;
       padding: 14px;
-      background: linear-gradient(135deg, #00ff88, #00c46a);
-      border: none;
-      border-radius: 10px;
-      color: #0a0a15;
-      font-size: 16px;
-      font-weight: 700;
+      background: #000;
+      border: 2px solid var(--green);
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 10px;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: background 0.1s, color 0.1s, box-shadow 0.1s;
       margin-bottom: 20px;
     }
-
     .join-btn:hover:not(:disabled) {
-      opacity: 0.9;
-      transform: translateY(-1px);
+      background: var(--green);
+      color: #000;
+      box-shadow: 0 0 20px rgba(57,255,20,0.5);
     }
-
-    .join-btn:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    .join-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .join-conn-status {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.45);
-      margin-bottom: 20px;
-    }
-
-    .join-conn-status.connected {
-      color: #00ff88;
-    }
+    .join-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .join-back {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.35);
+      font-size: 7px;
+      color: var(--dim);
       text-decoration: none;
-      transition: color 0.2s;
+      letter-spacing: 1px;
     }
+    .join-back:hover { color: var(--green); }
 
-    .join-back:hover {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    /* ── Game Screen ─────────────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════════════
+       GAME SCREEN
+    ══════════════════════════════════════════════════════════════ */
     #game-screen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      background: var(--bg);
     }
+    #game-screen.hidden { display: none; }
 
-    #game-screen.hidden {
-      display: none;
-    }
-
-    /* Top bar */
+    /* ── Topbar ─────────────────────────────────────────────────── */
     #topbar {
-      height: 50px;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      background: rgba(0, 0, 0, 0.35);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      gap: 12px;
+      height: 48px; min-height: 48px;
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
 
     .topbar-back {
-      color: rgba(255, 255, 255, 0.6);
-      text-decoration: none;
-      font-size: 14px;
-      white-space: nowrap;
-      transition: color 0.2s;
-      flex-shrink: 0;
+      font-size: 7px; color: var(--dim);
+      text-decoration: none; white-space: nowrap;
+      flex-shrink: 0; letter-spacing: 1px;
     }
+    .topbar-back:hover { color: var(--green); }
 
-    .topbar-back:hover {
-      color: #ffffff;
-    }
-
-    .topbar-divider {
-      width: 1px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.15);
-      flex-shrink: 0;
+    .topbar-sep {
+      width: 1px; height: 18px;
+      background: var(--border); flex-shrink: 0;
     }
 
     .topbar-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #ffffff;
-      white-space: nowrap;
-      flex-shrink: 0;
+      font-size: 8px; color: var(--green);
+      white-space: nowrap; flex-shrink: 0;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--green);
     }
 
-    .topbar-spacer {
-      flex: 1;
-    }
+    .topbar-spacer { flex: 1; }
 
     .topbar-stat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; flex-shrink: 0; gap: 2px;
     }
-
     .topbar-stat-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.4);
-      line-height: 1;
-      margin-bottom: 2px;
+      font-size: 6px; color: var(--dim); line-height: 1; letter-spacing: 1px;
     }
-
     .topbar-stat-value {
-      font-size: 14px;
-      font-weight: 700;
-      color: #ffffff;
-      line-height: 1;
+      font-size: 11px; line-height: 1;
     }
+    .topbar-stat-value.score-val { color: var(--amber); text-shadow: 0 0 8px var(--amber); }
+    .topbar-stat-value.kills-val { color: var(--red);   text-shadow: 0 0 8px var(--red); }
+    .topbar-stat-value.online-val{ color: var(--cyan);  text-shadow: 0 0 8px var(--cyan); }
 
-    .topbar-stat-value.score-val {
-      color: #ffd700;
+    .topbar-player {
+      display: flex; align-items: center;
+      gap: 6px; flex-shrink: 0; max-width: 110px;
     }
-
-    .topbar-stat-value.kills-val {
-      color: #ff6b6b;
-    }
-
-    .topbar-stat-value.online-val {
-      color: #66c0f4;
-    }
-
-    .topbar-player-name {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-      max-width: 120px;
-    }
-
-    .topbar-name-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+    .topbar-dot {
+      width: 7px; height: 7px;
       flex-shrink: 0;
     }
-
-    .topbar-name-text {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .topbar-name {
+      font-size: 7px; color: var(--green);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: 1px;
     }
 
-    /* Main area */
-    #main-area {
-      flex: 1;
-      display: flex;
-      min-height: 0;
-    }
+    /* ── Main area ──────────────────────────────────────────────── */
+    #main-area { flex: 1; display: flex; min-height: 0; }
 
-    /* Canvas wrapper */
+    /* ── Canvas wrap ────────────────────────────────────────────── */
     #canvas-wrap {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      min-width: 0;
-      overflow: hidden;
+      flex: 1; display: flex;
+      align-items: center; justify-content: center;
+      position: relative; min-width: 0; overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* CRT scanlines on canvas area */
+    #canvas-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 3px,
+        rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px
+      );
+      pointer-events: none; z-index: 1;
     }
 
     #game-canvas {
       display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+      position: relative; z-index: 0;
     }
 
-    /* Death overlay */
+    /* ── Death overlay ──────────────────────────────────────────── */
     #death-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(4px);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75);
+      pointer-events: none; opacity: 0; transition: opacity 0.2s;
     }
-
-    #death-overlay.visible {
-      opacity: 1;
-    }
+    #death-overlay.visible { opacity: 1; }
 
     .death-card {
       text-align: center;
-      padding: 32px 40px;
-      background: rgba(15, 15, 35, 0.9);
-      border: 1px solid rgba(255, 107, 107, 0.4);
-      border-radius: 16px;
-      box-shadow: 0 0 40px rgba(255, 107, 107, 0.2);
+      padding: 28px 36px;
+      background: #000;
+      border: 2px solid var(--red);
+      box-shadow: 0 0 30px rgba(255,49,49,0.3), inset 0 0 20px rgba(255,49,49,0.05);
     }
 
-    .death-emoji {
-      font-size: 48px;
-      line-height: 1;
-      margin-bottom: 12px;
-      display: block;
+    .death-title {
+      font-size: 16px; color: var(--red);
+      margin-bottom: 14px; letter-spacing: 2px;
+      text-shadow: 0 0 12px var(--red);
+      animation: blink 0.8s step-end infinite;
     }
-
-    .death-msg {
-      font-size: 22px;
-      font-weight: 700;
-      color: #ff6b6b;
-      margin-bottom: 8px;
-    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
     .death-killer {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 20px;
+      font-size: 8px; color: rgba(255,255,255,0.5);
+      margin-bottom: 20px; line-height: 2;
     }
+    .death-killer strong { color: var(--amber); }
 
-    .death-killer strong {
-      color: #ffd700;
+    .death-respawn-label {
+      font-size: 7px; color: var(--dim); margin-bottom: 8px; letter-spacing: 1px;
     }
-
-    .death-respawn {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-bottom: 8px;
-    }
-
     .death-countdown {
-      font-size: 40px;
-      font-weight: 700;
-      color: #00ff88;
-      line-height: 1;
+      font-size: 36px; color: var(--green);
+      text-shadow: 0 0 20px var(--green);
     }
 
-    /* Mobile bottom panel toggle */
-    #mobile-lb-toggle {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      height: 36px;
-      background: rgba(0, 0, 0, 0.4);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 13px;
-      cursor: pointer;
-      user-select: none;
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    #sidebar {
+      width: 210px; min-width: 210px;
+      display: flex; flex-direction: column;
+      background: var(--bg2);
+      border-left: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .sidebar-tabs {
+      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sidebar-tab {
+      flex: 1; padding: 10px 4px;
+      background: none; border: none;
+      font-family: var(--font); font-size: 7px;
+      color: var(--dim); cursor: pointer;
+      letter-spacing: 1px;
+      border-right: 1px solid var(--border);
+      transition: color 0.15s, background 0.15s;
+    }
+    .sidebar-tab:last-child { border-right: none; }
+    .sidebar-tab.active {
+      color: var(--green);
+      background: rgba(57,255,20,0.06);
+      text-shadow: 0 0 8px var(--green);
+    }
+    .sidebar-tab:hover:not(.active) { color: var(--green2); }
+
+    .lb-list {
+      flex: 1; overflow-y: auto; padding: 4px 0;
+    }
+    .lb-list::-webkit-scrollbar { width: 3px; }
+    .lb-list::-webkit-scrollbar-track { background: transparent; }
+    .lb-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .lb-item {
+      display: flex; align-items: center;
+      padding: 6px 10px; gap: 7px;
+    }
+    .lb-item.mine {
+      background: rgba(57,255,20,0.07);
+      border-left: 2px solid var(--green);
+    }
+    .lb-item.dead { opacity: 0.35; }
+
+    .lb-rank { font-size: 8px; width: 18px; text-align: center; flex-shrink: 0; color: var(--dim); }
+    .lb-dot { width: 7px; height: 7px; flex-shrink: 0; }
+    .lb-name {
+      flex: 1; font-size: 7px; color: rgba(255,255,255,0.7);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+      letter-spacing: 0.5px;
+    }
+    .lb-val {
+      font-size: 9px; font-weight: 700; flex-shrink: 0; letter-spacing: 1px;
+    }
+    .lb-val.score { color: var(--amber); }
+    .lb-val.kills { color: var(--red); }
+
+    .sidebar-footer {
+      padding: 8px 10px;
+      border-top: 1px solid var(--border);
+      font-size: 6px; color: var(--dim);
+      text-align: center; letter-spacing: 1px;
       flex-shrink: 0;
+    }
+
+    /* ── Mobile leaderboard ─────────────────────────────────────── */
+    #mobile-lb-toggle {
+      display: none; align-items: center; justify-content: space-between;
+      padding: 0 14px; height: 34px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      font-size: 7px; color: var(--dim);
+      cursor: pointer; flex-shrink: 0;
+      letter-spacing: 1px;
     }
 
     #mobile-lb-panel {
-      display: none;
-      flex-direction: column;
-      background: rgba(10, 10, 21, 0.95);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      max-height: 220px;
-      overflow-y: auto;
+      display: none; flex-direction: column;
+      background: #000;
+      border-top: 1px solid var(--border);
+      max-height: 200px; overflow-y: auto;
       flex-shrink: 0;
     }
+    #mobile-lb-panel.open { display: flex; }
 
-    /* Leaderboard Sidebar */
-    #sidebar {
-      width: 220px;
-      min-width: 220px;
-      display: flex;
-      flex-direction: column;
-      background: rgba(0, 0, 0, 0.3);
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
-      overflow: hidden;
+    .mobile-lb-tabs {
+      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
-
-    .sidebar-header {
-      padding: 12px 14px 8px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: rgba(255, 255, 255, 0.4);
-      text-transform: uppercase;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      flex-shrink: 0;
+    .mobile-lb-tab {
+      flex: 1; padding: 8px; background: none; border: none;
+      font-family: var(--font); font-size: 7px;
+      color: var(--dim); cursor: pointer; letter-spacing: 1px;
+      border-right: 1px solid var(--border);
     }
+    .mobile-lb-tab:last-child { border-right: none; }
+    .mobile-lb-tab.active { color: var(--green); background: rgba(57,255,20,0.05); }
 
-    .lb-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 6px 0;
-    }
-
-    .lb-list::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .lb-list::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .lb-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 2px;
-    }
-
-    .lb-item {
-      display: flex;
-      align-items: center;
-      padding: 7px 14px;
-      gap: 8px;
-      transition: background 0.15s;
-    }
-
-    .lb-item.mine {
-      background: rgba(0, 255, 136, 0.08);
-      border-left: 2px solid #00ff88;
-    }
-
-    .lb-item.dead {
-      opacity: 0.45;
-    }
-
-    .lb-rank {
-      font-size: 14px;
-      width: 22px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .lb-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .lb-name {
-      flex: 1;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-width: 0;
-    }
-
-    .lb-score {
-      font-size: 12px;
-      font-weight: 700;
-      color: #ffd700;
-      flex-shrink: 0;
-    }
-
-    .lb-kills {
-      font-size: 11px;
-      color: rgba(255, 107, 107, 0.8);
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-
-    .sidebar-footer {
-      padding: 10px 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.3);
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    /* Toast notifications */
+    /* ── Toast ──────────────────────────────────────────────────── */
     #toast-container {
-      position: fixed;
-      top: 60px;
-      left: 50%;
+      position: fixed; top: 56px; left: 50%;
       transform: translateX(-50%);
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
+      z-index: 500;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
       pointer-events: none;
     }
-
     .toast {
-      padding: 8px 16px;
-      background: rgba(20, 20, 40, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 20px;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.85);
+      padding: 7px 14px;
+      background: #000;
+      border: 1px solid var(--green2);
+      font-size: 7px; color: var(--green);
+      letter-spacing: 1px;
       white-space: nowrap;
-      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      animation: toastIn 0.15s ease, toastOut 0.3s ease 2.4s forwards;
+      box-shadow: 0 0 12px rgba(57,255,20,0.2);
     }
+    .toast.kill-toast { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px rgba(255,49,49,0.2); }
+    @keyframes toastIn  { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes toastOut { from{opacity:1} to{opacity:0} }
 
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes toastOut {
-      from { opacity: 1; transform: translateY(0); }
-      to   { opacity: 0; transform: translateY(-10px); }
-    }
-
-    /* ── Responsive ──────────────────────────────────────────────── */
+    /* ── Responsive ─────────────────────────────────────────────── */
     @media (max-width: 768px) {
-      #sidebar {
-        display: none;
-      }
-
-      #mobile-lb-toggle {
-        display: flex;
-      }
-
-      #mobile-lb-panel {
-        display: none;
-      }
-
-      #mobile-lb-panel.open {
-        display: flex;
-      }
-
-      .topbar-stat {
-        display: none;
-      }
-
-      .topbar-stat.always-show {
-        display: flex;
-      }
-
-      .topbar-divider {
-        display: none;
-      }
-
-      .topbar-title {
-        display: none;
-      }
+      #sidebar { display: none; }
+      #mobile-lb-toggle { display: flex; }
+      .topbar-stat:not(.always-show) { display: none; }
+      .topbar-sep { display: none; }
+      .topbar-title { display: none; }
     }
-
     @media (max-width: 480px) {
-      #topbar {
-        padding: 0 10px;
-        gap: 8px;
-      }
-
-      .join-card {
-        padding: 36px 24px;
-      }
+      #topbar { padding: 0 10px; gap: 8px; }
+      .join-card { padding: 28px 20px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Join Screen ──────────────────────────────────────────────── -->
+<!-- ══ JOIN SCREEN ═══════════════════════════════════════════════ -->
 <div id="join-screen">
   <div class="join-card">
-    <div class="join-logo">INDEED</div>
-    <span class="join-emoji">🐍</span>
-    <div class="join-title">多人贪吃蛇</div>
-    <div class="join-subtitle">实时多人对战，吃食物得分<br>击败对手赢取击杀奖励</div>
+    <div class="join-logo">· INDEED ·</div>
+    <div class="join-ascii">▓█▓ SNAKE ARENA ▓█▓</div>
+    <div class="join-subtitle">EAT · GROW · DOMINATE<br>MULTIPLAYER REALTIME</div>
+    <div class="join-label">&gt; ENTER NAME:</div>
     <input
       id="name-input"
       class="join-input"
       type="text"
-      placeholder="输入你的昵称"
+      placeholder="PLAYER_1"
       maxlength="16"
       autocomplete="off"
       spellcheck="false"
     />
-    <div class="join-conn-status" id="conn-status">正在连接...</div>
-    <button class="join-btn" id="join-btn" disabled>进入游戏</button>
-    <a href="/" class="join-back">← 返回首页</a>
+    <div class="join-conn-status" id="conn-status">CONNECTING...</div>
+    <button class="join-btn" id="join-btn" disabled>[ INSERT COIN ]</button>
+    <a href="/" class="join-back">← BACK TO HOME</a>
   </div>
 </div>
 
-<!-- ── Game Screen ──────────────────────────────────────────────── -->
+<!-- ══ GAME SCREEN ════════════════════════════════════════════════ -->
 <div id="game-screen" class="hidden">
-  <!-- Top bar -->
+
+  <!-- Topbar -->
   <div id="topbar">
-    <a href="/" class="topbar-back">← 返回</a>
-    <div class="topbar-divider"></div>
-    <div class="topbar-title">🐍 多人贪吃蛇</div>
+    <a href="/" class="topbar-back">← BACK</a>
+    <div class="topbar-sep"></div>
+    <div class="topbar-title">SNAKE ARENA</div>
     <div class="topbar-spacer"></div>
     <div class="topbar-stat always-show" id="stat-score">
-      <span class="topbar-stat-label">得分</span>
+      <span class="topbar-stat-label">SCORE</span>
       <span class="topbar-stat-value score-val" id="my-score">0</span>
     </div>
+    <div class="topbar-sep"></div>
     <div class="topbar-stat" id="stat-kills">
-      <span class="topbar-stat-label">击杀</span>
+      <span class="topbar-stat-label">KILLS</span>
       <span class="topbar-stat-value kills-val" id="my-kills">0</span>
     </div>
+    <div class="topbar-sep"></div>
     <div class="topbar-stat" id="stat-online">
-      <span class="topbar-stat-label">在线</span>
+      <span class="topbar-stat-label">ONLINE</span>
       <span class="topbar-stat-value online-val" id="online-count">0</span>
     </div>
-    <div class="topbar-divider"></div>
-    <div class="topbar-player-name">
-      <div class="topbar-name-dot" id="my-dot"></div>
-      <span class="topbar-name-text" id="my-name-topbar">-</span>
+    <div class="topbar-sep"></div>
+    <div class="topbar-player">
+      <div class="topbar-dot" id="my-dot"></div>
+      <span class="topbar-name" id="my-name-topbar">-</span>
     </div>
   </div>
 
   <!-- Main area -->
   <div id="main-area">
-    <!-- Canvas area -->
+
+    <!-- Canvas -->
     <div id="canvas-wrap">
       <canvas id="game-canvas"></canvas>
       <!-- Death overlay -->
       <div id="death-overlay">
         <div class="death-card">
-          <span class="death-emoji">💀</span>
-          <div class="death-msg">你挂了！</div>
+          <div class="death-title">GAME OVER</div>
           <div class="death-killer" id="death-killer-text"></div>
-          <div class="death-respawn">复活倒计时</div>
+          <div class="death-respawn-label">RESPAWN IN</div>
           <div class="death-countdown" id="death-countdown">3</div>
         </div>
       </div>
     </div>
 
-    <!-- Desktop leaderboard sidebar -->
+    <!-- Desktop sidebar -->
     <div id="sidebar">
-      <div class="sidebar-header">🏆 积分榜</div>
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="score" onclick="switchTab('score')">◈ SCORE</button>
+        <button class="sidebar-tab" data-tab="kills" onclick="switchTab('kills')">⚔ KILLS</button>
+      </div>
       <div class="lb-list" id="lb-list-desktop"></div>
-      <div class="sidebar-footer">方向键 / WASD 控制</div>
+      <div class="sidebar-footer">ARROWS / WASD · SWIPE</div>
     </div>
   </div>
 
-  <!-- Mobile leaderboard toggle -->
-  <div id="mobile-lb-toggle" onclick="toggleMobileLb()">🏆 积分榜 ▲</div>
+  <!-- Mobile leaderboard -->
+  <div id="mobile-lb-toggle" onclick="toggleMobileLb()">
+    <span id="mobile-lb-label">◈ LEADERBOARD ▲</span>
+  </div>
   <div id="mobile-lb-panel">
+    <div class="mobile-lb-tabs">
+      <button class="mobile-lb-tab active" data-tab="score" onclick="switchMobileTab('score')">◈ SCORE</button>
+      <button class="mobile-lb-tab" data-tab="kills" onclick="switchMobileTab('kills')">⚔ KILLS</button>
+    </div>
     <div class="lb-list" id="lb-list-mobile"></div>
-    <div class="sidebar-footer" style="text-align:center;padding:8px 14px;font-size:11px;color:rgba(255,255,255,0.3)">👆 滑动屏幕控制</div>
   </div>
 </div>
 
@@ -654,12 +525,10 @@
 // ──────────────────────────────────────────────────────────────────
 //  Config — proxy-first, direct fallback
 // ──────────────────────────────────────────────────────────────────
-const PROXY  = { url: window.location.origin,      path: '/snake-ws/socket.io' };
+const PROXY  = { url: window.location.origin,       path: '/snake-ws/socket.io' };
 const DIRECT = { url: 'http://150.158.110.168:3003', path: '/socket.io' };
 const GRID = 30;
 
-// Try nginx proxy first (needed on mobile to bypass carrier port blocks).
-// Fall back to direct connection if proxy not available (e.g. nginx not yet configured).
 async function resolveServerConfig() {
   try {
     const ctrl = new AbortController();
@@ -675,40 +544,41 @@ async function resolveServerConfig() {
 // ──────────────────────────────────────────────────────────────────
 //  State
 // ──────────────────────────────────────────────────────────────────
-let socket = null;
-let myId = null;
-let myColor = '#00ff88';
-let myName = '';
-let gameState = null;  // latest state from server
-let isConnected = false;
-let isDead = false;
+let socket       = null;
+let myId         = null;
+let myColor      = '#39ff14';
+let myName       = '';
+let gameState    = null;
+let isConnected  = false;
+let isDead       = false;
 let mobileLbOpen = false;
-let lastDeathKillerName = null;
+let activeTab    = 'score';   // desktop
+let mobileTab    = 'score';   // mobile
 
 // ──────────────────────────────────────────────────────────────────
 //  DOM refs
 // ──────────────────────────────────────────────────────────────────
-const joinScreen   = document.getElementById('join-screen');
-const gameScreen   = document.getElementById('game-screen');
-const nameInput    = document.getElementById('name-input');
-const joinBtn      = document.getElementById('join-btn');
-const connStatus   = document.getElementById('conn-status');
-const canvas       = document.getElementById('game-canvas');
-const ctx          = canvas.getContext('2d');
-const canvasWrap   = document.getElementById('canvas-wrap');
-const deathOverlay = document.getElementById('death-overlay');
+const joinScreen      = document.getElementById('join-screen');
+const gameScreen      = document.getElementById('game-screen');
+const nameInput       = document.getElementById('name-input');
+const joinBtn         = document.getElementById('join-btn');
+const connStatus      = document.getElementById('conn-status');
+const canvas          = document.getElementById('game-canvas');
+const ctx             = canvas.getContext('2d');
+const canvasWrap      = document.getElementById('canvas-wrap');
+const deathOverlay    = document.getElementById('death-overlay');
 const deathKillerText = document.getElementById('death-killer-text');
 const deathCountdown  = document.getElementById('death-countdown');
-const myScoreEl    = document.getElementById('my-score');
-const myKillsEl    = document.getElementById('my-kills');
-const onlineEl     = document.getElementById('online-count');
-const myDotEl      = document.getElementById('my-dot');
-const myNameTopbar = document.getElementById('my-name-topbar');
-const lbDesktop    = document.getElementById('lb-list-desktop');
-const lbMobile     = document.getElementById('lb-list-mobile');
-const mobileLbToggle = document.getElementById('mobile-lb-toggle');
-const mobileLbPanel  = document.getElementById('mobile-lb-panel');
-const toastContainer = document.getElementById('toast-container');
+const myScoreEl       = document.getElementById('my-score');
+const myKillsEl       = document.getElementById('my-kills');
+const onlineEl        = document.getElementById('online-count');
+const myDotEl         = document.getElementById('my-dot');
+const myNameTopbar    = document.getElementById('my-name-topbar');
+const lbDesktop       = document.getElementById('lb-list-desktop');
+const lbMobile        = document.getElementById('lb-list-mobile');
+const mobileLbToggle  = document.getElementById('mobile-lb-toggle');
+const mobileLbPanel   = document.getElementById('mobile-lb-panel');
+const toastContainer  = document.getElementById('toast-container');
 
 // ──────────────────────────────────────────────────────────────────
 //  Name persistence
@@ -717,10 +587,28 @@ const toastContainer = document.getElementById('toast-container');
   const saved = localStorage.getItem('snake_player_name');
   if (saved) nameInput.value = saved;
 })();
-
 nameInput.addEventListener('input', () => {
   localStorage.setItem('snake_player_name', nameInput.value.trim());
 });
+
+// ──────────────────────────────────────────────────────────────────
+//  Leaderboard tab switching
+// ──────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.sidebar-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  if (gameState) renderLeaderboard(lbDesktop, gameState, tab);
+}
+
+function switchMobileTab(tab) {
+  mobileTab = tab;
+  document.querySelectorAll('.mobile-lb-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  if (gameState) renderLeaderboard(lbMobile, gameState, tab);
+}
 
 // ──────────────────────────────────────────────────────────────────
 //  Socket connection
@@ -736,29 +624,30 @@ function initSocket(cfg) {
 
   socket.on('connect', () => {
     isConnected = true;
-    connStatus.textContent = '已连接 ✓';
+    connStatus.textContent = 'CONNECTED ✓';
     connStatus.classList.add('connected');
     joinBtn.disabled = false;
   });
 
   socket.on('disconnect', () => {
     isConnected = false;
-    connStatus.textContent = '连接断开，正在重连...';
+    connStatus.textContent = 'DISCONNECTED — RETRYING...';
     connStatus.classList.remove('connected');
     joinBtn.disabled = true;
-    showToast('⚠️ 连接断开，正在重连...');
+    showToast('⚠ CONNECTION LOST');
   });
 
   socket.on('connect_error', () => {
-    connStatus.textContent = '连接失败，重试中...';
+    connStatus.textContent = 'CONNECT ERROR — RETRYING...';
     connStatus.classList.remove('connected');
   });
 
   socket.on('joined', ({ id, color }) => {
-    myId = id;
+    myId    = id;
     myColor = color;
-    myDotEl.style.background = color;
-    myNameTopbar.textContent = myName;
+    myDotEl.style.background   = color;
+    myDotEl.style.boxShadow    = `0 0 6px ${color}`;
+    myNameTopbar.textContent   = myName;
 
     joinScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
@@ -775,15 +664,14 @@ function initSocket(cfg) {
   socket.on('player-died', ({ id, name, killedBy, killedById }) => {
     if (id === myId) {
       isDead = true;
-      lastDeathKillerName = killedBy;
       showDeathOverlay(killedBy);
     } else {
       if (killedById === myId) {
-        showToast(`⚔️ 你击杀了 ${name}！+30分 +1击杀`);
+        showToast(`KILLED ${name.toUpperCase()}  +30  +1K`, true);
       } else if (killedBy) {
-        showToast(`💀 ${name} 被 ${killedBy} 击杀`);
+        showToast(`${name.toUpperCase()} KILLED BY ${killedBy.toUpperCase()}`);
       } else {
-        showToast(`💀 ${name} 撞墙了`);
+        showToast(`${name.toUpperCase()} HIT A WALL`);
       }
     }
   });
@@ -792,30 +680,26 @@ function initSocket(cfg) {
     if (id === myId) {
       isDead = false;
       hideDeathOverlay();
-      showToast('✅ 复活！继续战斗！');
+      showToast('RESPAWNED — FIGHT!');
     } else {
-      showToast(`🔄 ${name} 复活了`);
+      showToast(`${name.toUpperCase()} RESPAWNED`);
     }
   });
 
   socket.on('player-left', ({ id, name }) => {
-    if (id !== myId) {
-      showToast(`👋 ${name} 离开了游戏`);
-    }
+    if (id !== myId) showToast(`${name.toUpperCase()} LEFT`);
   });
 }
 
 // ──────────────────────────────────────────────────────────────────
-//  Join button
+//  Join
 // ──────────────────────────────────────────────────────────────────
 joinBtn.addEventListener('click', doJoin);
-nameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') doJoin();
-});
+nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doJoin(); });
 
 function doJoin() {
   if (!isConnected) return;
-  const name = nameInput.value.trim() || 'Anonymous';
+  const name = nameInput.value.trim() || 'PLAYER';
   myName = name;
   localStorage.setItem('snake_player_name', name);
   socket.emit('join', { name });
@@ -828,18 +712,16 @@ let cellSize = 16;
 
 function resizeCanvas() {
   const wrap = canvasWrap.getBoundingClientRect();
-  const availW = wrap.width  - 4;
-  const availH = wrap.height - 4;
-  cellSize = Math.max(8, Math.floor(Math.min(availW, availH) / GRID));
+  const avail = Math.min(wrap.width - 4, wrap.height - 4);
+  cellSize = Math.max(8, Math.floor(avail / GRID));
   const size = cellSize * GRID;
   canvas.width  = size;
   canvas.height = size;
 }
-
 window.addEventListener('resize', resizeCanvas);
 
 // ──────────────────────────────────────────────────────────────────
-//  Rendering
+//  Rendering — retro pixel art style
 // ──────────────────────────────────────────────────────────────────
 function renderLoop() {
   render();
@@ -847,204 +729,191 @@ function renderLoop() {
 }
 
 function render() {
-  const W = canvas.width;
-  const H = canvas.height;
+  const W  = canvas.width;
+  const H  = canvas.height;
   const cs = cellSize;
 
-  // Background
-  ctx.fillStyle = '#0a0a15';
+  // ── Background ──
+  ctx.fillStyle = '#020802';
   ctx.fillRect(0, 0, W, H);
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  // ── Grid (pixel-art style — subtle green lines) ──
+  ctx.strokeStyle = 'rgba(0,100,20,0.25)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= GRID; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * cs, 0);
-    ctx.lineTo(i * cs, H);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, i * cs);
-    ctx.lineTo(W, i * cs);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(i * cs, 0);     ctx.lineTo(i * cs, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * cs);     ctx.lineTo(W, i * cs); ctx.stroke();
   }
 
   if (!gameState) return;
 
-  const now = Date.now();
+  const now  = Date.now();
+  // Blink food every 400ms (pixel art style)
+  const foodOn = Math.floor(now / 280) % 2 === 0;
 
-  // Foods
-  const foodPulse = 0.75 + 0.25 * Math.sin(now / 400);
-  const foodRadius = (cs * 0.38) * foodPulse;
-
+  // ── Foods ──
   for (const food of gameState.foods) {
-    const fx = food.x * cs + cs / 2;
-    const fy = food.y * cs + cs / 2;
+    const fx = food.x * cs;
+    const fy = food.y * cs;
+    const pad = Math.max(1, Math.floor(cs * 0.15));
+    const sz  = cs - pad * 2;
 
-    // Glow
-    const grd = ctx.createRadialGradient(fx, fy, 0, fx, fy, cs * 0.7);
-    grd.addColorStop(0, 'rgba(255, 60, 60, 0.35)');
-    grd.addColorStop(1, 'rgba(255, 60, 60, 0)');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(fx, fy, cs * 0.7, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Core
-    ctx.fillStyle = '#ff4444';
-    ctx.beginPath();
-    ctx.arc(fx, fy, foodRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Highlight
-    ctx.fillStyle = 'rgba(255, 180, 180, 0.6)';
-    ctx.beginPath();
-    ctx.arc(fx - foodRadius * 0.25, fy - foodRadius * 0.25, foodRadius * 0.35, 0, Math.PI * 2);
-    ctx.fill();
+    if (foodOn) {
+      // Glow hint
+      ctx.fillStyle = 'rgba(255,49,49,0.12)';
+      ctx.fillRect(fx - 1, fy - 1, cs + 2, cs + 2);
+      // Main block
+      ctx.fillStyle = '#ff3131';
+      ctx.fillRect(fx + pad, fy + pad, sz, sz);
+      // Pixel highlight (top-left)
+      ctx.fillStyle = '#ff8888';
+      ctx.fillRect(fx + pad, fy + pad, Math.max(2, Math.floor(sz * 0.35)), Math.max(2, Math.floor(sz * 0.35)));
+    } else {
+      // Off — dim
+      ctx.fillStyle = '#661111';
+      ctx.fillRect(fx + pad, fy + pad, sz, sz);
+    }
   }
 
-  // Snakes
+  // ── Snakes ──
   for (const player of gameState.players) {
     if (!player.alive || !player.snake || player.snake.length === 0) continue;
     drawSnake(player, now);
   }
 
-  // Name labels (drawn after snakes to be on top)
+  // ── Name labels ──
   for (const player of gameState.players) {
     if (!player.alive || !player.snake || player.snake.length === 0) continue;
     drawNameLabel(player);
   }
 
-  // Update death countdown from gameState
+  // ── Death countdown ──
   if (isDead && myId) {
     const me = gameState.players.find(p => p.id === myId);
-    if (me && !me.alive && me.respawnIn !== null && me.respawnIn !== undefined) {
+    if (me && !me.alive && me.respawnIn != null) {
       deathCountdown.textContent = me.respawnIn;
     }
   }
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  if (w < 2 * r) r = w / 2;
-  if (h < 2 * r) r = h / 2;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
 function drawSnake(player, now) {
-  const cs = cellSize;
+  const cs   = cellSize;
   const isMe = player.id === myId;
-  const color = player.color;
-  const len = player.snake.length;
+  const col  = player.color;
+  const len  = player.snake.length;
 
-  ctx.save();
+  // Pre-parse hex color → r,g,b for alpha segments
+  const r = parseInt(col.slice(1,3),16);
+  const g = parseInt(col.slice(3,5),16);
+  const b = parseInt(col.slice(5,7),16);
 
   for (let i = len - 1; i >= 0; i--) {
-    const seg = player.snake[i];
+    const seg    = player.snake[i];
     const isHead = i === 0;
-    const t = len > 1 ? 1 - (i / (len - 1)) * 0.7 : 1;
+    const tAlpha = len > 1 ? Math.max(0.25, 1 - (i / (len - 1)) * 0.72) : 1;
 
-    const segSize = isHead ? cs - 2 : cs - 3;
-    const offset = isHead ? 1 : 1.5;
-    const radius = isHead ? cs * 0.35 : cs * 0.22;
+    const pad = isHead ? 1 : 2;
+    const sx  = seg.x * cs + pad;
+    const sy  = seg.y * cs + pad;
+    const sz  = cs - pad * 2;
 
-    const sx = seg.x * cs + offset;
-    const sy = seg.y * cs + offset;
-
-    if (isHead) {
-      // Shadow/glow for head
-      ctx.shadowColor = color;
-      ctx.shadowBlur = isMe ? 20 : 10;
+    if (isHead && isMe) {
+      // Outer glow for own head
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = 14;
+    } else if (isHead) {
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = 6;
     } else {
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur  = 0;
     }
 
-    // Parse color and apply alpha
-    ctx.globalAlpha = t;
-    ctx.fillStyle = color;
-
-    roundRect(ctx, sx, sy, segSize, segSize, radius);
-    ctx.fill();
+    ctx.fillStyle   = `rgba(${r},${g},${b},${tAlpha})`;
+    ctx.fillRect(sx, sy, sz, sz);
 
     if (isHead) {
-      // Eyes
       ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      const eyeSize = Math.max(2, cs * 0.1);
-      const eyeOffset = cs * 0.22;
-      ctx.fillStyle = 'rgba(0,0,0,0.8)';
-      const dir = player.dir || { x: 1, y: 0 };
-      // Compute eye positions based on direction
-      const ex = seg.x * cs + cs / 2;
-      const ey = seg.y * cs + cs / 2;
-      const perpX = dir.y;
-      const perpY = -dir.x;
-      const fwdX = dir.x * cs * 0.18;
-      const fwdY = dir.y * cs * 0.18;
-      ctx.beginPath();
-      ctx.arc(ex + fwdX + perpX * eyeOffset, ey + fwdY + perpY * eyeOffset, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(ex + fwdX - perpX * eyeOffset, ey + fwdY - perpY * eyeOffset, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
+
+      // Darker inner square (pixel detail)
+      const inner = Math.floor(sz * 0.25);
+      ctx.fillStyle = `rgba(0,0,0,0.3)`;
+      ctx.fillRect(sx + inner, sy + inner, sz - inner * 2, sz - inner * 2);
+
+      // Eyes — pixel dots
+      const dir    = player.dir || { x: 1, y: 0 };
+      const perpX  = dir.y;
+      const perpY  = -dir.x;
+      const eyeSz  = Math.max(2, Math.floor(cs * 0.12));
+      const eyeOff = cs * 0.2;
+      const fwdOff = cs * 0.16;
+      const ex     = seg.x * cs + cs / 2;
+      const ey_    = seg.y * cs + cs / 2;
+      const fwdX   = dir.x * fwdOff;
+      const fwdY   = dir.y * fwdOff;
+
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(
+        Math.round(ex + fwdX + perpX * eyeOff - eyeSz / 2),
+        Math.round(ey_ + fwdY + perpY * eyeOff - eyeSz / 2),
+        eyeSz, eyeSz
+      );
+      ctx.fillRect(
+        Math.round(ex + fwdX - perpX * eyeOff - eyeSz / 2),
+        Math.round(ey_ + fwdY - perpY * eyeOff - eyeSz / 2),
+        eyeSz, eyeSz
+      );
+
+      // Pixel highlight on head corner
+      ctx.fillStyle = `rgba(${r},${g},${b},0.6)`;
+      ctx.fillRect(sx, sy, 2, 2);
     }
   }
 
-  ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
-  ctx.shadowColor = 'transparent';
-  ctx.restore();
 }
 
 function drawNameLabel(player) {
-  const cs = cellSize;
+  const cs   = cellSize;
   const head = player.snake[0];
   if (!head) return;
-
   const isMe = player.id === myId;
-  const label = (isMe ? '★ ' : '') + player.name;
-
-  const hx = head.x * cs + cs / 2;
-  const hy = head.y * cs;
+  const label = (isMe ? '► ' : '') + player.name.toUpperCase();
+  const fontSize = Math.max(6, Math.floor(cs * 0.38));
 
   ctx.save();
-  ctx.font = `bold ${Math.max(9, cs * 0.42)}px sans-serif`;
+  ctx.font      = `${fontSize}px "Press Start 2P", monospace`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
 
-  const textW = ctx.measureText(label).width;
+  const tw  = ctx.measureText(label).width;
   const pad = 4;
-  const bh = Math.max(12, cs * 0.48);
-  const bw = textW + pad * 2;
-  const by = hy - 4;
-  const bx = hx - bw / 2;
+  const bw  = tw + pad * 2;
+  const bh  = fontSize + pad * 2;
+  const bx  = head.x * cs + cs / 2 - bw / 2;
+  const by  = head.y * cs - bh - 2;
 
-  // Background
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  roundRect(ctx, bx, by - bh, bw, bh, 3);
-  ctx.fill();
-
+  // BG
+  ctx.fillStyle = 'rgba(0,0,0,0.82)';
+  ctx.fillRect(bx, by, bw, bh);
+  // Border
+  ctx.strokeStyle = isMe ? player.color : 'rgba(255,255,255,0.2)';
+  ctx.lineWidth   = 1;
+  ctx.strokeRect(bx, by, bw, bh);
   // Text
-  ctx.fillStyle = isMe ? '#ffffff' : 'rgba(255,255,255,0.85)';
-  ctx.fillText(label, hx, by);
+  ctx.fillStyle   = isMe ? player.color : 'rgba(255,255,255,0.75)';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label, head.x * cs + cs / 2, by + pad);
 
   ctx.restore();
 }
 
 // ──────────────────────────────────────────────────────────────────
-//  HUD update
+//  HUD
 // ──────────────────────────────────────────────────────────────────
 function updateHUD(state) {
   const me = myId ? state.players.find(p => p.id === myId) : null;
   if (me) {
-    myScoreEl.textContent = me.score;
-    myKillsEl.textContent = me.kills;
+    myScoreEl.textContent = String(me.score).padStart(4, '0');
+    myKillsEl.textContent = String(me.kills).padStart(2, '0');
   }
   onlineEl.textContent = state.players.length;
 }
@@ -1052,34 +921,38 @@ function updateHUD(state) {
 // ──────────────────────────────────────────────────────────────────
 //  Leaderboard
 // ──────────────────────────────────────────────────────────────────
-const RANK_MEDALS = ['🥇', '🥈', '🥉'];
-
 function updateLeaderboard(state) {
-  const sorted = [...state.players].sort((a, b) => b.score - a.score);
-  const html = sorted.map((p, i) => {
-    const isMe = p.id === myId;
-    const isDead = !p.alive;
-    const medal = i < 3 ? RANK_MEDALS[i] : (i + 1).toString();
-    const namePrefix = isDead ? '💀 ' : '';
-    return `<div class="lb-item${isMe ? ' mine' : ''}${isDead ? ' dead' : ''}">
-      <span class="lb-rank">${medal}</span>
-      <span class="lb-dot" style="background:${p.color}"></span>
-      <span class="lb-name">${namePrefix}${escapeHtml(p.name)}</span>
-      <span class="lb-score">${p.score}</span>
-      <span class="lb-kills">⚔ ${p.kills}</span>
-    </div>`;
-  }).join('');
-
-  lbDesktop.innerHTML = html;
-  lbMobile.innerHTML = html;
+  renderLeaderboard(lbDesktop, state, activeTab);
+  renderLeaderboard(lbMobile,  state, mobileTab);
 }
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function renderLeaderboard(container, state, tab) {
+  const sorted = [...state.players].sort((a, b) =>
+    tab === 'kills'
+      ? (b.kills - a.kills) || (b.score - a.score)
+      : (b.score - a.score)
+  );
+
+  const RANK_CHARS = ['1', '2', '3'];
+
+  container.innerHTML = sorted.map((p, i) => {
+    const isMe  = p.id === myId;
+    const dead  = !p.alive;
+    const rank  = i < 3 ? RANK_CHARS[i] : String(i + 1);
+    const prefix= dead ? '✕' : '';
+    const val   = tab === 'kills' ? p.kills : p.score;
+    const cls   = tab === 'kills' ? 'kills' : 'score';
+    return `<div class="lb-item${isMe ? ' mine' : ''}${dead ? ' dead' : ''}">
+      <span class="lb-rank">${rank}</span>
+      <span class="lb-dot" style="background:${p.color};box-shadow:0 0 4px ${p.color}"></span>
+      <span class="lb-name">${prefix}${escapeHtml(p.name.toUpperCase())}</span>
+      <span class="lb-val ${cls}">${String(val).padStart(tab==='kills'?2:4,'0')}</span>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1087,14 +960,11 @@ function escapeHtml(str) {
 // ──────────────────────────────────────────────────────────────────
 function showDeathOverlay(killedBy) {
   deathOverlay.classList.add('visible');
-  if (killedBy) {
-    deathKillerText.innerHTML = `被 <strong>${escapeHtml(killedBy)}</strong> 击杀`;
-  } else {
-    deathKillerText.textContent = '撞到身体了';
-  }
+  deathKillerText.innerHTML = killedBy
+    ? `KILLED BY <strong>${escapeHtml(killedBy.toUpperCase())}</strong>`
+    : 'HIT A WALL';
   deathCountdown.textContent = '3';
 }
-
 function hideDeathOverlay() {
   deathOverlay.classList.remove('visible');
 }
@@ -1102,14 +972,12 @@ function hideDeathOverlay() {
 // ──────────────────────────────────────────────────────────────────
 //  Toast
 // ──────────────────────────────────────────────────────────────────
-function showToast(msg) {
+function showToast(msg, isKill = false) {
   const el = document.createElement('div');
-  el.className = 'toast';
+  el.className = 'toast' + (isKill ? ' kill-toast' : '');
   el.textContent = msg;
   toastContainer.appendChild(el);
-  setTimeout(() => {
-    if (el.parentNode) el.parentNode.removeChild(el);
-  }, 2900);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 2800);
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -1117,87 +985,55 @@ function showToast(msg) {
 // ──────────────────────────────────────────────────────────────────
 function toggleMobileLb() {
   mobileLbOpen = !mobileLbOpen;
-  if (mobileLbOpen) {
-    mobileLbPanel.classList.add('open');
-    mobileLbToggle.textContent = '🏆 积分榜 ▼';
-  } else {
-    mobileLbPanel.classList.remove('open');
-    mobileLbToggle.textContent = '🏆 积分榜 ▲';
-  }
+  mobileLbPanel.classList.toggle('open', mobileLbOpen);
+  document.getElementById('mobile-lb-label').textContent =
+    mobileLbOpen ? '◈ LEADERBOARD ▼' : '◈ LEADERBOARD ▲';
 }
 
 // ──────────────────────────────────────────────────────────────────
 //  Keyboard controls
 // ──────────────────────────────────────────────────────────────────
 const KEY_MAP = {
-  ArrowUp:    'up',
-  ArrowDown:  'down',
-  ArrowLeft:  'left',
-  ArrowRight: 'right',
-  w: 'up',
-  W: 'up',
-  s: 'down',
-  S: 'down',
-  a: 'left',
-  A: 'left',
-  d: 'right',
-  D: 'right',
+  ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+  w:'up', W:'up', s:'down', S:'down', a:'left', A:'left', d:'right', D:'right',
 };
-
 document.addEventListener('keydown', (e) => {
   const dir = KEY_MAP[e.key];
-  if (dir && socket && myId) {
-    e.preventDefault();
-    socket.emit('direction', dir);
-  }
+  if (dir && socket && myId) { e.preventDefault(); socket.emit('direction', dir); }
 });
 
 // ──────────────────────────────────────────────────────────────────
-//  Touch / swipe controls
+//  Touch / swipe
 // ──────────────────────────────────────────────────────────────────
-let touchStartX = 0;
-let touchStartY = 0;
+let touchStartX = 0, touchStartY = 0;
 const MIN_SWIPE = 15;
 
 canvas.addEventListener('touchstart', (e) => {
-  const t = e.changedTouches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
+  touchStartX = e.changedTouches[0].clientX;
+  touchStartY = e.changedTouches[0].clientY;
 }, { passive: true });
 
 canvas.addEventListener('touchend', (e) => {
   if (!socket || !myId) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  const adx = Math.abs(dx);
-  const ady = Math.abs(dy);
+  const dx  = e.changedTouches[0].clientX - touchStartX;
+  const dy  = e.changedTouches[0].clientY - touchStartY;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
   if (Math.max(adx, ady) < MIN_SWIPE) return;
-  let dir;
-  if (adx > ady) {
-    dir = dx > 0 ? 'right' : 'left';
-  } else {
-    dir = dy > 0 ? 'down' : 'up';
-  }
-  socket.emit('direction', dir);
+  socket.emit('direction', adx > ady ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
 }, { passive: true });
 
-// Prevent default touch scroll on canvas
-canvas.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-}, { passive: false });
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
 // ──────────────────────────────────────────────────────────────────
 //  Init — probe proxy, then connect
 // ──────────────────────────────────────────────────────────────────
 (async () => {
-  connStatus.textContent = '检测连接中...';
+  connStatus.textContent = 'DETECTING SERVER...';
   const cfg = await resolveServerConfig();
-  console.log('[snake] using server config:', cfg.url, cfg.path);
+  console.log('[snake] server config:', cfg.url, cfg.path);
   initSocket(cfg);
 })();
 
-// Resize canvas once game screen becomes visible
 const gameScreenObserver = new MutationObserver(() => {
   if (!gameScreen.classList.contains('hidden')) {
     resizeCanvas();
