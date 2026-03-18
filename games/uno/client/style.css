@@ -1046,6 +1046,44 @@ body {
   transition: background 0.15s;
 }
 .vol-toggle:hover { background: rgba(255,255,255,0.18); }
+
+/* 完全关闭按钮（在滑块面板右上角） */
+.vol-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.vol-close:hover { color: #fff; }
+
+/* 完全隐藏后的极小触发器 */
+.vol-micro {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
+  font-size: 11px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+  transition: background 0.15s, color 0.15s;
+}
+.vol-micro.show { display: flex; }
+.vol-micro:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
 .vol-sliders {
   position: absolute;
   bottom: 44px;
@@ -1053,7 +1091,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 28px 12px 14px; /* 右侧留给关闭按钮 */
   min-width: 190px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }

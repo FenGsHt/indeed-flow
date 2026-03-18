@@ -898,6 +898,19 @@ $('btn-vol').addEventListener('click', () => {
   $('vol-sliders').classList.toggle('hidden');
 });
 
+// × 完全隐藏整个音量面板
+$('btn-vol-close').addEventListener('click', () => {
+  $('vol-sliders').classList.add('hidden');
+  $('vol-panel').classList.add('hidden');
+  $('btn-vol-micro').classList.add('show');
+});
+
+// 微型触发器 → 恢复音量按钮
+$('btn-vol-micro').addEventListener('click', () => {
+  $('vol-panel').classList.remove('hidden');
+  $('btn-vol-micro').classList.remove('show');
+});
+
 $('vol-master').addEventListener('input', e => SoundEngine.setMaster(+e.target.value));
 $('vol-sfx').addEventListener('input',    e => SoundEngine.setSfx(+e.target.value));
 $('vol-bgm').addEventListener('input',    e => SoundEngine.setBgm(+e.target.value));
