@@ -92,17 +92,27 @@
           <div class="scroll-hint scroll-hint-top"><span>⌃</span></div>
         </div>
 
-        <!-- 游戏内综合榜单 -->
-        <div class="ingame-leaderboard">
-          <div class="lb-title">🏆 排行榜</div>
-          <div class="lb-header-row">
-            <span class="lb-col-rank">名次</span>
-            <span class="lb-col-name">玩家</span>
-            <span class="lb-col-score">⭐胜场</span>
-            <span class="lb-col-hits">💥暴雷</span>
+        <!-- 游戏右侧面板 -->
+        <div class="game-right-panel">
+          <!-- 综合榜单 -->
+          <div class="ingame-leaderboard">
+            <div class="lb-title">🏆 排行榜</div>
+            <div class="lb-header-row">
+              <span class="lb-col-rank">名次</span>
+              <span class="lb-col-name">玩家</span>
+              <span class="lb-col-score">⭐胜场</span>
+              <span class="lb-col-hits">💥暴雷</span>
+            </div>
+            <div id="ingame-leaderboard" class="ingame-lb-body">
+              <div class="leaderboard-empty">暂无记录</div>
+            </div>
           </div>
-          <div id="ingame-leaderboard" class="ingame-lb-body">
-            <div class="leaderboard-empty">暂无记录</div>
+          <!-- 历史记录 -->
+          <div class="ingame-history">
+            <div class="lb-title">📜 历史记录</div>
+            <div id="ingame-history" class="ingame-history-body">
+              <div class="leaderboard-empty">暂无记录</div>
+            </div>
           </div>
         </div>
       </div>
@@ -131,6 +141,6 @@
   </div>
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script src="app.js?v=20260318d"></script>
+  <script src="app.js?v=20260318e"></script>
 </body>
 </html>

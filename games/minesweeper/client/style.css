@@ -711,8 +711,6 @@ body.in-game #game-screen {
 
 /* ====== 游戏内榜单（带标签） ====== */
 .ingame-leaderboard {
-  width: 180px;
-  flex-shrink: 0;
   background: rgba(0,0,0,0.25);
   border-radius: 10px;
   overflow: hidden;
@@ -783,8 +781,101 @@ body.in-game #game-screen {
   font-weight: bold;
 }
 
+/* 右侧面板容器 */
+.game-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 180px;
+  flex-shrink: 0;
+}
+
 .ingame-lb-body {
   padding: 4px 0;
+}
+
+/* 历史记录区 */
+.ingame-history {
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.lb-title-sm {
+  font-size: 11px;
+}
+
+.ingame-history-body {
+  padding: 4px 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ingame-history-body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.ingame-history-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 8px;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.history-row:last-child {
+  border-bottom: none;
+}
+
+.history-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.history-player {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255,255,255,0.85);
+}
+
+.history-result {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.history-won {
+  color: #55efc4;
+  background: rgba(85,239,196,0.12);
+}
+
+.history-lost {
+  color: #FF7675;
+  background: rgba(255,118,117,0.12);
+}
+
+.history-board {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+}
+
+.history-time {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  min-width: 28px;
+  text-align: right;
 }
 
 .lb-row-sm {

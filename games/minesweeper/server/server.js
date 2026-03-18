@@ -22,6 +22,9 @@ const LEADERBOARD_VERSION = 2; // 修改此值可强制重置榜单
 const mineLeaderboard = new Map();
 // 全局得分榜 playerName -> { name, score }（赢得局数）
 const scoreLeaderboard = new Map();
+// 历史记录（最近50条）
+const gameHistory = [];
+const MAX_HISTORY = 50;
 
 const roomManager = new RoomManager();
 const DEFAULT_ROOM = '游乐场';
@@ -39,6 +42,9 @@ function loadState() {
       }
       if (data.scoreLeaderboard) {
         data.scoreLeaderboard.forEach(e => scoreLeaderboard.set(e.name, e));
+      }
+      if (data.gameHistory) {
+        gameHistory.push(...data.gameHistory.slice(0, MAX_HISTORY));
       }
     } else {
       console.log('Leaderboard version mismatch, resetting leaderboards');
@@ -76,6 +82,7 @@ function saveState() {
       leaderboardVersion: LEADERBOARD_VERSION,
       mineLeaderboard: Array.from(mineLeaderboard.values()),
       scoreLeaderboard: Array.from(scoreLeaderboard.values()),
+      gameHistory: gameHistory.slice(0, MAX_HISTORY),
       defaultRoom: room ? {
         width: room.game.width,
         height: room.game.height,
@@ -120,6 +127,13 @@ function getMineLeaderboard() {
     .slice(0, 20);
 }
 
+// 记录历史并广播
+function recordHistory(playerName, result, width, height, mines) {
+  gameHistory.unshift({ time: Date.now(), player: playerName, result, width, height, mines });
+  if (gameHistory.length > MAX_HISTORY) gameHistory.length = MAX_HISTORY;
+  io.emit('history-update', gameHistory);
+}
+
 // 更新得分榜并广播（赢得一局 +1）
 function recordScore(playerName) {
   if (!playerName) return;
@@ -139,10 +153,11 @@ function getScoreLeaderboard() {
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
-  // 连接时推送房间列表和榜单
+  // 连接时推送房间列表、榜单和历史记录
   socket.emit('room-list', roomManager.getRoomList());
   socket.emit('leaderboard-update', getMineLeaderboard());
   socket.emit('score-leaderboard-update', getScoreLeaderboard());
+  socket.emit('history-update', gameHistory);
 
   let currentRoom = null;
   let currentPlayer = null;
@@ -243,11 +258,13 @@ io.on('connection', (socket) => {
         if (room.game.gameStatus === 'won') {
           // 赢得一局，给踩出最后一步的玩家 +1 分
           recordScore(currentPlayer.name);
+          recordHistory(currentPlayer.name, 'won', room.game.width, room.game.height, room.game.mines);
           saveState();
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
         } else if (room.game.gameStatus === 'lost') {
           // 踩雷，记录暴雷榜
           recordMineHit(currentPlayer.name);
+          recordHistory(currentPlayer.name, 'lost', room.game.width, room.game.height, room.game.mines);
           saveState();
           io.to(currentRoom).emit('game-over', {
             won: false,

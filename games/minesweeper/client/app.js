@@ -42,6 +42,7 @@ const gameOverHint = document.getElementById('game-over-hint');
 const roomListDiv = document.getElementById('room-list');
 const leaderboardDiv = document.getElementById('leaderboard');
 const ingameLb = document.getElementById('ingame-leaderboard');
+const ingameHistoryDiv = document.getElementById('ingame-history');
 
 // 名字弹窗
 const nameModal = document.getElementById('name-modal');
@@ -102,6 +103,10 @@ function initSocket() {
   socket.on('score-leaderboard-update', (data) => {
     lbScoreData = data || [];
     renderCombinedLeaderboard();
+  });
+
+  socket.on('history-update', (data) => {
+    renderHistory(data || []);
   });
 
   socket.on('game-state', (state) => {
@@ -209,6 +214,42 @@ function renderCombinedLeaderboard() {
     `;
     ingameLb.appendChild(row);
   });
+}
+
+// 渲染历史记录
+function renderHistory(data) {
+  if (!ingameHistoryDiv) return;
+  if (!data || data.length === 0) {
+    ingameHistoryDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
+    return;
+  }
+  ingameHistoryDiv.innerHTML = '';
+  data.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const icon = entry.result === 'won' ? '🎉' : '💥';
+    const resultText = entry.result === 'won' ? '赢了' : '暴雷';
+    const resultClass = entry.result === 'won' ? 'history-won' : 'history-lost';
+    const timeStr = formatRelativeTime(entry.time);
+    row.innerHTML = `
+      <span class="history-icon">${icon}</span>
+      <span class="history-player">${entry.player}</span>
+      <span class="history-result ${resultClass}">${resultText}</span>
+      <span class="history-board">${entry.width}×${entry.height}</span>
+      <span class="history-time">${timeStr}</span>
+    `;
+    ingameHistoryDiv.appendChild(row);
+  });
+}
+
+// 相对时间格式化
+function formatRelativeTime(timestamp) {
+  const diff = Math.floor((Date.now() - timestamp) / 1000);
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+  const d = new Date(timestamp);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 // 加入房间（大厅用）
