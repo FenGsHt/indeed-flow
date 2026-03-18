@@ -487,16 +487,42 @@ body {
   overflow: hidden;
 }
 
+/* 可出牌：白色光晕 + 上移提示 */
+.uno-card.playable {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 4px 16px rgba(255,255,255,0.3);
+  transform: translateY(-6px);
+}
+.uno-card.playable::after {
+  content: '▲ 出牌';
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffd700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.uno-card.playable:hover::after {
+  opacity: 1;
+}
 .uno-card.playable:hover {
-  transform: translateY(-12px) scale(1.06);
-  box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+  transform: translateY(-16px) scale(1.07);
+  box-shadow: 0 0 0 3px #ffd700, 0 20px 36px rgba(0,0,0,0.7);
   z-index: 10;
   position: relative;
 }
 
+/* 不可出牌：深度暗化 + 锁定感 */
 .uno-card.not-playable {
-  filter: brightness(0.55) saturate(0.5);
+  filter: brightness(0.38) saturate(0.25);
   cursor: not-allowed;
+  transform: translateY(0) scale(0.93);
+  box-shadow: none;
+  border-color: rgba(255,255,255,0.2);
 }
 
 .uno-card.selected {
@@ -789,12 +815,19 @@ body {
 
 /* ── 结束回合按钮 ──────────────────────────── */
 .btn-pass {
-  background: linear-gradient(135deg, #757575, #424242);
+  background: linear-gradient(135deg, #f57c00, #e65100);
   color: #fff;
   font-size: 14px;
-  padding: 10px 22px;
+  font-weight: 700;
+  padding: 10px 24px;
   border-radius: 50px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 18px rgba(245,124,0,0.55);
+  letter-spacing: 0.3px;
+  animation: pass-pulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes pass-pulse {
+  from { box-shadow: 0 4px 18px rgba(245,124,0,0.45); }
+  to   { box-shadow: 0 4px 28px rgba(245,124,0,0.8); }
 }
 
 /* ── 摸牌按钮 ───────────────────────────────── */
