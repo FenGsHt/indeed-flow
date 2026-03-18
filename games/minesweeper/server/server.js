@@ -22,6 +22,8 @@ const LEADERBOARD_VERSION = 2; // 修改此值可强制重置榜单
 const mineLeaderboard = new Map();
 // 全局得分榜 playerName -> { name, score }（赢得局数）
 const scoreLeaderboard = new Map();
+// 全局积分榜 playerName -> { name, cellsScore }（揭格累计积分）
+const cellsScoreLeaderboard = new Map();
 // 历史记录（最近50条）
 const gameHistory = [];
 const MAX_HISTORY = 50;
@@ -45,6 +47,9 @@ function loadState() {
       }
       if (data.gameHistory) {
         gameHistory.push(...data.gameHistory.slice(0, MAX_HISTORY));
+      }
+      if (data.cellsScoreLeaderboard) {
+        data.cellsScoreLeaderboard.forEach(e => cellsScoreLeaderboard.set(e.name, e));
       }
     } else {
       console.log('Leaderboard version mismatch, resetting leaderboards');
@@ -82,6 +87,7 @@ function saveState() {
       leaderboardVersion: LEADERBOARD_VERSION,
       mineLeaderboard: Array.from(mineLeaderboard.values()),
       scoreLeaderboard: Array.from(scoreLeaderboard.values()),
+      cellsScoreLeaderboard: Array.from(cellsScoreLeaderboard.values()),
       gameHistory: gameHistory.slice(0, MAX_HISTORY),
       defaultRoom: room ? {
         width: room.game.width,
@@ -127,6 +133,25 @@ function getMineLeaderboard() {
     .slice(0, 20);
 }
 
+// 更新积分榜并广播（揭格积分，按剩余比例阶梯加成）
+function recordCellsScore(playerName, cellsRevealed, beforeCount, safeTotal) {
+  if (!playerName || cellsRevealed <= 0) return;
+  const remainingRatio = (safeTotal - beforeCount) / safeTotal;
+  const stage = Math.floor((1 - remainingRatio) / 0.1); // 0~9
+  const multiplier = Math.round((stage + 1) * 0.1 * 10) / 10; // 0.1~1.0
+  const points = Math.round(cellsRevealed * multiplier * 10) / 10;
+  const entry = cellsScoreLeaderboard.get(playerName) || { name: playerName, cellsScore: 0 };
+  entry.cellsScore = Math.round((entry.cellsScore + points) * 10) / 10;
+  cellsScoreLeaderboard.set(playerName, entry);
+  io.emit('cells-score-leaderboard-update', getCellsScoreLeaderboard());
+}
+
+function getCellsScoreLeaderboard() {
+  return Array.from(cellsScoreLeaderboard.values())
+    .sort((a, b) => b.cellsScore - a.cellsScore)
+    .slice(0, 20);
+}
+
 // 记录历史并广播（含棋盘快照）
 function recordHistory(playerName, result, width, height, mines, board) {
   gameHistory.unshift({ time: Date.now(), player: playerName, result, width, height, mines, board });
@@ -157,6 +182,7 @@ io.on('connection', (socket) => {
   socket.emit('room-list', roomManager.getRoomList());
   socket.emit('leaderboard-update', getMineLeaderboard());
   socket.emit('score-leaderboard-update', getScoreLeaderboard());
+  socket.emit('cells-score-leaderboard-update', getCellsScoreLeaderboard());
   socket.emit('history-update', gameHistory);
 
   let currentRoom = null;
@@ -246,7 +272,10 @@ io.on('connection', (socket) => {
       room.game.placeMines(x, y);
     }
 
+    const beforeRevealedCount = room.game.revealedCount;
+    const safeTotal = room.game.width * room.game.height - room.game.mines;
     const result = room.game.reveal(x, y);
+    const cellsRevealed = room.game.revealedCount - beforeRevealedCount;
 
     if (result.success) {
       io.to(currentRoom).emit('game-state', {
@@ -272,6 +301,8 @@ io.on('connection', (socket) => {
           });
         }
       } else {
+        // 普通揭格，记录积分（阶梯加成）
+        recordCellsScore(currentPlayer.name, cellsRevealed, beforeRevealedCount, safeTotal);
         if (currentRoom === DEFAULT_ROOM) saveState();
       }
     }

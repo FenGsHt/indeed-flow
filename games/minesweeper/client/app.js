@@ -13,6 +13,7 @@ let gameState = null;
 let autoRestartTimer = null;
 let lbScoreData = [];
 let lbMineData = [];
+let lbCellsData = [];
 
 // DOM 元素
 const joinScreen = document.getElementById('join-screen');
@@ -109,6 +110,11 @@ function initSocket() {
     renderCombinedLeaderboard();
   });
 
+  socket.on('cells-score-leaderboard-update', (data) => {
+    lbCellsData = data || [];
+    renderCombinedLeaderboard();
+  });
+
   socket.on('history-update', (data) => {
     renderHistory(data || []);
   });
@@ -183,20 +189,25 @@ function renderMineLeaderboard(data) {
   }
 }
 
-// 渲染游戏内综合榜单（胜场 + 暴雷合并）
+// 渲染游戏内综合榜单（胜场 + 积分 + 暴雷合并）
 function renderCombinedLeaderboard() {
-  // 合并两个榜单
+  // 合并三个榜单
   const players = {};
   lbScoreData.forEach(e => {
-    players[e.name] = { name: e.name, score: e.score, hits: 0 };
+    players[e.name] = { name: e.name, score: e.score, cellsScore: 0, hits: 0 };
+  });
+  lbCellsData.forEach(e => {
+    if (players[e.name]) players[e.name].cellsScore = e.cellsScore;
+    else players[e.name] = { name: e.name, score: 0, cellsScore: e.cellsScore, hits: 0 };
   });
   lbMineData.forEach(e => {
     if (players[e.name]) players[e.name].hits = e.hits;
-    else players[e.name] = { name: e.name, score: 0, hits: e.hits };
+    else players[e.name] = { name: e.name, score: 0, cellsScore: 0, hits: e.hits };
   });
 
+  // 排序：仍按胜场，积分暂不计入权重
   const sorted = Object.values(players)
-    .sort((a, b) => b.score - a.score || b.hits - a.hits)
+    .sort((a, b) => b.score - a.score || b.cellsScore - a.cellsScore)
     .slice(0, 15);
 
   if (!ingameLb) return;
@@ -214,6 +225,7 @@ function renderCombinedLeaderboard() {
       <span class="lb-col-rank">${medal}</span>
       <span class="lb-col-name">${entry.name}</span>
       <span class="lb-col-score">${entry.score}</span>
+      <span class="lb-col-cells">${entry.cellsScore}</span>
       <span class="lb-col-hits">${entry.hits}</span>
     `;
     ingameLb.appendChild(row);

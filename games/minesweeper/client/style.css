@@ -764,7 +764,7 @@ body.in-game #game-screen {
 }
 
 .lb-col-score {
-  width: 36px;
+  width: 28px;
   flex-shrink: 0;
   text-align: center;
   font-size: 12px;
@@ -772,8 +772,17 @@ body.in-game #game-screen {
   font-weight: bold;
 }
 
+.lb-col-cells {
+  width: 42px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  color: #74b9ff;
+  font-weight: bold;
+}
+
 .lb-col-hits {
-  width: 36px;
+  width: 28px;
   flex-shrink: 0;
   text-align: center;
   font-size: 12px;
@@ -786,7 +795,7 @@ body.in-game #game-screen {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 180px;
+  width: 210px;
   flex-shrink: 0;
 }
 
