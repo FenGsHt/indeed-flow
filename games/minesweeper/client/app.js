@@ -98,6 +98,7 @@ function initSocket() {
   });
 
   socket.on('score-leaderboard-update', (data) => {
+    console.log('[score-lb] received:', data);
     renderScoreLeaderboard(data);
   });
 

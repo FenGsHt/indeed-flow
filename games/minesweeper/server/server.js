@@ -116,10 +116,12 @@ function getMineLeaderboard() {
 
 // 更新得分榜并广播
 function recordScore(playerName, cells) {
+  console.log(`[recordScore] player=${playerName} cells=${cells}`);
   if (!playerName || cells <= 0) return;
   const entry = scoreLeaderboard.get(playerName) || { name: playerName, score: 0 };
   entry.score += cells;
   scoreLeaderboard.set(playerName, entry);
+  console.log(`[recordScore] new score=${entry.score}, leaderboard size=${scoreLeaderboard.size}`);
   io.emit('score-leaderboard-update', getScoreLeaderboard());
   saveState();
 }
