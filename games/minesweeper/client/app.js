@@ -10,8 +10,9 @@ let currentPlayer = null;
 let currentPlayerName = '';
 let players = [];
 let gameState = null;
-let activeLeaderboardTab = 'score';
 let autoRestartTimer = null;
+let lbScoreData = [];
+let lbMineData = [];
 
 // DOM 元素
 const joinScreen = document.getElementById('join-screen');
@@ -40,8 +41,7 @@ const gameOverMessage = document.getElementById('game-over-message');
 const gameOverHint = document.getElementById('game-over-hint');
 const roomListDiv = document.getElementById('room-list');
 const leaderboardDiv = document.getElementById('leaderboard');
-const ingameScoreLb = document.getElementById('ingame-score-leaderboard');
-const ingameMineLb = document.getElementById('ingame-mine-leaderboard');
+const ingameLb = document.getElementById('ingame-leaderboard');
 
 // 名字弹窗
 const nameModal = document.getElementById('name-modal');
@@ -94,12 +94,14 @@ function initSocket() {
   });
 
   socket.on('leaderboard-update', (data) => {
-    renderMineLeaderboard(data);
+    lbMineData = data || [];
+    renderMineLeaderboard(lbMineData);
+    renderCombinedLeaderboard();
   });
 
   socket.on('score-leaderboard-update', (data) => {
-    console.log('[score-lb] received:', data);
-    renderScoreLeaderboard(data);
+    lbScoreData = data || [];
+    renderCombinedLeaderboard();
   });
 
   socket.on('game-state', (state) => {
@@ -151,64 +153,61 @@ function renderRoomList(rooms) {
   });
 }
 
-// 渲染暴雷榜
+// 渲染大厅暴雷榜（隐藏页面）
 function renderMineLeaderboard(data) {
-  // 大厅榜单（隐藏状态）
-  if (leaderboardDiv) {
-    if (!data || data.length === 0) {
-      leaderboardDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
-    } else {
-      leaderboardDiv.innerHTML = '';
-      data.forEach((entry, index) => {
-        const row = document.createElement('div');
-        row.className = 'lb-row';
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        row.innerHTML = `
-          <span class="lb-rank">${medal}</span>
-          <span class="lb-name">${entry.name}</span>
-          <span class="lb-hits">💥 ${entry.hits}</span>
-        `;
-        leaderboardDiv.appendChild(row);
-      });
-    }
-  }
-
-  // 游戏内暴雷榜
+  if (!leaderboardDiv) return;
   if (!data || data.length === 0) {
-    ingameMineLb.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
+    leaderboardDiv.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
   } else {
-    ingameMineLb.innerHTML = '';
-    data.slice(0, 10).forEach((entry, index) => {
+    leaderboardDiv.innerHTML = '';
+    data.forEach((entry, index) => {
       const row = document.createElement('div');
-      row.className = 'lb-row lb-row-sm';
+      row.className = 'lb-row';
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
       row.innerHTML = `
         <span class="lb-rank">${medal}</span>
         <span class="lb-name">${entry.name}</span>
         <span class="lb-hits">💥 ${entry.hits}</span>
       `;
-      ingameMineLb.appendChild(row);
+      leaderboardDiv.appendChild(row);
     });
   }
 }
 
-// 渲染得分榜
-function renderScoreLeaderboard(data) {
-  if (!data || data.length === 0) {
-    ingameScoreLb.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
+// 渲染游戏内综合榜单（胜场 + 暴雷合并）
+function renderCombinedLeaderboard() {
+  // 合并两个榜单
+  const players = {};
+  lbScoreData.forEach(e => {
+    players[e.name] = { name: e.name, score: e.score, hits: 0 };
+  });
+  lbMineData.forEach(e => {
+    if (players[e.name]) players[e.name].hits = e.hits;
+    else players[e.name] = { name: e.name, score: 0, hits: e.hits };
+  });
+
+  const sorted = Object.values(players)
+    .sort((a, b) => b.score - a.score || b.hits - a.hits)
+    .slice(0, 15);
+
+  if (!ingameLb) return;
+  if (sorted.length === 0) {
+    ingameLb.innerHTML = '<div class="leaderboard-empty">暂无记录</div>';
     return;
   }
-  ingameScoreLb.innerHTML = '';
-  data.slice(0, 10).forEach((entry, index) => {
+
+  ingameLb.innerHTML = '';
+  sorted.forEach((entry, index) => {
     const row = document.createElement('div');
-    row.className = 'lb-row lb-row-sm';
-    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+    row.className = 'lb-row lb-row-sm lb-row-combined';
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
     row.innerHTML = `
-      <span class="lb-rank">${medal}</span>
-      <span class="lb-name">${entry.name}</span>
-      <span class="lb-score">⭐ ${entry.score}</span>
+      <span class="lb-col-rank">${medal}</span>
+      <span class="lb-col-name">${entry.name}</span>
+      <span class="lb-col-score">${entry.score}</span>
+      <span class="lb-col-hits">${entry.hits}</span>
     `;
-    ingameScoreLb.appendChild(row);
+    ingameLb.appendChild(row);
   });
 }
 
@@ -583,18 +582,6 @@ document.querySelectorAll('.btn-preset').forEach(btn => {
     if (boardMinesInput) boardMinesInput.value = btn.dataset.m;
     document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-  });
-});
-
-// 榜单标签切换
-document.querySelectorAll('.lb-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    const tabName = tab.dataset.tab;
-    activeLeaderboardTab = tabName;
-    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    ingameScoreLb.classList.toggle('hidden', tabName !== 'score');
-    ingameMineLb.classList.toggle('hidden', tabName !== 'mine');
   });
 });
 

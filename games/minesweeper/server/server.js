@@ -16,10 +16,11 @@ const io = new Server(server, {
 });
 
 const STATE_FILE = path.join(__dirname, 'state.json');
+const LEADERBOARD_VERSION = 2; // 修改此值可强制重置榜单
 
 // 全局暴雷榜 playerName -> { name, hits }
 const mineLeaderboard = new Map();
-// 全局得分榜 playerName -> { name, score }（揭开格子数累计）
+// 全局得分榜 playerName -> { name, score }（赢得局数）
 const scoreLeaderboard = new Map();
 
 const roomManager = new RoomManager();
@@ -31,12 +32,16 @@ function loadState() {
     if (!fs.existsSync(STATE_FILE)) return;
     const data = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
 
-    // 恢复榜单
-    if (data.mineLeaderboard) {
-      data.mineLeaderboard.forEach(e => mineLeaderboard.set(e.name, e));
-    }
-    if (data.scoreLeaderboard) {
-      data.scoreLeaderboard.forEach(e => scoreLeaderboard.set(e.name, e));
+    // 恢复榜单（版本不匹配则重置）
+    if (data.leaderboardVersion === LEADERBOARD_VERSION) {
+      if (data.mineLeaderboard) {
+        data.mineLeaderboard.forEach(e => mineLeaderboard.set(e.name, e));
+      }
+      if (data.scoreLeaderboard) {
+        data.scoreLeaderboard.forEach(e => scoreLeaderboard.set(e.name, e));
+      }
+    } else {
+      console.log('Leaderboard version mismatch, resetting leaderboards');
     }
 
     // 恢复默认房间游戏状态
@@ -68,6 +73,7 @@ function saveState() {
   try {
     const room = roomManager.getRoom(DEFAULT_ROOM);
     const data = {
+      leaderboardVersion: LEADERBOARD_VERSION,
       mineLeaderboard: Array.from(mineLeaderboard.values()),
       scoreLeaderboard: Array.from(scoreLeaderboard.values()),
       defaultRoom: room ? {
@@ -114,14 +120,12 @@ function getMineLeaderboard() {
     .slice(0, 20);
 }
 
-// 更新得分榜并广播
-function recordScore(playerName, cells) {
-  console.log(`[recordScore] player=${playerName} cells=${cells}`);
-  if (!playerName || cells <= 0) return;
+// 更新得分榜并广播（赢得一局 +1）
+function recordScore(playerName) {
+  if (!playerName) return;
   const entry = scoreLeaderboard.get(playerName) || { name: playerName, score: 0 };
-  entry.score += cells;
+  entry.score += 1;
   scoreLeaderboard.set(playerName, entry);
-  console.log(`[recordScore] new score=${entry.score}, leaderboard size=${scoreLeaderboard.size}`);
   io.emit('score-leaderboard-update', getScoreLeaderboard());
   saveState();
 }
@@ -227,9 +231,7 @@ io.on('connection', (socket) => {
       room.game.placeMines(x, y);
     }
 
-    const beforeCount = room.game.revealedCount;
     const result = room.game.reveal(x, y);
-    const cellsRevealed = room.game.revealedCount - beforeCount;
 
     if (result.success) {
       io.to(currentRoom).emit('game-state', {
@@ -239,12 +241,12 @@ io.on('connection', (socket) => {
 
       if (result.gameOver) {
         if (room.game.gameStatus === 'won') {
-          // 胜利时记录最后揭开的格子得分
-          recordScore(currentPlayer.name, cellsRevealed);
+          // 赢得一局，给踩出最后一步的玩家 +1 分
+          recordScore(currentPlayer.name);
           saveState();
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
         } else if (room.game.gameStatus === 'lost') {
-          // 暴雷不计分，记录暴雷榜
+          // 踩雷，记录暴雷榜
           recordMineHit(currentPlayer.name);
           saveState();
           io.to(currentRoom).emit('game-over', {
@@ -253,8 +255,6 @@ io.on('connection', (socket) => {
           });
         }
       } else {
-        // 正常揭开，记录得分
-        recordScore(currentPlayer.name, cellsRevealed);
         if (currentRoom === DEFAULT_ROOM) saveState();
       }
     }
