@@ -491,10 +491,13 @@ function renderGame(state) {
 
   const pdb = $('pending-draw-badge');
   if (state.pendingDraw > 0) {
-    pdb.textContent = `+${state.pendingDraw} 待摸`;
-    pdb.classList.remove('hidden');
+    const n = state.pendingDraw;
+    const emoji = n <= 2 ? '😮' : n <= 4 ? '😱' : n <= 6 ? '🤯' : n <= 8 ? '😵' : '💀';
+    const cls   = n <= 2 ? 'pdb-mild' : n <= 4 ? 'pdb-heavy' : 'pdb-extreme';
+    pdb.className = `pending-draw-badge ${cls}`;
+    pdb.innerHTML = `<span class="pdb-num">+${n}</span><span class="pdb-emoji">${emoji}</span>`;
   } else {
-    pdb.classList.add('hidden');
+    pdb.className = 'pending-draw-badge hidden';
   }
 
   // 弃牌堆顶牌

@@ -528,14 +528,65 @@ body {
 
 .color-label { font-size: 10px; color: var(--muted); }
 
+/* ── 惩罚摸牌提示 ───────────────────────────── */
 .pending-draw-badge {
-  background: #e53935;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.pdb-num {
   color: #fff;
-  font-size: 11px;
   font-weight: 900;
-  padding: 3px 8px;
-  border-radius: 10px;
-  margin-top: 4px;
+  border-radius: 12px;
+  padding: 4px 14px;
+  letter-spacing: 1px;
+  animation: pdb-pulse 0.65s ease-in-out infinite alternate;
+}
+
+.pdb-emoji {
+  line-height: 1;
+  animation: pdb-shake 0.6s ease-in-out infinite;
+}
+
+/* 轻微（+2） */
+.pdb-mild .pdb-num {
+  font-size: 20px;
+  background: #ef5350;
+  box-shadow: 0 0 10px rgba(239,83,80,0.5);
+}
+.pdb-mild .pdb-emoji { font-size: 22px; animation-duration: 0.8s; }
+
+/* 重度（+4） */
+.pdb-heavy .pdb-num {
+  font-size: 26px;
+  background: linear-gradient(135deg, #e53935, #c62828);
+  box-shadow: 0 0 18px rgba(229,57,53,0.7);
+}
+.pdb-heavy .pdb-emoji { font-size: 30px; animation-duration: 0.45s; }
+
+/* 极端（+6及以上） */
+.pdb-extreme .pdb-num {
+  font-size: 34px;
+  background: linear-gradient(135deg, #b71c1c, #6a1aad);
+  box-shadow: 0 0 28px rgba(183,28,28,0.85), 0 0 8px rgba(106,26,173,0.5);
+  animation-duration: 0.3s;
+}
+.pdb-extreme .pdb-emoji { font-size: 40px; animation-duration: 0.25s; }
+
+@keyframes pdb-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.12); }
+}
+
+@keyframes pdb-shake {
+  0%, 100% { transform: translateX(0)    rotate(0deg);   }
+  20%       { transform: translateX(-4px) rotate(-12deg); }
+  40%       { transform: translateX(4px)  rotate(12deg);  }
+  60%       { transform: translateX(-3px) rotate(-8deg);  }
+  80%       { transform: translateX(3px)  rotate(8deg);   }
 }
 
 /* 牌堆 */
