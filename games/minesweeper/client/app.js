@@ -472,6 +472,13 @@ function updateGameStatus(status) {
     'lost': '💥 游戏结束'
   };
   gameStatusSpan.textContent = statusMap[status] || status;
+
+  // 游戏进行中隐藏"新游戏"按钮，结束/等待时显示
+  if (status === 'playing') {
+    newGameBtn.classList.add('hidden');
+  } else {
+    newGameBtn.classList.remove('hidden');
+  }
 }
 
 // 渲染玩家列表
