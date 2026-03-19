@@ -282,11 +282,13 @@ def main():
         title = f"🎮 Steam 折扣检测（{len(games)}款）"
         body  = f"本次无打折\n\n── 全部清单 ──\n{full_report}"
         send_bark(title, body)
+        send_openclaw(f"{title}\n\n{body}")
     else:
         discounted.sort(key=lambda x: x['discount'], reverse=True)
         title = f"🎮 Steam {len(discounted)}/{len(games)} 款打折"
         body  = f"── 全部清单 ──\n{full_report}"
         send_bark(title, body, jump_url="https://store.steampowered.com/specials#p=0&tab=TopSellers")
+        send_openclaw(f"{title}\n\n{body}\n\nhttps://store.steampowered.com/specials")
 
     print("=" * 40)
     print("检测完成")
