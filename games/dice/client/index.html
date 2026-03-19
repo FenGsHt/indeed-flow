@@ -294,8 +294,20 @@
       border-radius: 14px; padding: 1rem; margin-bottom: 0.8rem;
     }
     .bid-controls { display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .bid-input-group { display: flex; align-items: center; gap: 0.3rem; }
-    .bid-input-group input { width: 55px; text-align: center; font-size: 1.2rem; font-weight: 700; }
+    .bid-input-group { display: flex; align-items: center; gap: 0.15rem; user-select: none; }
+    .qty-btn {
+      width: 34px; height: 34px; border-radius: 50%; border: none;
+      background: rgba(212,166,70,0.2); color: var(--gold-bright);
+      font-size: 1.3rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .qty-btn:active { transform: scale(0.9); background: rgba(212,166,70,0.4); }
+    .qty-display {
+      width: 50px; text-align: center; font-size: 1.5rem; font-weight: 900;
+      color: var(--gold-bright); cursor: ns-resize;
+      -webkit-user-select: none; user-select: none;
+    }
     .bid-input-group .unit { font-size: 0.9rem; color: rgba(232,213,184,0.6); }
     .bid-face-select { display: flex; gap: 0.25rem; }
     .face-btn {
@@ -572,7 +584,9 @@
     <div class="bid-panel" id="bid-panel">
       <div class="bid-controls">
         <div class="bid-input-group">
-          <input type="number" id="bid-qty" value="1" min="1">
+          <button class="qty-btn" id="qty-minus">−</button>
+          <div class="qty-display" id="bid-qty">1</div>
+          <button class="qty-btn" id="qty-plus">+</button>
           <span class="unit">个</span>
         </div>
         <div class="bid-face-select" id="bid-face-select"></div>
@@ -949,6 +963,34 @@ function renderGame(state) {
 }
 
 // ── 叫价面板 ─────────────────────────────────────────
+let bidQty = 1;
+function updateQtyDisplay() { $('bid-qty').textContent = bidQty; }
+function setQty(v) { bidQty = Math.max(1, Math.round(v)); updateQtyDisplay(); }
+
+$('qty-minus').onclick = () => setQty(bidQty - 1);
+$('qty-plus').onclick  = () => setQty(bidQty + 1);
+
+// PC 鼠标滚轮
+$('bid-qty').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  setQty(bidQty + (e.deltaY < 0 ? 1 : -1));
+}, { passive: false });
+
+// 移动端触摸滑动
+(function() {
+  const el = $('bid-qty');
+  let startY = 0, startQty = 0;
+  el.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    startQty = bidQty;
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const dy = startY - e.touches[0].clientY;
+    setQty(startQty + Math.round(dy / 25));
+  }, { passive: false });
+})();
+
 function renderFaceSelect() {
   const c = $('bid-face-select'); c.innerHTML = '';
   for (let f = 1; f <= 6; f++) c.innerHTML += faceBtnHTML(f, f === selectedFace);
@@ -959,9 +1001,8 @@ function renderFaceSelect() {
 renderFaceSelect();
 
 $('btn-bid').onclick = () => {
-  const qty = parseInt($('bid-qty').value);
-  if (!qty || qty < 1) return showToast('数量不合法', true);
-  socket.emit('make-bid', { quantity: qty, face: selectedFace });
+  if (!bidQty || bidQty < 1) return showToast('数量不合法', true);
+  socket.emit('make-bid', { quantity: bidQty, face: selectedFace });
 };
 $('btn-challenge').onclick = () => { SFX.slam(); socket.emit('challenge'); };
 
