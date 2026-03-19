@@ -46,21 +46,83 @@ def get_db():
     return pymysql.connect(**DB_CONFIG)
 
 
+# 2026-03-19: 原先只取 steam_appid 非空的游戏，导致遗漏；现在取所有 todo/playing 游戏，
+#              然后从 url/source 字段提取 appid，或通过名字搜索 Steam 补全
 def get_games_with_appid():
-    """返回所有状态为 todo/playing 且有 steam_appid 的游戏列表"""
+    """返回所有状态为 todo/playing 的游戏，尽可能补全 steam_appid"""
     conn = get_db()
     try:
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute(
-            "SELECT id, name, steam_appid, status FROM games "
+            "SELECT id, name, steam_appid, url, source, status FROM games "
             "WHERE id != 'bookmarks' "
-            "  AND steam_appid IS NOT NULL AND steam_appid != '' "
             "  AND status IN ('todo', 'playing') "
             "ORDER BY name"
         )
-        return cursor.fetchall()
+        games = cursor.fetchall()
     finally:
         conn.close()
+
+    result = []
+    for g in games:
+        appid = (g.get('steam_appid') or '').strip()
+
+        # 尝试从 url / source 字段提取 appid
+        if not appid:
+            import re
+            for field in ('url', 'source'):
+                val = g.get(field) or ''
+                m = re.search(r'steampowered\.com/app/(\d+)', val)
+                if m:
+                    appid = m.group(1)
+                    break
+
+        # 仍然没有 appid → 通过游戏名搜索 Steam
+        if not appid:
+            appid = search_steam_appid(g['name'])
+
+        if appid:
+            g['steam_appid'] = appid
+            save_steam_appid(g['id'], appid)
+            result.append(g)
+        else:
+            print(f"  [SKIP] {g['name']}: 无法确定 Steam appid")
+
+    return result
+
+
+def search_steam_appid(game_name):
+    """通过 Steam Store Search API 用游戏名搜索 appid"""
+    try:
+        url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
+        )
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            items = data.get('items', [])
+            if items:
+                return str(items[0].get('id', ''))
+    except Exception as e:
+        print(f"  [WARN] search appid for '{game_name}' failed: {e}")
+    return ''
+
+
+def save_steam_appid(game_id, app_id):
+    """把发现的 appid 写回数据库"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE games SET steam_appid = %s '
+            'WHERE id = %s AND (steam_appid IS NULL OR steam_appid = "")',
+            (str(app_id), game_id)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"  [WARN] save appid error: {e}")
 
 
 # ── Steam API ────────────────────────────────────────────────────────────
