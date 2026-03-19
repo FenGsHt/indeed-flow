@@ -263,7 +263,7 @@
       <div class="welcome">
         <div class="welcome-icon">🤖</div>
         <h2>AI 助手测试台</h2>
-        <p>在下方加载任意页面，AI 助手会自动注入并帮你用自然语言操控页面元素。</p>
+        <p>在地址栏输入任意网址（如 baidu.com）或选择本站页面。本站页面支持 AI 助手注入，外部页面可浏览但 AI 不可用。</p>
         <div class="welcome-links">
           <a class="welcome-link" data-url="./index.html"><span class="emoji">🏠</span>首页</a>
           <a class="welcome-link" data-url="./games.html"><span class="emoji">🎮</span>游戏中心</a>
@@ -273,7 +273,7 @@
         </div>
       </div>
     </div>
-    <iframe id="main-frame" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+    <iframe id="main-frame"></iframe>
   </div>
 
   <div class="status-bar">
@@ -294,8 +294,13 @@
 
     function navigateTo(url) {
       if (!url) return;
+      // 自动补全协议：含域名特征的补 https://，否则当本站路径
       if (!/^https?:\/\//i.test(url) && !/^\.\//.test(url) && !/^\//.test(url)) {
-        url = './' + url;
+        if (/\.[a-z]{2,}(\/|$)/i.test(url)) {
+          url = 'https://' + url;
+        } else {
+          url = './' + url;
+        }
       }
       frame.src = url;
       overlay.classList.add('hidden');
@@ -341,31 +346,42 @@
         if (!doc) throw new Error('cross-origin');
 
         const currentUrl = frame.contentWindow.location.href;
+        if (currentUrl === 'about:blank') return;
         updateUrlBar(currentUrl);
 
-        // 检查页面是否已自带 page-agent（index.html/games.html 本身已集成）
+        // 判断是否同源
+        const isSameOrigin = new URL(currentUrl).origin === location.origin;
+        if (!isSameOrigin) throw new Error('cross-origin');
+
+        // 检查页面是否已自带 page-agent
         if (doc.querySelector('#injected-page-agent') ||
             frame.contentWindow.__pageAgentInjected) {
-          setAiStatus(true, 'AI 助手已就绪');
+          setAiStatus('ok', 'AI 助手已就绪（本站页面）');
           return;
         }
 
-        // 同源页面：注入本站构建好的 page-agent 脚本
+        // 同源页面：注入 page-agent 脚本
         const injectScript = doc.createElement('script');
         injectScript.id = 'injected-page-agent';
         injectScript.type = 'module';
-        // 使用相对于站点根目录的路径加载注入脚本
         injectScript.src = '/src/page-agent-inject.js';
         doc.body.appendChild(injectScript);
 
-        setAiStatus(true, 'AI 助手已注入');
+        setAiStatus('ok', 'AI 助手已注入（本站页面）');
       } catch {
-        setAiStatus(false, '跨域页面，AI 助手不可用');
+        setAiStatus('cross', '外部页面 · AI 助手不可用（跨域限制）');
       }
     });
 
-    function setAiStatus(ok, text) {
-      aiDot.style.background = ok ? '#4caf50' : '#ff9800';
+    // 检测 iframe 加载被拦截（X-Frame-Options / CSP）
+    frame.addEventListener('error', () => {
+      setAiStatus('error', '该网站禁止在 iframe 中加载');
+    });
+
+    function setAiStatus(type, text) {
+      const colors = { ok: '#4caf50', cross: '#ff9800', error: '#ff4757' };
+      aiDot.style.background = colors[type] || '#ff9800';
+      aiDot.style.animation = type === 'ok' ? 'pulse 2s infinite' : 'none';
       aiText.textContent = text;
     }
   </script>
