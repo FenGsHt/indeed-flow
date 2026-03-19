@@ -218,16 +218,30 @@
       display: flex; align-items: center; gap: 0.4rem;
       padding: 0.4rem 0.7rem; border-radius: 10px;
       background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(212,166,70,0.15);
+      border: 2px solid rgba(212,166,70,0.15);
       font-size: 0.8rem; transition: all 0.3s;
+      position: relative;
     }
     .player-chip.active {
-      border-color: var(--gold);
-      background: rgba(212,166,70,0.15);
-      box-shadow: 0 0 15px rgba(212,166,70,0.2);
+      border-color: var(--gold-bright);
+      background: rgba(212,166,70,0.18);
+      box-shadow: 0 0 20px rgba(212,166,70,0.35);
+      animation: chipPulse 1.5s ease-in-out infinite;
     }
+    @keyframes chipPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(212,166,70,0.35); }
+      50% { box-shadow: 0 0 30px rgba(212,166,70,0.55); }
+    }
+    .player-chip .turn-tag, .beer-chip .turn-tag {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      font-size: 0.55rem; font-weight: 700; padding: 1px 6px;
+      border-radius: 6px; white-space: nowrap;
+    }
+    .turn-tag.current { background: var(--gold-bright); color: var(--wood-dark); }
+    .turn-tag.next { background: rgba(212,166,70,0.3); color: var(--gold-bright); }
     .player-chip.eliminated { opacity: 0.35; text-decoration: line-through; }
     .player-chip .dice-dots { font-size: 0.65rem; color: var(--gold-dim); }
+    .player-chip.is-next { border-color: rgba(212,166,70,0.4); background: rgba(212,166,70,0.06); }
 
     .table-center {
       text-align: center; padding: 1.2rem;
@@ -388,7 +402,7 @@
     /* ── 啤酒小人 ──────────────────────────────── */
     .beer-guy {
       display: inline-flex; flex-direction: column; align-items: center;
-      position: relative; width: 56px; height: 80px;
+      position: relative; width: 56px; min-height: 70px;
       transition: transform 0.3s;
     }
     .beer-guy .bg-head {
@@ -471,15 +485,21 @@
 
     .beer-chip {
       display: flex; align-items: flex-end; gap: 0.4rem;
-      padding: 0.4rem; border-radius: 10px;
+      padding: 0.4rem 0.5rem; border-radius: 10px;
       background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(212,166,70,0.1);
+      border: 2px solid rgba(212,166,70,0.1);
+      position: relative; transition: all 0.3s;
     }
     .beer-chip .bc-name {
       font-size: 0.75rem; max-width: 60px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .beer-chip.active { border-color: var(--gold); background: rgba(212,166,70,0.1); }
+    .beer-chip.active {
+      border-color: var(--gold-bright);
+      background: rgba(212,166,70,0.12);
+      animation: chipPulse 1.5s ease-in-out infinite;
+    }
+    .beer-chip.is-next { border-color: rgba(212,166,70,0.4); background: rgba(212,166,70,0.06); }
 
     .toggle-beer {
       display: flex; align-items: center; gap: 0.5rem;
@@ -915,19 +935,38 @@ async function fetchPlayerScores(names) {
 function renderGame(state) {
   const isMyTurn = state.currentPlayerId === myId;
   const beerMode = state.settings?.beerMode;
+  const isPlaying = state.status === 'playing';
+
+  // 计算下家 ID
+  let nextPlayerId = null;
+  if (isPlaying && state.currentPlayerId) {
+    const activePlayers = state.players.filter(p => !p.eliminated);
+    const curIdx = activePlayers.findIndex(p => p.id === state.currentPlayerId);
+    if (curIdx !== -1 && activePlayers.length > 1) {
+      nextPlayerId = activePlayers[(curIdx + 1) % activePlayers.length].id;
+    }
+  }
+
+  function turnTag(pid) {
+    if (!isPlaying) return '';
+    if (pid === state.currentPlayerId) return '<span class="turn-tag current">👈 叫价中</span>';
+    if (pid === nextPlayerId) return '<span class="turn-tag next">下家</span>';
+    return '';
+  }
 
   if (beerMode) {
-    // roundEnd 时暂存新等级，等结算关闭后再触发动画
     if (state.status === 'roundEnd' && !pendingBeerLevels) {
       pendingBeerLevels = {};
       state.players.forEach(p => { pendingBeerLevels[p.id] = p.beerLevel; });
     }
     $('players-bar').innerHTML = state.players.map(p => {
-      const active = p.id === state.currentPlayerId && state.status === 'playing';
+      const active = p.id === state.currentPlayerId && isPlaying;
+      const isNext = p.id === nextPlayerId;
       const isDrinking = drinkingIds.includes(p.id);
       const pts = playerScores[p.name];
       const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
-      return `<div class="beer-chip ${active ? 'active' : ''}">
+      return `<div class="beer-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''}">
+        ${turnTag(p.id)}
         ${beerGuyHTML(p.beerLevel, isDrinking)}
         <div>
           <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
@@ -938,10 +977,12 @@ function renderGame(state) {
     }).join('');
   } else {
     $('players-bar').innerHTML = state.players.map(p => {
-      const active = p.id === state.currentPlayerId && state.status === 'playing';
+      const active = p.id === state.currentPlayerId && isPlaying;
+      const isNext = p.id === nextPlayerId;
       const pts = playerScores[p.name];
       const ptsStr = pts != null ? `<span style="font-size:0.7rem;color:var(--gold-bright);margin-left:0.3rem;">💰${pts}</span>` : '';
-      return `<div class="player-chip ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}">
+      return `<div class="player-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''} ${p.eliminated ? 'eliminated' : ''}">
+        ${turnTag(p.id)}
         <span>${p.name}${p.id === myId ? '(你)' : ''}${ptsStr}</span>
         <span class="dice-dots">${'🎲'.repeat(p.diceCount) || '💀'}</span>
       </div>`;
