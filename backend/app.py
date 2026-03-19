@@ -19,6 +19,8 @@ from pathlib import Path
 from games_api import games_bp, init_db
 # 2026-03-19: 接入 page-agent，新增 LLM 代理 Blueprint
 from llm_proxy import llm_bp
+# 2026-03-19: Web 反向代理（ai-test.html 用，绕过 iframe 跨域）
+from web_proxy import proxy_bp
 
 app = Flask(__name__, template_folder='.')
 CORS(app)
@@ -27,6 +29,8 @@ CORS(app)
 app.register_blueprint(games_bp)
 # 2026-03-19: 挂载 LLM 代理 Blueprint（page-agent 用）
 app.register_blueprint(llm_bp)
+# 2026-03-19: 挂载 Web 代理 Blueprint（ai-test.html 用）
+app.register_blueprint(proxy_bp)
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)

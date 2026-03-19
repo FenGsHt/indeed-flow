@@ -547,6 +547,32 @@
       box-shadow: 0 6px 30px rgba(0,212,255,0.5);
     }
 
+    /* 2026-03-19: AI 助手左下角浮动入口 */
+    .ai-fab {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(123,47,247,0.6), rgba(0,212,255,0.6));
+      border: 1px solid rgba(123,47,247,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(123,47,247,0.3);
+      transition: all 0.3s;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .ai-fab:hover {
+      transform: scale(1.15);
+      box-shadow: 0 4px 20px rgba(123,47,247,0.5);
+    }
+
     /* 弹窗 */
     .modal {
       position: fixed;
@@ -947,22 +973,6 @@
         </div>
       </div>
 
-      <!-- 2026-03-19: AI 助手测试入口 -->
-      <div style="margin-bottom: 2rem;">
-        <a href="./ai-test.html" style="text-decoration: none; display: block;">
-          <div style="background: linear-gradient(135deg, rgba(123,47,247,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(123,47,247,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;"
-               onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 30px rgba(123,47,247,0.3)';this.style.borderColor='rgba(123,47,247,0.6)'"
-               onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(123,47,247,0.3)'">
-            <div style="font-size: 2.5rem;">🤖</div>
-            <div style="flex:1;">
-              <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">AI 助手测试台</div>
-              <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">在内嵌浏览器中加载任意页面 · AI 自然语言操控</div>
-            </div>
-            <div style="font-size: 1.2rem; color: rgba(255,255,255,0.3);">→</div>
-          </div>
-        </a>
-      </div>
-
       <!-- Steam 每日推荐 -->
       <div id="steam-recommendations" class="steam-recommendations" style="display:none;">
         <div class="steam-rec-header">
@@ -978,6 +988,8 @@
         <div class="loading"></div>
       </div>
       <button class="add-game-btn" onclick="openAddModal()">+</button>
+      <!-- 2026-03-19: AI 助手测试入口（左下角小按钮） -->
+      <a href="./ai-test.html" class="ai-fab" title="AI 助手测试台">🤖</a>
     </div>
 
     <!-- 新闻内容 -->

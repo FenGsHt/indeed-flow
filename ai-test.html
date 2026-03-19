@@ -263,7 +263,7 @@
       <div class="welcome">
         <div class="welcome-icon">🤖</div>
         <h2>AI 助手测试台</h2>
-        <p>在地址栏输入任意网址（如 baidu.com）或选择本站页面。本站页面支持 AI 助手注入，外部页面可浏览但 AI 不可用。</p>
+        <p>在地址栏输入任意网址（如 baidu.com）或选择本站页面。外部网页通过后端代理加载，AI 助手同样可用。</p>
         <div class="welcome-links">
           <a class="welcome-link" data-url="./index.html"><span class="emoji">🏠</span>首页</a>
           <a class="welcome-link" data-url="./games.html"><span class="emoji">🎮</span>游戏中心</a>
@@ -292,6 +292,14 @@
     const aiDot      = document.getElementById('ai-dot');
     const aiText     = document.getElementById('ai-status-text');
 
+    // 2026-03-19: 判断是否为本站路径（相对路径或同源绝对路径）
+    function isLocalUrl(url) {
+      if (/^\.\//.test(url) || /^\/(?!\/)/.test(url)) return true;
+      try {
+        return new URL(url, location.href).origin === location.origin;
+      } catch { return false; }
+    }
+
     function navigateTo(url) {
       if (!url) return;
       // 自动补全协议：含域名特征的补 https://，否则当本站路径
@@ -302,7 +310,12 @@
           url = './' + url;
         }
       }
-      frame.src = url;
+      // 2026-03-19: 外部 URL 走后端反向代理，绕过 iframe 跨域 / X-Frame-Options
+      if (!isLocalUrl(url)) {
+        frame.src = '/api/browse?url=' + encodeURIComponent(url);
+      } else {
+        frame.src = url;
+      }
       overlay.classList.add('hidden');
       updateUrlBar(url);
     }
@@ -339,7 +352,7 @@
       });
     });
 
-    // iframe 加载完成后尝试注入 page-agent（仅同源）
+    // 2026-03-19: iframe 加载完成后注入 page-agent（同源 + 代理页面均可）
     frame.addEventListener('load', () => {
       try {
         const doc = frame.contentDocument;
@@ -347,35 +360,33 @@
 
         const currentUrl = frame.contentWindow.location.href;
         if (currentUrl === 'about:blank') return;
-        updateUrlBar(currentUrl);
 
-        // 判断是否同源
-        const isSameOrigin = new URL(currentUrl).origin === location.origin;
-        if (!isSameOrigin) throw new Error('cross-origin');
+        // 代理页面的真实 URL 从地址栏取（不覆盖 urlInput）
+        const isProxied = currentUrl.includes('/api/browse?url=');
+        if (!isProxied) updateUrlBar(currentUrl);
 
-        // 检查页面是否已自带 page-agent
+        // 检查页面是否已自带 page-agent（代理注入或本站自带）
         if (doc.querySelector('#injected-page-agent') ||
             frame.contentWindow.__pageAgentInjected) {
-          setAiStatus('ok', 'AI 助手已就绪（本站页面）');
+          setAiStatus('ok', isProxied ? 'AI 助手已就绪（代理模式）' : 'AI 助手已就绪（本站页面）');
           return;
         }
 
-        // 同源页面：注入 page-agent 脚本
+        // 同源页面 / 代理页面：注入 page-agent 脚本
         const injectScript = doc.createElement('script');
         injectScript.id = 'injected-page-agent';
         injectScript.type = 'module';
         injectScript.src = '/src/page-agent-inject.js';
         doc.body.appendChild(injectScript);
 
-        setAiStatus('ok', 'AI 助手已注入（本站页面）');
+        setAiStatus('ok', isProxied ? 'AI 助手已注入（代理模式）' : 'AI 助手已注入（本站页面）');
       } catch {
         setAiStatus('cross', '外部页面 · AI 助手不可用（跨域限制）');
       }
     });
 
-    // 检测 iframe 加载被拦截（X-Frame-Options / CSP）
     frame.addEventListener('error', () => {
-      setAiStatus('error', '该网站禁止在 iframe 中加载');
+      setAiStatus('error', '该网站加载失败');
     });
 
     function setAiStatus(type, text) {
