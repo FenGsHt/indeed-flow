@@ -552,37 +552,78 @@ function renderGame(state) {
   wasMyTurn = isMyTurn;
 }
 
+// 2026-03-19: 重写，按出牌顺序排列对手，显示方向箭头和回合序号
 function renderOtherPlayers(state) {
-  const others = state.players.filter(p => !p.isYou);
   const el = $('other-players');
   el.innerHTML = '';
+  const n   = state.players.length;
+  const dir = state.direction;
 
-  others.forEach(p => {
+  const myIdx  = state.players.findIndex(p => p.isYou);
+  const curIdx = state.players.findIndex(p => p.id === state.currentPlayerId);
+
+  // 按出牌方向排列（从"我"的下一位开始）
+  const ordered = [];
+  let idx = myIdx;
+  for (let i = 0; i < n - 1; i++) {
+    idx = (idx + dir + n) % n;
+    ordered.push(state.players[idx]);
+  }
+
+  // 计算每个玩家离当前回合的步数
+  const turnOrder = {};
+  let tidx = curIdx;
+  for (let step = 0; step < n; step++) {
+    turnOrder[state.players[tidx].id] = step;
+    tidx = (tidx + dir + n) % n;
+  }
+
+  // "你"标记（序列起点）
+  const myOrder  = turnOrder[state.players[myIdx].id] ?? 0;
+  const myBadge  = myOrder === 0 ? '🎯' : `#${myOrder}`;
+  const youEl = document.createElement('div');
+  youEl.className = 'play-order-you' + (myOrder === 0 ? ' active' : '');
+  youEl.innerHTML = `<span class="you-label">你</span><span class="you-order">${myBadge}</span>`;
+  el.appendChild(youEl);
+
+  ordered.forEach((p, i) => {
+    // 方向箭头
+    const arrowEl = document.createElement('span');
+    arrowEl.className = 'play-order-arrow';
+    arrowEl.textContent = dir === 1 ? '›' : '‹';
+    el.appendChild(arrowEl);
+
     const div = document.createElement('div');
     div.className = 'other-player';
     if (p.id === state.currentPlayerId) div.classList.add('active');
+
+    const nextIdx = (curIdx + dir + n) % n;
+    if (p.id === state.players[nextIdx]?.id && p.id !== state.currentPlayerId) {
+      div.classList.add('next');
+    }
+
     if (p.cardCount === 1 && !p.saidUno) div.classList.add('uno-danger');
     if (!p.connected) div.classList.add('disconnected');
     div.dataset.pid = p.id;
 
-    // 迷你背面牌（最多显示 10 张）
     const cardCount = Math.min(p.cardCount, 10);
     const miniCards = Array(cardCount).fill('<div class="mini-card"></div>').join('');
 
+    const order = turnOrder[p.id] ?? 0;
+    const orderBadge = order === 0 ? '🎯' : `#${order}`;
+
     div.innerHTML = `
+      <span class="turn-order-badge">${orderBadge}</span>
       ${p.saidUno ? '<span class="uno-tag">UNO!</span>' : ''}
       ${!p.connected ? '<span class="disconnected-tag">断线中…</span>' : ''}
       <div class="other-player-name">${p.name}</div>
       <div class="other-player-cards">${miniCards}</div>
-      <div class="other-player-score">🏆 ${p.score}胜 &nbsp;·&nbsp; ${p.points}分</div>
+      <div class="other-player-score">🏆 ${p.score}胜 · ${p.points}分</div>
     `;
 
-    // 点击抓 UNO（对方有1张且未喊）
     if (p.cardCount === 1 && !p.saidUno) {
       div.title = '点击抓 UNO！';
-      div.addEventListener('click', () => {
-        socket.emit('catch-uno', { targetId: p.id });
-      });
+      div.addEventListener('click', () => socket.emit('catch-uno', { targetId: p.id }));
     }
 
     el.appendChild(div);
