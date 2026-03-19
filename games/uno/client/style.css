@@ -1331,6 +1331,24 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Jump-In 抢牌高亮 ─────────────────────── */
+/* 2026-03-19: 非回合时可抢牌的卡片闪烁提示 */
+.uno-card.jump-in-ready {
+  animation: jump-in-pulse 1.2s ease-in-out infinite;
+  cursor: pointer !important;
+  filter: brightness(1.1);
+}
+
+@keyframes jump-in-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255,215,0,0.3), inset 0 0 0 2px rgba(255,215,0,0.2); }
+  50%      { box-shadow: 0 0 16px rgba(255,215,0,0.7), inset 0 0 0 2px rgba(255,215,0,0.6); }
+}
+
+.uno-card.jump-in-ready:hover {
+  transform: translateY(-14px) scale(1.08) !important;
+  box-shadow: 0 0 20px rgba(255,215,0,0.8), inset 0 0 0 2px rgba(255,215,0,0.7);
+}
+
 /* ── 质疑 +4 弹窗 ─────────────────────────── */
 /* 2026-03-19: 质疑机制 UI */
 .challenge-box {

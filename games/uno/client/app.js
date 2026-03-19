@@ -166,8 +166,16 @@ const SoundEngine = (() => {
     }
   }
 
+  // 2026-03-19: Jump-In 抢牌音效
+  function jumpIn() {
+    _init(); _resume();
+    _osc('square', 880, 0.08, 0.25);
+    setTimeout(() => _osc('square', 1100, 0.08, 0.25), 60);
+    setTimeout(() => _osc('square', 1320, 0.12, 0.3), 120);
+  }
+
   return { playCard, drawCard, playSkip, playDraw2, sayUno, yourTurn, playWin, playLose,
-           startBgm, stopBgm, setMaster, setSfx, setBgm, challenge };
+           startBgm, stopBgm, setMaster, setSfx, setBgm, challenge, jumpIn };
 })();
 
 // ══════════════════════════════════════════════════════════════
@@ -381,6 +389,7 @@ $('btn-create').addEventListener('click', () => {
       sevensZero:     $('opt-sevens').checked,
       forcePlay:      $('opt-force').checked,
       allowChallenge: $('opt-challenge').checked, // 2026-03-19: 质疑 +4
+      allowJumpIn:    $('opt-jumpin').checked,     // 2026-03-19: Jump-In 抢牌
       targetScore:    parseInt($('opt-target').value) || 0,
     },
   });
@@ -673,15 +682,32 @@ function renderHand(hand, state) {
     return (a.value ?? 99) - (b.value ?? 99);
   });
 
+  // 2026-03-19: Jump-In 判定——非回合时检测完全匹配的牌
+  const jumpInEnabled = !isMyTurn && state.settings?.allowJumpIn && !state.challenge && state.pendingDraw === 0;
+
   sorted.forEach((card, i) => {
     const canPlay = isMyTurn && canPlayCard(card, state);
-    const el = makeCard(card, { playable: isMyTurn ? canPlay : null });
-    el.style.zIndex = i + 1; // 从左到右层叠，右边的牌在上
+    const canJump = jumpInEnabled && isExactMatch(card, state.topCard);
+    const el = makeCard(card, { playable: isMyTurn ? canPlay : (canJump ? true : null) });
+    if (canJump) el.classList.add('jump-in-ready');
+    el.style.zIndex = i + 1;
     if (isMyTurn && canPlay) {
       el.addEventListener('click', () => onCardClick(card));
+    } else if (canJump) {
+      el.addEventListener('click', () => {
+        socket.emit('jump-in', { cardId: card.id });
+      });
     }
     scroll.appendChild(el);
   });
+}
+
+// 2026-03-19: 判断是否为完全相同的牌（Jump-In 条件）
+function isExactMatch(card, topCard) {
+  if (!topCard || card.color === 'wild') return false;
+  if (card.color !== topCard.color || card.type !== topCard.type) return false;
+  if (card.type === 'number' && card.value !== topCard.value) return false;
+  return true;
 }
 
 function canPlayCard(card, state) {
@@ -993,6 +1019,17 @@ socket.on('challenge-result', ({ success, penalizedName, drawnCount }) => {
 
 socket.on('challenge-accepted', ({ playerId }) => {
   $('challenge-modal').classList.add('hidden');
+});
+
+// 2026-03-19: Jump-In 抢牌
+socket.on('jumped-in', ({ playerId, playerName, card }) => {
+  if (playerId === myId) {
+    toast('⚡ 你抢牌成功！', 2500);
+  } else {
+    toast(`⚡ ${playerName} 抢牌！`, 2500);
+    flyCardFromOpponent(playerId, card);
+  }
+  SoundEngine.jumpIn();
 });
 
 socket.on('error', ({ message }) => {

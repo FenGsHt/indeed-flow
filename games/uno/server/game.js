@@ -97,6 +97,7 @@ class UnoGame {
     this.settings = {
       stackDraw:      true,   // 叠加 +2/+4
       allowChallenge: true,   // 2026-03-19: 允许质疑 +4
+      allowJumpIn:    false,  // 2026-03-19: Jump-In 抢牌
       sevensZero:     false,  // 7换牌/0传递
       forcePlay:      true,   // 摸到的牌若能出必须出
       targetScore:    0,      // 系列赛目标分（0=无限局）
@@ -335,6 +336,64 @@ class UnoGame {
     }
     this.eventLog.push({ type: 'catch_uno', catcherId, targetId, ts: Date.now() });
     return true;
+  }
+
+  // ── Jump-In 抢牌 ───────────────────────────
+  // 2026-03-19: 任意玩家打出和弃牌堆顶完全相同的牌（颜色+类型+数值），抢断回合
+  jumpIn(playerId, cardId) {
+    if (this.status !== 'playing')       return { ok: false, reason: 'not_playing' };
+    if (!this.settings.allowJumpIn)      return { ok: false, reason: 'jump_in_disabled' };
+    if (this.challenge)                  return { ok: false, reason: 'challenge_pending' };
+    if (this.pendingDraw > 0)            return { ok: false, reason: 'pending_draw' };
+    if (this.currentPlayer.id === playerId) return { ok: false, reason: 'your_turn' };
+
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { ok: false, reason: 'player_not_found' };
+
+    const cardIdx = player.hand.findIndex(c => c.id === cardId);
+    if (cardIdx === -1) return { ok: false, reason: 'card_not_found' };
+
+    const card = player.hand[cardIdx];
+    const top  = this.topCard;
+
+    // 万能牌不能抢牌（没有固定颜色）
+    if (card.color === 'wild') return { ok: false, reason: 'wild_cannot_jump' };
+    // 必须完全匹配：颜色 + 类型 + 数值
+    if (card.color !== top.color || card.type !== top.type) return { ok: false, reason: 'not_exact_match' };
+    if (card.type === 'number' && card.value !== top.value) return { ok: false, reason: 'not_exact_match' };
+
+    // 执行抢牌
+    player.hand.splice(cardIdx, 1);
+    this.drawnThisTurn = false;
+    if (player.hand.length !== 1) player.saidUno = false;
+    this.discardPile.push(card);
+    this.currentColor = card.color;
+
+    // 将回合转移到抢牌者
+    this.currentIdx = this.players.indexOf(player);
+
+    this.eventLog.push({
+      type: 'jump_in', playerId, playerName: player.name,
+      card: { ...card }, ts: Date.now(),
+    });
+
+    // 胜利检查
+    if (player.hand.length === 0) {
+      this.status = 'finished';
+      this.winner = player;
+      player.score = (player.score || 0) + 1;
+      const roundPoints = this.players
+        .filter(p => p.id !== player.id)
+        .reduce((sum, p) => sum + p.hand.reduce((s, c) => s + cardPoints(c), 0), 0);
+      player.points = (player.points || 0) + roundPoints;
+      const target = this.settings.targetScore;
+      const seriesOver = target > 0 && player.points >= target;
+      return { ok: true, finished: true, seriesOver, winner: { id: player.id, name: player.name, roundPoints } };
+    }
+
+    // 应用牌面效果（Skip、Reverse、+2 等从抢牌者位置生效）
+    this._applyEffect(card, null);
+    return { ok: true };
   }
 
   // ── 质疑 +4 ────────────────────────────────

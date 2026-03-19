@@ -231,6 +231,30 @@ io.on('connection', socket => {
     broadcastGame(roomId);
   });
 
+  // ── Jump-In 抢牌 ────────────────────────────
+  // 2026-03-19: 任意玩家可在非自己回合打出完全相同的牌
+  socket.on('jump-in', ({ cardId }) => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.jumpIn(socket.id, cardId);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+
+    const pName = game.players.find(p => p.id === socket.id)?.name || '';
+    io.to(roomId).emit('jumped-in', {
+      playerId: socket.id, playerName: pName,
+      card: game.topCard,
+    });
+
+    broadcastGame(roomId);
+    if (result.finished) {
+      stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
+      io.to(roomId).emit('game-over', { ...result.winner, seriesOver: !!result.seriesOver });
+      io.emit('leaderboard', stats.getLeaderboard());
+      broadcastRoomList();
+    }
+  });
+
   // ── 再来一局 ──────────────────────────────
   socket.on('play-again', ({ resetScores } = {}) => {
     if (!roomId) return;
