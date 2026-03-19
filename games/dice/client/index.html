@@ -333,6 +333,11 @@
       animation: resultBounce 0.5s ease;
       max-height: 85vh; overflow-y: auto;
     }
+    .result-box.i-win  { border-color: var(--gold-bright); box-shadow: 0 0 80px rgba(212,166,70,0.5); }
+    .result-box.i-lose { border-color: var(--red); box-shadow: 0 0 80px rgba(192,57,43,0.4); }
+    .my-result-banner { text-align: center; font-size: 2.2rem; font-weight: 900; margin-bottom: 0.3rem; animation: resultBounce 0.6s ease; }
+    .my-result-banner.win-banner { color: var(--gold-bright); text-shadow: 0 0 20px rgba(212,166,70,0.6); }
+    .my-result-banner.lose-banner { color: var(--red); text-shadow: 0 0 20px rgba(192,57,43,0.5); }
     @keyframes resultBounce { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
     .result-verdict { text-align: center; font-size: 1.6rem; font-weight: 900; font-family: 'Noto Serif SC', serif; margin-bottom: 0.4rem; }
     .result-verdict.win { color: var(--gold-bright); }
@@ -808,8 +813,9 @@ socket.on('challenge-result', (result) => {
   SFX.challenge();
   screenShake();
   setTimeout(() => {
-    if (result.loserId === myId) SFX.lose(); else SFX.win();
-    spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30, result.bidderWins ? '#d4a646' : '#e74c3c');
+    const iLost = result.loserId === myId || (result.isExact && result.loserNames?.includes(myName));
+    if (iLost) SFX.lose(); else SFX.win();
+    spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30, iLost ? '#e74c3c' : '#d4a646');
     // 即时更新本地积分缓存
     if (result.winnerName) playerScores[result.winnerName] = (playerScores[result.winnerName] || 1000) + 100;
     if (result.loserNames) result.loserNames.forEach(n => { playerScores[n] = (playerScores[n] || 1000) - 100; });
@@ -995,9 +1001,22 @@ function showResultOverlay(r) {
     }
   }
 
+  const iAmWinner = r.winnerId === myId;
+  const iAmLoser = r.loserId === myId || (r.isExact && r.loserNames?.includes(myName));
+  let bannerHTML = '';
+  let boxClass = '';
+  if (iAmWinner) {
+    bannerHTML = '<div class="my-result-banner win-banner">🎉 你赢了！</div>';
+    boxClass = 'i-win';
+  } else if (iAmLoser) {
+    bannerHTML = '<div class="my-result-banner lose-banner">💀 你输了！</div>';
+    boxClass = 'i-lose';
+  }
+
   $('result-container').innerHTML = `
     <div class="result-overlay">
-      <div class="result-box">
+      <div class="result-box ${boxClass}">
+        ${bannerHTML}
         <div class="result-verdict ${r.bidderWins ? 'win' : 'lose'}">${verdictText}</div>
         <div class="result-detail">
           ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，${r.challengerName} 喊了 "开！"
