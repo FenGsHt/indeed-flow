@@ -254,7 +254,8 @@ def main():
 
     if not discounted:
         send_bark("🎮 Steam 折扣检测", f"检测 {len(games)} 款游戏，本次无打折")
-        send_openclaw(f"🎮 Steam 折扣检测：检测 {len(games)} 款游戏，本次无打折")
+        # 2026-03-19: 暂时屏蔽 QQ 群推送
+        # send_openclaw(f"🎮 Steam 折扣检测：检测 {len(games)} 款游戏，本次无打折")
     else:
         # 按折扣力度从大到小排序
         discounted.sort(key=lambda x: x['discount'], reverse=True)
@@ -270,7 +271,8 @@ def main():
         body    = '\n'.join(lines)
         qq_msg  = f"{title}\n\n" + body + "\n\nhttps://store.steampowered.com/specials"
         send_bark(title, body, jump_url="https://store.steampowered.com/specials#p=0&tab=TopSellers")
-        send_openclaw(qq_msg)
+        # 2026-03-19: 暂时屏蔽 QQ 群推送
+        # send_openclaw(qq_msg)
 
     print("=" * 40)
     print("检测完成")
