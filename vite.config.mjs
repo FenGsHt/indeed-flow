@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         games: resolve(__dirname, 'games.html'),
+        aitest: resolve(__dirname, 'ai-test.html'),
       },
     },
   },
