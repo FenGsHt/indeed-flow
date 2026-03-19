@@ -62,6 +62,8 @@ jobs:
                       ${{ secrets.SERVER_PATH }}/games/minesweeper/server \
                       ${{ secrets.SERVER_PATH }}/games/snake/client \
                       ${{ secrets.SERVER_PATH }}/games/snake/server \
+                      ${{ secrets.SERVER_PATH }}/games/dice/client \
+                      ${{ secrets.SERVER_PATH }}/games/dice/server \
                       ${{ secrets.SERVER_PATH }}/backend && \
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
@@ -230,6 +232,63 @@ jobs:
           ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "sudo python3 /tmp/nginx_add_uno_proxy.py; \
              rm -f /tmp/nginx_add_uno_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || echo 'WARNING: nginx reload failed'"
+
+      - name: Deploy dice client
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa \
+              games/dice/client/index.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/client/
+            scp -i ~/.ssh/id_rsa \
+              games/dice/ecosystem.config.js \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/
+
+      - name: Deploy dice server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r games/dice/server/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/server/
+
+      - name: Start dice server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+               cd ${{ secrets.SERVER_PATH }}/games/dice/server && \
+               ([ ! -d node_modules ] && npm install --no-audit || \
+                (md5sum package.json > /tmp/dice_pkg_hash_new && \
+                 (diff -q /tmp/dice_pkg_hash_new /tmp/dice_pkg_hash_old > /dev/null 2>&1 || \
+                  (npm install --no-audit && cp /tmp/dice_pkg_hash_new /tmp/dice_pkg_hash_old)))) && \
+               pm2 stop dice-server 2>/dev/null; \
+               pm2 delete dice-server 2>/dev/null; \
+               fuser -k 3005/tcp 2>/dev/null || true; \
+               pm2 start server.js --name dice-server && \
+               pm2 save"
+
+      - name: Configure nginx proxy for dice WebSocket
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_dice_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_dice_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_dice_proxy.py; \
+             rm -f /tmp/nginx_add_dice_proxy.py; \
              (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
                && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
              || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \

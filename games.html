@@ -164,6 +164,20 @@
 
     .uno-card .game-card-title { color: #ff7043; }
 
+    .game-card.dice-card::before {
+      background: radial-gradient(circle at 50% 0%, rgba(212,166,70,0.15) 0%, transparent 70%);
+    }
+    .dice-card .game-card-title { color: #e8c36a; }
+    .dice-card .tag { color: #e8c36a; background: rgba(212,166,70,0.08); border-color: rgba(212,166,70,0.2); }
+    .dice-card .enter-btn {
+      background: linear-gradient(90deg, #d4a646, #e8c36a);
+      color: #1a0e08;
+    }
+    .dice-card .enter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(212,166,70,0.4);
+    }
+
     .game-card:hover {
       transform: translateY(-4px);
       border-color: rgba(255,255,255,0.2);
@@ -364,6 +378,24 @@
           <span class="tag">房间系统</span>
         </div>
         <a href="./games/uno/client/index.html" class="enter-btn">开始游戏 →</a>
+      </div>
+
+      <!-- 2026-03-19: 吹牛骰 -->
+      <div class="game-card dice-card">
+        <div class="online-badge">多人实时</div>
+        <span class="game-card-emoji">🎲</span>
+        <div class="game-card-title">吹牛骰</div>
+        <div class="game-card-desc">
+          经典酒馆骰子游戏<br>
+          摇骰猜数，真话与谎言的博弈<br>
+          质疑对手的叫价，拼的是胆量！
+        </div>
+        <div class="game-tags">
+          <span class="tag">2~8人</span>
+          <span class="tag">回合制</span>
+          <span class="tag">骰子自定义</span>
+        </div>
+        <a href="./games/dice/client/index.html" class="enter-btn">开始游戏 →</a>
       </div>
 
     </div>

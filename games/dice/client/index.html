@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src="/auth-gate.js"></script>
+  <title>吹牛骰 · INDEED 酒馆</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@400;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --wood-dark: #1a0e08;
+      --wood-mid: #2d1810;
+      --wood-light: #3c2415;
+      --gold: #d4a646;
+      --gold-bright: #e8c36a;
+      --gold-dim: #8b6914;
+      --parchment: #e8d5b8;
+      --red: #c0392b;
+      --green: #27ae60;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Serif SC', serif;
+      min-height: 100vh;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 18px),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 18px),
+        linear-gradient(180deg, #1a0e08 0%, #2d1810 30%, #3c2415 60%, #2d1810 100%);
+      color: var(--parchment);
+      overflow-x: hidden;
+    }
+
+    /* ── 酒馆氛围光效 ──────────────────────────── */
+    .tavern-glow {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 600px 400px at 20% 10%, rgba(212,166,70,0.12), transparent),
+        radial-gradient(ellipse 500px 350px at 80% 15%, rgba(212,166,70,0.08), transparent),
+        radial-gradient(ellipse 300px 300px at 50% 90%, rgba(212,166,70,0.06), transparent);
+      animation: flicker 4s ease-in-out infinite alternate;
+    }
+    @keyframes flicker {
+      0%   { opacity: 0.8; }
+      30%  { opacity: 1; }
+      50%  { opacity: 0.9; }
+      70%  { opacity: 1; }
+      100% { opacity: 0.85; }
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      max-width: 800px; margin: 0 auto; padding: 1rem;
+      min-height: 100vh;
+    }
+
+    /* ── 通用组件 ──────────────────────────────── */
+    .panel {
+      background: rgba(30, 18, 10, 0.92);
+      border: 1px solid rgba(212,166,70,0.25);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,166,70,0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn {
+      padding: 0.7rem 1.5rem; border: none; border-radius: 10px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; font-family: inherit;
+    }
+    .btn:active { transform: scale(0.95); }
+
+    .btn-gold {
+      background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+      color: var(--wood-dark);
+      text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+      box-shadow: 0 4px 15px rgba(212,166,70,0.4);
+    }
+    .btn-gold:hover { box-shadow: 0 6px 20px rgba(212,166,70,0.6); transform: translateY(-2px); }
+
+    .btn-red {
+      background: linear-gradient(180deg, #e74c3c, #c0392b);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(192,57,43,0.4);
+    }
+    .btn-red:hover { box-shadow: 0 6px 20px rgba(192,57,43,0.6); transform: translateY(-2px); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.08);
+      color: var(--parchment);
+      border: 1px solid rgba(212,166,70,0.2);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.15); }
+
+    .hidden { display: none !important; }
+
+    input, select {
+      padding: 0.7rem 1rem; border-radius: 10px;
+      border: 1px solid rgba(212,166,70,0.3);
+      background: rgba(0,0,0,0.3); color: var(--parchment);
+      font-size: 1rem; font-family: inherit; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--gold); }
+
+    .title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 2.2rem; font-weight: 900;
+      text-align: center;
+      background: linear-gradient(180deg, var(--gold-bright) 20%, var(--gold) 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 0.3rem;
+    }
+    .subtitle {
+      text-align: center; font-size: 0.85rem;
+      color: rgba(232,213,184,0.5); margin-bottom: 1.5rem;
+      letter-spacing: 0.2em;
+    }
+
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 10px;
+      background: rgba(212,166,70,0.95); color: var(--wood-dark);
+      font-weight: 700; font-size: 0.9rem; z-index: 9999;
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .toast.error { background: rgba(231,76,60,0.95); color: #fff; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
+    @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
+
+    /* ── 大厅 ──────────────────────────────────── */
+    #lobby { max-width: 500px; margin: 2rem auto; }
+
+    .lantern {
+      text-align: center; font-size: 3rem; margin-bottom: 0.5rem;
+      animation: lanternSwing 3s ease-in-out infinite;
+    }
+    @keyframes lanternSwing {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+
+    .room-code {
+      text-align: center; font-size: 2rem; font-weight: 900;
+      letter-spacing: 0.3em; color: var(--gold-bright);
+      margin: 0.8rem 0;
+      text-shadow: 0 0 20px rgba(212,166,70,0.5);
+    }
+
+    .player-list { margin: 1rem 0; }
+    .player-row {
+      display: flex; align-items: center; gap: 0.8rem;
+      padding: 0.6rem 0.8rem; border-radius: 8px;
+      border-bottom: 1px solid rgba(212,166,70,0.1);
+    }
+    .player-row .name { flex: 1; font-weight: 600; }
+    .player-row .badge {
+      font-size: 0.75rem; padding: 0.2rem 0.6rem;
+      border-radius: 20px; font-weight: 700;
+    }
+    .badge-ready { background: rgba(39,174,96,0.3); color: #2ecc71; }
+    .badge-wait  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+    .badge-host  { background: rgba(212,166,70,0.3); color: var(--gold-bright); }
+
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0;
+    }
+    .setting-row label { font-size: 0.9rem; }
+    .setting-row input[type=number] { width: 70px; text-align: center; }
+
+    .lobby-actions {
+      display: flex; gap: 0.8rem; margin-top: 1.2rem;
+      flex-wrap: wrap; justify-content: center;
+    }
+
+    /* ── 游戏界面 ──────────────────────────────── */
+    #game-screen { display: none; }
+
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem;
+    }
+    .game-header .room-id { font-size: 0.8rem; color: rgba(232,213,184,0.4); }
+
+    /* 玩家横条 */
+    .players-bar {
+      display: flex; gap: 0.6rem; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 1rem;
+    }
+    .player-chip {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.8rem; border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(212,166,70,0.15);
+      font-size: 0.85rem; transition: all 0.3s;
+    }
+    .player-chip.active {
+      border-color: var(--gold);
+      background: rgba(212,166,70,0.15);
+      box-shadow: 0 0 15px rgba(212,166,70,0.2);
+    }
+    .player-chip.eliminated { opacity: 0.35; text-decoration: line-through; }
+    .player-chip .dice-dots {
+      font-size: 0.7rem; color: var(--gold-dim);
+    }
+
+    /* 桌面中央区域 */
+    .table-center {
+      text-align: center; padding: 1.5rem;
+      background: radial-gradient(ellipse at center, rgba(212,166,70,0.08), transparent 70%);
+      border-radius: 20px; margin-bottom: 1rem;
+      min-height: 180px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+
+    .current-bid {
+      font-size: 2.5rem; font-weight: 900;
+      font-family: 'Noto Serif SC', serif;
+      color: var(--gold-bright);
+      text-shadow: 0 0 30px rgba(212,166,70,0.5);
+      margin-bottom: 0.3rem;
+    }
+    .bid-speaker {
+      font-size: 0.9rem; color: rgba(232,213,184,0.6);
+    }
+    .wild-note {
+      font-size: 0.75rem; padding: 0.3rem 0.8rem;
+      background: rgba(212,166,70,0.15); border-radius: 20px;
+      color: var(--gold); margin-top: 0.5rem; display: inline-block;
+    }
+
+    .turn-banner {
+      font-size: 1.1rem; font-weight: 700;
+      padding: 0.6rem 1.2rem; border-radius: 10px;
+      margin-bottom: 1rem; text-align: center;
+    }
+    .turn-banner.my-turn {
+      background: linear-gradient(135deg, rgba(212,166,70,0.25), rgba(212,166,70,0.1));
+      border: 1px solid rgba(212,166,70,0.4);
+      color: var(--gold-bright);
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+    .turn-banner.other-turn {
+      background: rgba(255,255,255,0.05);
+      color: rgba(232,213,184,0.5);
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 10px rgba(212,166,70,0.2); }
+      50% { box-shadow: 0 0 25px rgba(212,166,70,0.4); }
+    }
+
+    /* 你的骰子 */
+    .my-dice-area {
+      margin-bottom: 1rem; text-align: center;
+    }
+    .my-dice-area .label {
+      font-size: 0.8rem; color: rgba(232,213,184,0.5);
+      margin-bottom: 0.5rem;
+    }
+    .dice-row {
+      display: flex; justify-content: center; gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .die {
+      width: 52px; height: 52px;
+      background: linear-gradient(145deg, #f5f0e8, #d4c9b8);
+      border-radius: 10px;
+      box-shadow: 3px 3px 6px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(0,0,0,0.1),
+                  inset 1px 1px 2px rgba(255,255,255,0.5);
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 7px;
+      transition: transform 0.3s;
+    }
+    .die:hover { transform: scale(1.1); }
+    .die .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--wood-dark);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+      align-self: center; justify-self: center;
+    }
+    .die.red-die { background: linear-gradient(145deg, #ff6b6b, #c0392b); }
+    .die.red-die .dot { background: #fff; box-shadow: none; }
+
+    .die.shake-anim {
+      animation: dieShake 0.6s ease;
+    }
+    @keyframes dieShake {
+      0%   { transform: rotate(0) scale(0.5); opacity: 0; }
+      30%  { transform: rotate(15deg) scale(1.1); opacity: 1; }
+      50%  { transform: rotate(-10deg) scale(1.05); }
+      70%  { transform: rotate(5deg) scale(1); }
+      100% { transform: rotate(0) scale(1); }
+    }
+
+    /* 叫价面板 */
+    .bid-panel {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(212,166,70,0.2);
+      border-radius: 14px; padding: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .bid-controls {
+      display: flex; gap: 0.8rem; align-items: center;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .bid-input-group {
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .bid-input-group input {
+      width: 60px; text-align: center; font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .bid-input-group .unit {
+      font-size: 1rem; color: rgba(232,213,184,0.6);
+    }
+    .bid-face-select {
+      display: flex; gap: 0.3rem;
+    }
+    .face-btn {
+      width: 42px; height: 42px; border-radius: 8px;
+      border: 2px solid rgba(212,166,70,0.2);
+      background: rgba(255,255,255,0.06);
+      cursor: pointer; transition: all 0.2s;
+      display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 5px;
+    }
+    .face-btn:hover { border-color: var(--gold); background: rgba(212,166,70,0.1); }
+    .face-btn.selected {
+      border-color: var(--gold-bright);
+      background: rgba(212,166,70,0.25);
+      box-shadow: 0 0 12px rgba(212,166,70,0.3);
+    }
+    .face-btn .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--parchment);
+      align-self: center; justify-self: center;
+    }
+
+    .bid-actions {
+      display: flex; gap: 0.8rem; justify-content: center;
+      margin-top: 1rem;
+    }
+
+    /* 叫价历史 */
+    .bid-log {
+      max-height: 150px; overflow-y: auto;
+      padding: 0.8rem; border-radius: 10px;
+      background: rgba(0,0,0,0.2);
+      margin-bottom: 1rem; font-size: 0.8rem;
+    }
+    .bid-log-entry {
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: rgba(232,213,184,0.7);
+    }
+    .bid-log-entry .bid-value {
+      color: var(--gold-bright); font-weight: 700;
+    }
+
+    /* ── 开骰结果覆盖层 ──────────────────────── */
+    .result-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(10,5,2,0.92);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+      animation: overlayIn 0.4s ease;
+    }
+    @keyframes overlayIn { from { opacity: 0; } }
+
+    .result-box {
+      width: 90%; max-width: 500px;
+      background: rgba(30,18,10,0.95);
+      border: 2px solid var(--gold);
+      border-radius: 20px; padding: 2rem;
+      box-shadow: 0 0 60px rgba(212,166,70,0.3);
+      animation: resultBounce 0.5s ease;
+      max-height: 85vh; overflow-y: auto;
+    }
+    @keyframes resultBounce {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    .result-verdict {
+      text-align: center; font-size: 1.8rem; font-weight: 900;
+      font-family: 'Noto Serif SC', serif;
+      margin-bottom: 0.5rem;
+    }
+    .result-verdict.win { color: var(--gold-bright); }
+    .result-verdict.lose { color: var(--red); }
+
+    .result-detail {
+      text-align: center; font-size: 0.9rem;
+      color: rgba(232,213,184,0.7); margin-bottom: 1.2rem;
+    }
+
+    .result-all-dice { margin-bottom: 1.5rem; }
+    .result-player-dice {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(212,166,70,0.1);
+      flex-wrap: wrap;
+    }
+    .result-player-dice .rpd-name {
+      width: 70px; font-size: 0.85rem; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .result-player-dice .die { width: 36px; height: 36px; padding: 4px; }
+    .result-player-dice .die .dot { width: 5px; height: 5px; }
+    .result-player-dice .die.highlight {
+      box-shadow: 0 0 12px rgba(212,166,70,0.8);
+      border: 2px solid var(--gold);
+    }
+    .result-player-dice .die.straight-die {
+      opacity: 0.35;
+      text-decoration: line-through;
+    }
+
+    .result-actions {
+      display: flex; gap: 0.8rem; justify-content: center;
+      margin-top: 1rem;
+    }
+
+    /* ── 游戏结束 ─────────────────────────────── */
+    .game-over-title {
+      font-size: 3rem; text-align: center; margin-bottom: 0.5rem;
+    }
+    .winner-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.8rem; font-weight: 900;
+      color: var(--gold-bright);
+      text-shadow: 0 0 30px rgba(212,166,70,0.6);
+      text-align: center; margin-bottom: 1.5rem;
+    }
+
+    /* ── 粒子特效 ─────────────────────────────── */
+    .particle {
+      position: fixed; pointer-events: none; z-index: 9000;
+      border-radius: 50%;
+      animation: particleFly 1s ease-out forwards;
+    }
+    @keyframes particleFly {
+      0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+    }
+
+    /* ── 屏幕震动 ─────────────────────────────── */
+    .screen-shake { animation: screenShake 0.5s ease; }
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0); }
+      10% { transform: translate(-4px, 2px); }
+      20% { transform: translate(4px, -2px); }
+      30% { transform: translate(-3px, 3px); }
+      40% { transform: translate(3px, -1px); }
+      50% { transform: translate(-2px, 1px); }
+    }
+
+    /* 响应式 */
+    @media (max-width: 500px) {
+      .title { font-size: 1.6rem; }
+      .current-bid { font-size: 2rem; }
+      .die { width: 44px; height: 44px; padding: 5px; }
+      .die .dot { width: 7px; height: 7px; }
+      .face-btn { width: 36px; height: 36px; padding: 4px; }
+    }
+  </style>
+</head>
+<body>
+<div class="tavern-glow"></div>
+<div class="container" id="app-root">
+
+  <!-- ════ 大厅 ════════════════════════════════════════ -->
+  <div id="lobby">
+    <div class="panel">
+      <div class="lantern">🏮</div>
+      <div class="title">吹牛骰</div>
+      <div class="subtitle">酒馆 · 骰盅 · 真话与谎言</div>
+
+      <!-- 创建/加入 -->
+      <div id="lobby-entry">
+        <div style="margin-bottom:1rem;">
+          <input id="player-name" type="text" placeholder="你的名字" style="width:100%;" maxlength="12">
+        </div>
+        <div style="display:flex;gap:0.8rem;margin-bottom:1rem;">
+          <input id="room-input" type="text" placeholder="房间号（加入时填）" style="flex:1;text-transform:uppercase;" maxlength="6">
+          <button class="btn btn-ghost" id="btn-join">加入</button>
+        </div>
+        <div style="margin-bottom:0.8rem;">
+          <div class="setting-row">
+            <label>🎲 每人骰子数</label>
+            <input type="number" id="opt-dice-count" value="5" min="1" max="10">
+          </div>
+        </div>
+        <button class="btn btn-gold" id="btn-create" style="width:100%;">🍺 开桌</button>
+      </div>
+
+      <!-- 房间内 -->
+      <div id="lobby-room" class="hidden">
+        <div class="room-code" id="room-code"></div>
+        <div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.4);margin-bottom:0.8rem;">
+          分享房间号给酒友
+        </div>
+        <div class="setting-row">
+          <label>🎲 每人骰子数</label>
+          <input type="number" id="room-dice-count" value="5" min="1" max="10">
+        </div>
+        <div class="player-list" id="player-list"></div>
+        <div class="lobby-actions">
+          <button class="btn btn-gold" id="btn-ready">准备</button>
+          <button class="btn btn-gold" id="btn-start" disabled>开始</button>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:1rem;">
+      <a href="/games.html" style="color:rgba(232,213,184,0.4);font-size:0.8rem;text-decoration:none;">← 返回游戏中心</a>
+    </div>
+  </div>
+
+  <!-- ════ 游戏界面 ════════════════════════════════════ -->
+  <div id="game-screen">
+    <div class="game-header">
+      <a href="/games.html" style="color:var(--gold-dim);text-decoration:none;font-size:0.85rem;">🏮 酒馆</a>
+      <span class="room-id" id="game-room-id"></span>
+    </div>
+
+    <!-- 玩家横条 -->
+    <div class="players-bar" id="players-bar"></div>
+
+    <!-- 回合提示 -->
+    <div class="turn-banner hidden" id="turn-banner"></div>
+
+    <!-- 桌面中央 -->
+    <div class="table-center" id="table-center">
+      <div style="font-size:3rem;opacity:0.3;">🎲</div>
+      <div style="color:rgba(232,213,184,0.3);">等待叫价…</div>
+    </div>
+
+    <!-- 你的骰子 -->
+    <div class="my-dice-area">
+      <div class="label">🍺 你的骰盅</div>
+      <div class="dice-row" id="my-dice"></div>
+    </div>
+
+    <!-- 叫价面板 -->
+    <div class="bid-panel" id="bid-panel">
+      <div class="bid-controls">
+        <div class="bid-input-group">
+          <input type="number" id="bid-qty" value="1" min="1">
+          <span class="unit">个</span>
+        </div>
+        <div class="bid-face-select" id="bid-face-select"></div>
+      </div>
+      <div class="bid-actions">
+        <button class="btn btn-gold" id="btn-bid">📢 叫价</button>
+        <button class="btn btn-red" id="btn-challenge" disabled>🔥 开！</button>
+      </div>
+    </div>
+
+    <!-- 叫价历史 -->
+    <div class="bid-log" id="bid-log">
+      <div style="text-align:center;color:rgba(232,213,184,0.3);">本轮叫价记录</div>
+    </div>
+  </div>
+
+  <!-- ════ 结果覆盖层容器 ══════════════════════════════ -->
+  <div id="result-container"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ─── 工具函数 ────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function showToast(msg, error) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (error ? ' error' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// 骰子点位映射：1-9 格子哪些放点
+const DOT_MAP = {
+  1: [5],
+  2: [3, 7],
+  3: [3, 5, 7],
+  4: [1, 3, 7, 9],
+  5: [1, 3, 5, 7, 9],
+  6: [1, 4, 3, 6, 7, 9],
+};
+
+function dieHTML(value, cls = '') {
+  const pos = DOT_MAP[value] || [];
+  let cells = '';
+  for (let i = 1; i <= 9; i++) {
+    cells += pos.includes(i) ? '<div class="dot"></div>' : '<div></div>';
+  }
+  return `<div class="die ${cls}">${cells}</div>`;
+}
+
+function faceBtnHTML(value, selected) {
+  const pos = DOT_MAP[value] || [];
+  let cells = '';
+  for (let i = 1; i <= 9; i++) {
+    cells += pos.includes(i) ? '<div class="dot"></div>' : '<div></div>';
+  }
+  return `<div class="face-btn ${selected ? 'selected' : ''}" data-face="${value}">${cells}</div>`;
+}
+
+// ─── 音效引擎 ────────────────────────────────────────
+const SFX = (() => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  function play(freq, dur, type = 'square', vol = 0.15) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + dur);
+  }
+  return {
+    shake() {
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => play(200 + Math.random() * 600, 0.05, 'triangle', 0.08), i * 50);
+      }
+    },
+    bid() { play(440, 0.1, 'square', 0.1); setTimeout(() => play(550, 0.15, 'square', 0.1), 80); },
+    challenge() {
+      play(200, 0.3, 'sawtooth', 0.15);
+      setTimeout(() => play(150, 0.4, 'sawtooth', 0.2), 150);
+    },
+    win() {
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => play(f, 0.2, 'square', 0.1), i * 120));
+    },
+    lose() {
+      [400, 350, 300, 200].forEach((f, i) => setTimeout(() => play(f, 0.25, 'sawtooth', 0.08), i * 150));
+    },
+    slam() { play(80, 0.3, 'triangle', 0.25); },
+  };
+})();
+
+// ─── 粒子特效 ────────────────────────────────────────
+function spawnParticles(x, y, count = 20, color = '#d4a646') {
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 8;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 120;
+    p.style.cssText = `
+      left:${x}px; top:${y}px; width:${size}px; height:${size}px;
+      background:${color};
+      --dx:${Math.cos(angle) * dist}px; --dy:${Math.sin(angle) * dist}px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function screenShake() {
+  document.getElementById('app-root').classList.add('screen-shake');
+  setTimeout(() => document.getElementById('app-root').classList.remove('screen-shake'), 500);
+}
+
+// ─── Socket 连接 ─────────────────────────────────────
+const PROXY  = { url: window.location.origin, path: '/dice-ws/socket.io' };
+const DIRECT = { url: 'http://150.158.110.168:3005', path: '/socket.io' };
+let cfg = PROXY;
+let socket = io(cfg.url, { path: cfg.path, transports: ['websocket', 'polling'] });
+
+socket.on('connect_error', () => {
+  if (cfg === PROXY) {
+    cfg = DIRECT;
+    socket.io.uri = cfg.url;
+    socket.io.opts.path = cfg.path;
+    socket.connect();
+  }
+});
+
+const SAVED_NAME = localStorage.getItem('dice_player_name') || '';
+if (SAVED_NAME) $('player-name').value = SAVED_NAME;
+
+let myId = null;
+let currentRoomId = '';
+let selectedFace = 1;
+let gameState = null;
+
+socket.on('connect', () => { myId = socket.id; });
+
+// ─── 大厅事件 ────────────────────────────────────────
+$('btn-create').onclick = () => {
+  const name = $('player-name').value.trim() || '庄家';
+  localStorage.setItem('dice_player_name', name);
+  const diceCount = parseInt($('opt-dice-count').value) || 5;
+  socket.emit('create-room', { name, settings: { diceCount } });
+};
+
+$('btn-join').onclick = () => {
+  const name = $('player-name').value.trim() || '玩家';
+  const roomId = $('room-input').value.trim();
+  if (!roomId) return showToast('请输入房间号', true);
+  localStorage.setItem('dice_player_name', name);
+  socket.emit('join-room', { roomId, name });
+};
+
+$('btn-ready').onclick = () => socket.emit('toggle-ready');
+$('btn-start').onclick = () => socket.emit('start-game');
+
+$('room-dice-count').onchange = () => {
+  socket.emit('update-settings', { diceCount: parseInt($('room-dice-count').value) || 5 });
+};
+
+socket.on('room-created', ({ roomId }) => {
+  currentRoomId = roomId;
+  $('room-code').textContent = roomId;
+  $('lobby-entry').classList.add('hidden');
+  $('lobby-room').classList.remove('hidden');
+});
+
+socket.on('room-joined', ({ roomId }) => {
+  currentRoomId = roomId;
+  $('room-code').textContent = roomId;
+  $('lobby-entry').classList.add('hidden');
+  $('lobby-room').classList.remove('hidden');
+});
+
+socket.on('lobby-update', (state) => {
+  $('room-dice-count').value = state.settings.diceCount;
+  $('player-list').innerHTML = state.players.map((p, i) => `
+    <div class="player-row">
+      <span style="font-size:1.2rem;">${i === 0 ? '👑' : '🍺'}</span>
+      <span class="name">${p.name}${p.id === myId ? ' (你)' : ''}</span>
+      ${i === 0 ? '<span class="badge badge-host">房主</span>' : ''}
+      <span class="badge ${p.ready ? 'badge-ready' : 'badge-wait'}">${p.ready ? '已准备' : '等待中'}</span>
+    </div>
+  `).join('');
+  $('btn-start').disabled = !state.canStart;
+});
+
+socket.on('error-msg', msg => showToast(msg, true));
+socket.on('player-joined', ({ name }) => showToast(`🍺 ${name} 入座`));
+socket.on('player-left', ({ name }) => showToast(`${name} 离开了`));
+
+// ─── 游戏事件 ────────────────────────────────────────
+socket.on('game-started', () => {
+  $('lobby').style.display = 'none';
+  $('game-screen').style.display = 'block';
+  $('game-room-id').textContent = '房间 ' + currentRoomId;
+  SFX.shake();
+  showToast('🎲 摇骰子！');
+});
+
+socket.on('new-round', () => {
+  $('result-container').innerHTML = '';
+  SFX.shake();
+  showToast('🎲 新一轮！');
+});
+
+socket.on('game-restarted', () => {
+  $('lobby').style.display = 'block';
+  $('game-screen').style.display = 'none';
+  $('result-container').innerHTML = '';
+});
+
+socket.on('bid-made', ({ playerName, quantity, face }) => {
+  SFX.bid();
+});
+
+socket.on('challenge-result', (result) => {
+  SFX.challenge();
+  screenShake();
+  setTimeout(() => {
+    const isMyLoss = result.loserId === myId;
+    if (isMyLoss) SFX.lose(); else SFX.win();
+    spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30,
+      result.bidderWins ? '#d4a646' : '#e74c3c');
+    showResultOverlay(result);
+  }, 400);
+});
+
+// ─── 渲染游戏状态 ────────────────────────────────────
+socket.on('game-state', (state) => {
+  gameState = state;
+  renderGame(state);
+});
+
+function renderGame(state) {
+  const isMyTurn = state.currentPlayerId === myId;
+
+  // 玩家横条
+  $('players-bar').innerHTML = state.players.map(p => {
+    const active = p.id === state.currentPlayerId && state.status === 'playing';
+    const elim = p.eliminated;
+    const diceIcons = '🎲'.repeat(p.diceCount);
+    return `
+      <div class="player-chip ${active ? 'active' : ''} ${elim ? 'eliminated' : ''}">
+        <span>${p.name}${p.id === myId ? '(你)' : ''}</span>
+        <span class="dice-dots">${diceIcons || '💀'}</span>
+      </div>
+    `;
+  }).join('');
+
+  // 回合横幅
+  const banner = $('turn-banner');
+  if (state.status === 'playing') {
+    banner.classList.remove('hidden');
+    if (isMyTurn) {
+      banner.className = 'turn-banner my-turn';
+      banner.textContent = state.currentBid ? '🍺 轮到你了——加码或开骰！' : '🍺 轮到你先叫！';
+    } else {
+      const cp = state.players.find(p => p.id === state.currentPlayerId);
+      banner.className = 'turn-banner other-turn';
+      banner.textContent = `等待 ${cp?.name || '?'} …`;
+    }
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  // 桌面中央——当前叫价
+  if (state.currentBid) {
+    const wild = state.wildOnes ? '（1 当万能）' : '（1 不万能 · 叫斋）';
+    $('table-center').innerHTML = `
+      <div class="current-bid">${state.currentBid.quantity} 个 ${state.currentBid.face}</div>
+      <div class="bid-speaker">${state.currentBid.playerName} 叫的</div>
+      <div class="wild-note">${wild}</div>
+    `;
+  } else if (state.status === 'playing') {
+    $('table-center').innerHTML = `
+      <div style="font-size:3rem;">🎲</div>
+      <div style="color:rgba(232,213,184,0.5);">等待第一个叫价…</div>
+    `;
+  }
+
+  // 你的骰子
+  const me = state.players.find(p => p.id === myId);
+  if (me && me.dice) {
+    $('my-dice').innerHTML = me.dice.map(d => dieHTML(d, 'shake-anim')).join('');
+  } else {
+    $('my-dice').innerHTML = '<div style="color:rgba(232,213,184,0.3);">等待摇骰…</div>';
+  }
+
+  // 叫价面板显隐
+  const bidPanel = $('bid-panel');
+  if (state.status === 'playing' && isMyTurn && !me?.eliminated) {
+    bidPanel.classList.remove('hidden');
+    $('btn-challenge').disabled = !state.currentBid;
+    renderFaceSelect();
+  } else {
+    bidPanel.classList.add('hidden');
+  }
+
+  // 叫价记录
+  if (state.roundLog && state.roundLog.length > 0) {
+    $('bid-log').innerHTML = state.roundLog.map(b =>
+      `<div class="bid-log-entry">${b.playerName}：<span class="bid-value">${b.quantity} 个 ${b.face}</span></div>`
+    ).join('');
+    $('bid-log').scrollTop = $('bid-log').scrollHeight;
+  }
+}
+
+// ─── 叫价面板 ────────────────────────────────────────
+function renderFaceSelect() {
+  const container = $('bid-face-select');
+  container.innerHTML = '';
+  for (let f = 1; f <= 6; f++) {
+    container.innerHTML += faceBtnHTML(f, f === selectedFace);
+  }
+  container.querySelectorAll('.face-btn').forEach(btn => {
+    btn.onclick = () => {
+      selectedFace = parseInt(btn.dataset.face);
+      renderFaceSelect();
+    };
+  });
+}
+renderFaceSelect();
+
+$('btn-bid').onclick = () => {
+  const qty = parseInt($('bid-qty').value);
+  if (!qty || qty < 1) return showToast('数量不合法', true);
+  socket.emit('make-bid', { quantity: qty, face: selectedFace });
+};
+
+$('btn-challenge').onclick = () => {
+  SFX.slam();
+  socket.emit('challenge');
+};
+
+// ─── 开骰结果覆盖层 ─────────────────────────────────
+function showResultOverlay(r) {
+  const isGameOver = r.gameOver;
+  const bidFace = r.bid.face;
+  const verdictText = r.bidderWins
+    ? `✅ 叫价成立！实际有 ${r.actualCount} 个`
+    : `❌ 吹牛失败！只有 ${r.actualCount} 个`;
+  const loserText = `${r.loserName} ${r.loserEliminated ? '淘汰出局！💀' : '失去一颗骰子'}`;
+
+  let diceHTML = '';
+  for (const pd of r.allDice) {
+    const straightTag = pd.isStraight
+      ? '<span style="font-size:0.7rem;color:#e8c36a;background:rgba(212,166,70,0.2);padding:0.15rem 0.5rem;border-radius:10px;margin-left:0.3rem;">顺子·不计</span>'
+      : '';
+    const diceStr = pd.dice.map(d => {
+      if (pd.isStraight) return dieHTML(d, 'straight-die');
+      const isMatch = d === bidFace || (r.wildOnes && bidFace !== 1 && d === 1);
+      return dieHTML(d, isMatch ? 'highlight' : '');
+    }).join('');
+    diceHTML += `
+      <div class="result-player-dice">
+        <span class="rpd-name">${pd.name}${straightTag}</span>
+        ${diceStr}
+      </div>
+    `;
+  }
+
+  let gameOverHTML = '';
+  if (isGameOver && r.winner) {
+    gameOverHTML = `
+      <div class="game-over-title">🏆</div>
+      <div class="winner-name">${r.winner.name} 获胜！</div>
+    `;
+  }
+
+  $('result-container').innerHTML = `
+    <div class="result-overlay" id="result-overlay">
+      <div class="result-box">
+        ${gameOverHTML}
+        <div class="result-verdict ${r.bidderWins ? 'win' : 'lose'}">
+          ${verdictText}
+        </div>
+        <div class="result-detail">
+          ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，
+          ${r.challengerName} 喊了 "开！"
+          <br>${loserText}
+        </div>
+        <div class="result-all-dice">${diceHTML}</div>
+        <div class="result-actions">
+          ${isGameOver
+            ? '<button class="btn btn-gold" onclick="socket.emit(\'restart\')">🍺 再来一局</button>'
+            : '<button class="btn btn-gold" onclick="socket.emit(\'next-round\');$(\'result-container\').innerHTML=\'\';">🎲 下一轮</button>'
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 触发音频上下文（需用户交互）
+document.addEventListener('click', () => {
+  if (typeof SFX !== 'undefined') {
+    const ctx = SFX.shake.toString(); // just trigger
+  }
+}, { once: true });
+</script>
+</body>
+</html>
