@@ -85,10 +85,13 @@ io.on('connection', (socket) => {
 
   socket.on('update-settings', (settings) => {
     if (lobby.game) return;
-    if (settings.diceCount) {
+    if (settings.diceCount != null) {
       lobby.diceCount = Math.min(10, Math.max(1, parseInt(settings.diceCount) || 5));
     }
-    io.emit('settings-update', { diceCount: lobby.diceCount || 5 });
+    if (settings.beerMode != null) {
+      lobby.beerMode = !!settings.beerMode;
+    }
+    io.emit('settings-update', { diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode });
   });
 
   socket.on('start-game', () => {
@@ -100,7 +103,7 @@ io.on('connection', (socket) => {
     }
     if (readyPlayers.length < 2) return socket.emit('error-msg', '至少需要 2 人准备');
 
-    const game = new DiceGame({ diceCount: lobby.diceCount || 5 });
+    const game = new DiceGame({ diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode });
     for (const sid of readyPlayers) {
       const p = lobby.players.get(sid);
       game.addPlayer(sid, p.name);
@@ -210,6 +213,7 @@ io.on('connection', (socket) => {
 
 // ── 初始化默认设置 ───────────────────────────────────
 lobby.diceCount = 5;
+lobby.beerMode = false;
 
 const PORT = process.env.PORT || 3005;
 server.listen(PORT, () => {

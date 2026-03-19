@@ -368,6 +368,97 @@
       30% { transform: translate(-3px, 3px); } 40% { transform: translate(3px, -1px); }
     }
 
+    /* ── 啤酒小人 ──────────────────────────────── */
+    .beer-guy {
+      display: inline-flex; flex-direction: column; align-items: center;
+      position: relative; width: 36px; height: 52px;
+    }
+    .beer-guy .bg-head {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fdd; border: 1.5px solid #c97;
+      position: relative; z-index: 2;
+    }
+    .beer-guy .bg-face {
+      position: absolute; top: 4px; left: 2px; right: 2px;
+      text-align: center; font-size: 7px; line-height: 1;
+    }
+    .beer-guy .bg-body {
+      width: 16px; min-height: 14px; border-radius: 4px 4px 6px 6px;
+      background: linear-gradient(180deg, #8B4513, #A0522D);
+      margin-top: -3px; position: relative; z-index: 1;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .beer-guy .bg-belly {
+      width: 0; height: 0; border-radius: 50%;
+      background: radial-gradient(circle, #DEB887, #D2B48C);
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      position: absolute;
+    }
+    .beer-guy .bg-legs {
+      display: flex; gap: 3px; margin-top: -1px;
+    }
+    .beer-guy .bg-leg {
+      width: 5px; height: 10px; background: #654321;
+      border-radius: 0 0 2px 2px;
+    }
+    .beer-guy .bg-mug {
+      position: absolute; right: -8px; top: 20px;
+      font-size: 10px; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .beer-guy.has-beer .bg-mug { opacity: 1; }
+
+    .beer-guy.drinking .bg-head {
+      animation: beerDrink 0.6s ease;
+    }
+    @keyframes beerDrink {
+      0%, 100% { transform: rotate(0); }
+      30% { transform: rotate(-15deg) translateY(-2px); }
+      60% { transform: rotate(10deg); }
+    }
+    .beer-guy.drinking .bg-mug {
+      animation: mugLift 0.6s ease;
+    }
+    @keyframes mugLift {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px) rotate(-20deg); }
+    }
+
+    .beer-chip {
+      display: flex; align-items: flex-end; gap: 0.3rem;
+      padding: 0.3rem; border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(212,166,70,0.1);
+    }
+    .beer-chip .bc-name {
+      font-size: 0.7rem; max-width: 50px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .beer-chip.active { border-color: var(--gold); background: rgba(212,166,70,0.1); }
+
+    .toggle-beer {
+      display: flex; align-items: center; gap: 0.5rem;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .toggle-beer input { display: none; }
+    .toggle-beer .switch {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      position: relative; transition: background 0.3s;
+    }
+    .toggle-beer .switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: transform 0.3s;
+    }
+    .toggle-beer input:checked + .switch {
+      background: var(--gold);
+    }
+    .toggle-beer input:checked + .switch::after {
+      transform: translateX(16px);
+    }
+
     @media (max-width: 500px) {
       .title { font-size: 1.5rem; }
       .current-bid { font-size: 1.8rem; }
@@ -419,6 +510,13 @@
           <div class="setting-row">
             <label>🎲 骰子数</label>
             <input type="number" id="dice-count" value="5" min="1" max="10">
+          </div>
+          <div class="setting-row">
+            <label class="toggle-beer">
+              🍺 啤酒模式
+              <input type="checkbox" id="beer-mode">
+              <span class="switch"></span>
+            </label>
           </div>
           <div class="player-list" id="player-list"></div>
           <div class="lobby-actions">
@@ -558,6 +656,7 @@ let myId = null;
 let myName = '';
 let selectedFace = 1;
 let currentLbTab = 'all';
+let gameState = null;
 
 const SAVED_NAME = localStorage.getItem('dice_player_name') || '';
 if (SAVED_NAME) $('player-name').value = SAVED_NAME;
@@ -641,8 +740,12 @@ setInterval(() => { if ($('lobby-screen').style.display !== 'none') fetchLeaderb
 $('btn-ready').onclick = () => socket.emit('toggle-ready');
 $('btn-start').onclick = () => socket.emit('start-game');
 $('dice-count').onchange = () => socket.emit('update-settings', { diceCount: parseInt($('dice-count').value) || 5 });
+$('beer-mode').onchange = () => socket.emit('update-settings', { beerMode: $('beer-mode').checked });
 
-socket.on('settings-update', ({ diceCount }) => { $('dice-count').value = diceCount; });
+socket.on('settings-update', ({ diceCount, beerMode }) => {
+  $('dice-count').value = diceCount;
+  $('beer-mode').checked = !!beerMode;
+});
 
 socket.on('lobby-update', (state) => {
   $('online-count').textContent = `${state.players.length} 人在线`;
@@ -699,19 +802,59 @@ socket.on('challenge-result', (result) => {
   }, 400);
 });
 
-socket.on('game-state', (state) => renderGame(state));
+socket.on('game-state', (state) => { gameState = state; renderGame(state); });
+
+// ── 啤酒小人 HTML ────────────────────────────────────
+function beerGuyHTML(level) {
+  const lv = Math.max(0, Math.min(10, level || 0));
+  // 肚子从 0 到 24px 逐级变大
+  const bellyW = lv * 2.4;
+  const bellyH = lv * 2;
+  const bodyW = 16 + lv * 1.2;
+  const bodyH = 14 + lv * 1.5;
+  // 表情随等级变化
+  const faces = ['😊','😄','😆','😁','🤪','😵','🥴','🤢','😵‍💫','🥴','💀'];
+  const face = faces[lv] || '😊';
+  return `<div class="beer-guy ${lv > 0 ? 'has-beer' : ''}">
+    <div class="bg-head"><div class="bg-face">${face}</div></div>
+    <div class="bg-body" style="width:${bodyW}px;min-height:${bodyH}px;">
+      <div class="bg-belly" style="width:${bellyW}px;height:${bellyH}px;"></div>
+    </div>
+    <div class="bg-legs"><div class="bg-leg"></div><div class="bg-leg"></div></div>
+    <div class="bg-mug">🍺</div>
+  </div>`;
+}
+
+let prevBeerLevels = {};
 
 // ── 渲染游戏 ─────────────────────────────────────────
 function renderGame(state) {
   const isMyTurn = state.currentPlayerId === myId;
+  const beerMode = state.settings?.beerMode;
 
-  $('players-bar').innerHTML = state.players.map(p => {
-    const active = p.id === state.currentPlayerId && state.status === 'playing';
-    return `<div class="player-chip ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}">
-      <span>${p.name}${p.id === myId ? '(你)' : ''}</span>
-      <span class="dice-dots">${'🎲'.repeat(p.diceCount) || '💀'}</span>
-    </div>`;
-  }).join('');
+  if (beerMode) {
+    $('players-bar').innerHTML = state.players.map(p => {
+      const active = p.id === state.currentPlayerId && state.status === 'playing';
+      const prevLv = prevBeerLevels[p.id] || 0;
+      const drinking = p.beerLevel > prevLv;
+      prevBeerLevels[p.id] = p.beerLevel;
+      return `<div class="beer-chip ${active ? 'active' : ''}">
+        <div class="${drinking ? 'drinking' : ''}">${beerGuyHTML(p.beerLevel)}</div>
+        <div>
+          <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
+          <div style="font-size:0.6rem;color:var(--gold-dim);">${'🍺'.repeat(p.beerLevel)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    $('players-bar').innerHTML = state.players.map(p => {
+      const active = p.id === state.currentPlayerId && state.status === 'playing';
+      return `<div class="player-chip ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}">
+        <span>${p.name}${p.id === myId ? '(你)' : ''}</span>
+        <span class="dice-dots">${'🎲'.repeat(p.diceCount) || '💀'}</span>
+      </div>`;
+    }).join('');
+  }
 
   const banner = $('turn-banner');
   if (state.status === 'playing') {
@@ -811,6 +954,7 @@ function showResultOverlay(r) {
         <div class="result-detail">
           ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，${r.challengerName} 喊了 "开！"
           <br>🏆 ${winnerText} &nbsp; 💔 ${loserText}
+          ${gameState?.settings?.beerMode ? '<br><span style="font-size:0.8rem;">🍺 ' + r.loserName + ' 干了一杯！</span>' : ''}
         </div>
         <div class="result-all-dice">${diceHTML}</div>
         <div class="result-actions">

@@ -11,6 +11,7 @@ class DiceGame {
     this.settings = {
       diceCount:  5,
       maxPlayers: 8,
+      beerMode:   false,
       ...settings,
     };
     this.status = 'waiting'; // waiting | playing | roundEnd | finished
@@ -36,12 +37,14 @@ class DiceGame {
     if (this.players.find(p => p.id === id)) return null;
     const player = {
       id,
-      name: (name || `玩家${this.players.length + 1}`).substring(0, 12),
+      name: (name || `玩家${this.players.length + 1}`).substring(0, 20),
       dice: [],
       diceCount: this.settings.diceCount,
       eliminated: false,
       ready: false,
       wins: 0,
+      beerLevel: 0,         // 啤酒肚等级 0-10
+      roundsSinceLoss: 0,   // 连续未输轮数，满 3 则 beerLevel-1
     };
     this.players.push(player);
     return player;
@@ -161,7 +164,20 @@ class DiceGame {
     const loser  = bidderWins ? challenger : bidder;
     const winner = bidderWins ? bidder : challenger;
 
-    // 不扣骰子、不淘汰，只看积分
+    // 啤酒模式：输家喝酒肚子变大，赢家累计未输轮数（满3缩小1级）
+    if (this.settings.beerMode) {
+      loser.beerLevel = Math.min(10, loser.beerLevel + 1);
+      loser.roundsSinceLoss = 0;
+
+      for (const p of this.activePlayers) {
+        if (p.id === loser.id) continue;
+        p.roundsSinceLoss++;
+        if (p.roundsSinceLoss >= 3) {
+          p.beerLevel = Math.max(0, p.beerLevel - 1);
+          p.roundsSinceLoss = 0;
+        }
+      }
+    }
 
     const result = {
       ok: true,
@@ -223,6 +239,7 @@ class DiceGame {
         eliminated: p.eliminated,
         ready:      p.ready,
         wins:       p.wins,
+        beerLevel:  p.beerLevel,
         dice:       (p.id === playerId && isActive) ? p.dice : null,
       })),
     };
