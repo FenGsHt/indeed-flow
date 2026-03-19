@@ -320,7 +320,7 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py backend/llm_proxy.py backend/web_proxy.py \
+            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py backend/llm_proxy.py backend/web_proxy.py backend/dice_api.py \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
 
       - name: Restart Flask backend
