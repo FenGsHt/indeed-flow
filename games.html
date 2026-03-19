@@ -369,20 +369,6 @@
   </div>
 
   <!-- 2026-03-19: page-agent AI 助手（模块化接入，不影响其他功能） -->
-  <script type="module">
-    (async function initPageAgent() {
-      try {
-        const { PageAgent } = await import('https://esm.sh/page-agent@1.5.11');
-        new PageAgent({
-          model: 'qwen3.5-plus',
-          baseURL: 'http://150.158.110.168:5001/api/llm/v1',
-          apiKey: 'proxy',
-          language: 'zh-CN',
-        });
-      } catch (e) {
-        console.warn('[page-agent] 加载失败:', e);
-      }
-    })();
-  </script>
+  <script type="module" src="./src/page-agent-init.js"></script>
 </body>
 </html>

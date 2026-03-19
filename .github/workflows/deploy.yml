@@ -70,15 +70,16 @@ jobs:
           rsync -az -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
-      - name: Deploy static game pages
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            scp -i ~/.ssh/id_rsa games.html \
-              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+      # 2026-03-19: games.html 已加入 Vite 多页构建，随 dist/ 一起 rsync 部署，不再需要单独 scp
+      # - name: Deploy static game pages
+      #   uses: nick-fields/retry@v2
+      #   with:
+      #     max_attempts: 3
+      #     retry_wait_seconds: 15
+      #     timeout_minutes: 10
+      #     command: |
+      #       scp -i ~/.ssh/id_rsa games.html \
+      #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Deploy minesweeper client
         uses: nick-fields/retry@v2
