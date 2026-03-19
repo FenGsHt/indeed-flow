@@ -91,7 +91,10 @@ io.on('connection', (socket) => {
     if (settings.beerMode != null) {
       lobby.beerMode = !!settings.beerMode;
     }
-    io.emit('settings-update', { diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode });
+    if (settings.exactPenalty != null) {
+      lobby.exactPenalty = !!settings.exactPenalty;
+    }
+    io.emit('settings-update', { diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode, exactPenalty: !!lobby.exactPenalty });
   });
 
   socket.on('start-game', () => {
@@ -103,7 +106,7 @@ io.on('connection', (socket) => {
     }
     if (readyPlayers.length < 2) return socket.emit('error-msg', '至少需要 2 人准备');
 
-    const game = new DiceGame({ diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode });
+    const game = new DiceGame({ diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode, exactPenalty: !!lobby.exactPenalty });
     for (const sid of readyPlayers) {
       const p = lobby.players.get(sid);
       game.addPlayer(sid, p.name);
@@ -148,9 +151,9 @@ io.on('connection', (socket) => {
       if (sock) sock.emit('challenge-result', r);
     }
 
-    // 每轮结束即上报：赢家 +100，输家 -50
-    if (r.winnerName && r.loserName) {
-      reportResult(r.winnerName, [r.loserName]);
+    // 每轮结束即上报：赢家 +100，输家 -50（精准开骰时多个输家）
+    if (r.winnerName && r.loserNames && r.loserNames.length > 0) {
+      reportResult(r.winnerName, r.loserNames);
     }
 
     setTimeout(() => broadcastGameState(), 100);
@@ -214,6 +217,7 @@ io.on('connection', (socket) => {
 // ── 初始化默认设置 ───────────────────────────────────
 lobby.diceCount = 5;
 lobby.beerMode = false;
+lobby.exactPenalty = false;
 
 const PORT = process.env.PORT || 3005;
 server.listen(PORT, () => {

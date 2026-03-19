@@ -518,6 +518,14 @@
               <span class="switch"></span>
             </label>
           </div>
+          <div class="setting-row">
+            <label class="toggle-beer">
+              🎯 精准开骰
+              <input type="checkbox" id="exact-penalty">
+              <span class="switch"></span>
+            </label>
+            <div style="font-size:0.65rem;color:rgba(232,213,184,0.45);margin-top:2px;">开骰恰好等于叫价→除叫价者外全体算输</div>
+          </div>
           <div class="player-list" id="player-list"></div>
           <div class="lobby-actions">
             <button class="btn btn-gold" id="btn-ready">准备</button>
@@ -741,10 +749,12 @@ $('btn-ready').onclick = () => socket.emit('toggle-ready');
 $('btn-start').onclick = () => socket.emit('start-game');
 $('dice-count').onchange = () => socket.emit('update-settings', { diceCount: parseInt($('dice-count').value) || 5 });
 $('beer-mode').onchange = () => socket.emit('update-settings', { beerMode: $('beer-mode').checked });
+$('exact-penalty').onchange = () => socket.emit('update-settings', { exactPenalty: $('exact-penalty').checked });
 
-socket.on('settings-update', ({ diceCount, beerMode }) => {
+socket.on('settings-update', ({ diceCount, beerMode, exactPenalty }) => {
   $('dice-count').value = diceCount;
   $('beer-mode').checked = !!beerMode;
+  $('exact-penalty').checked = !!exactPenalty;
 });
 
 socket.on('lobby-update', (state) => {
@@ -927,12 +937,19 @@ function showResultOverlay(r) {
     return;
   }
 
-  const verdictText = r.bidderWins
-    ? `✅ 叫价成立！实际有 ${r.actualCount} 个`
-    : `❌ 吹牛失败！只有 ${r.actualCount} 个`;
+  let verdictText;
+  if (r.isExact) {
+    verdictText = `🎯 精准开骰！恰好 ${r.actualCount} 个 — 全体受罚！`;
+  } else {
+    verdictText = r.bidderWins
+      ? `✅ 叫价成立！实际有 ${r.actualCount} 个`
+      : `❌ 吹牛失败！只有 ${r.actualCount} 个`;
+  }
 
   const winnerText = `${r.winnerName} <span style="color:var(--gold-bright);">+100</span>`;
-  const loserText  = `${r.loserName} <span style="color:var(--red);">-50</span>`;
+  const loserText = r.isExact
+    ? r.loserNames.map(n => `${n} <span style="color:var(--red);">-50</span>`).join('、')
+    : `${r.loserName} <span style="color:var(--red);">-50</span>`;
 
   let diceHTML = '';
   if (r.allDice) {
@@ -953,8 +970,8 @@ function showResultOverlay(r) {
         <div class="result-verdict ${r.bidderWins ? 'win' : 'lose'}">${verdictText}</div>
         <div class="result-detail">
           ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，${r.challengerName} 喊了 "开！"
-          <br>🏆 ${winnerText} &nbsp; 💔 ${loserText}
-          ${gameState?.settings?.beerMode ? '<br><span style="font-size:0.8rem;">🍺 ' + r.loserName + ' 干了一杯！</span>' : ''}
+          <br>🏆 ${winnerText} &nbsp; ${r.isExact ? '💀' : '💔'} ${loserText}
+          ${gameState?.settings?.beerMode ? '<br><span style="font-size:0.8rem;">🍺 ' + (r.isExact ? r.loserNames.join('、') + ' 全体干了一杯！' : r.loserName + ' 干了一杯！') + '</span>' : ''}
         </div>
         <div class="result-all-dice">${diceHTML}</div>
         <div class="result-actions">

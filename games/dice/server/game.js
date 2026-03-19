@@ -12,6 +12,7 @@ class DiceGame {
       diceCount:  5,
       maxPlayers: 8,
       beerMode:   false,
+      exactPenalty: false,  // 精准开骰：恰好等于叫价时，除叫价者外全体算输
       ...settings,
     };
     this.status = 'waiting'; // waiting | playing | roundEnd | finished
@@ -161,16 +162,30 @@ class DiceGame {
 
     // 实际 >= 叫价 → 叫价者赢（开的人猜错），否则叫价者吹牛被抓
     const bidderWins = actualCount >= bid.quantity;
-    const loser  = bidderWins ? challenger : bidder;
-    const winner = bidderWins ? bidder : challenger;
+    // 精准开骰：恰好等于叫价 → 叫价者独赢，其余全部算输
+    const isExact = this.settings.exactPenalty && actualCount === bid.quantity;
+
+    let losers = [];  // 可能多人输
+    let winner, loser;
+
+    if (isExact) {
+      winner = bidder;
+      losers = this.activePlayers.filter(p => p.id !== bidder.id);
+      loser = challenger; // 主输家仍是开骰的人（下轮由他先叫）
+    } else {
+      loser  = bidderWins ? challenger : bidder;
+      winner = bidderWins ? bidder : challenger;
+      losers = [loser];
+    }
 
     // 啤酒模式：输家喝酒肚子变大，赢家累计未输轮数（满3缩小1级）
     if (this.settings.beerMode) {
-      loser.beerLevel = Math.min(10, loser.beerLevel + 1);
-      loser.roundsSinceLoss = 0;
-
+      for (const lo of losers) {
+        lo.beerLevel = Math.min(10, lo.beerLevel + 1);
+        lo.roundsSinceLoss = 0;
+      }
       for (const p of this.activePlayers) {
-        if (p.id === loser.id) continue;
+        if (losers.some(lo => lo.id === p.id)) continue;
         p.roundsSinceLoss++;
         if (p.roundsSinceLoss >= 3) {
           p.beerLevel = Math.max(0, p.beerLevel - 1);
@@ -190,10 +205,12 @@ class DiceGame {
       wildOnes: this.wildOnes,
       straights,
       bidderWins,
+      isExact,
       winnerId: winner.id,
       winnerName: winner.name,
       loserId: loser.id,
       loserName: loser.name,
+      loserNames: losers.map(l => l.name),
       allDice: this.activePlayers.map(p => ({
         id: p.id, name: p.name, dice: [...p.dice],
         isStraight: straights.includes(p.id),
@@ -203,7 +220,6 @@ class DiceGame {
     this.lastResult = result;
     this.eventLog.push({ type: 'challenge', ...result, ts: Date.now() });
 
-    // 每轮结束直接 roundEnd，由下一轮继续，输家先叫
     this.status = 'roundEnd';
     this.currentIdx = this.players.indexOf(loser);
 
