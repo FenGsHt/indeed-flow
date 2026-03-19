@@ -222,6 +222,7 @@ def main():
         return
 
     discounted = []
+    all_results = []  # 2026-03-19: 记录所有游戏的检测结果，用于调试
 
     for game in games:
         app_id = game['steam_appid']
@@ -232,47 +233,62 @@ def main():
 
         if price is None:
             print(f"  {name} (appid={app_id}): 无价格信息（免费/不在中区/已下架）")
+            all_results.append({
+                'name': name, 'app_id': app_id,
+                'status': '无价格信息', 'discount': 0,
+                'final_price': 0, 'original_price': 0,
+            })
             continue
 
         discount         = price.get('discount_percent', 0)
         final_price      = price.get('final',   0) / 100
         original_price   = price.get('initial', 0) / 100
 
+        entry = {
+            'name':           name,
+            'app_id':         app_id,
+            'discount':       discount,
+            'final_price':    final_price,
+            'original_price': original_price,
+            'status':         f'-{discount}%' if discount > 0 else '无折扣',
+        }
+        all_results.append(entry)
+
         if discount > 0:
             print(f"  ★ {name}: -{discount}%  ¥{final_price:.2f}（原价 ¥{original_price:.2f}）")
-            discounted.append({
-                'name':           name,
-                'app_id':         app_id,
-                'discount':       discount,
-                'final_price':    final_price,
-                'original_price': original_price,
-            })
+            discounted.append(entry)
         else:
             print(f"  - {name}: 无折扣，¥{final_price:.2f}")
 
     print(f"\n打折游戏数：{len(discounted)}")
 
-    if not discounted:
-        send_bark("🎮 Steam 折扣检测", f"检测 {len(games)} 款游戏，本次无打折")
-        # 2026-03-19: 暂时屏蔽 QQ 群推送
-        # send_openclaw(f"🎮 Steam 折扣检测：检测 {len(games)} 款游戏，本次无打折")
-    else:
-        # 按折扣力度从大到小排序
-        discounted.sort(key=lambda x: x['discount'], reverse=True)
-
-        lines = []
-        for g in discounted:
-            lines.append(
-                f"{g['name']}  -{g['discount']}%  "
-                f"¥{g['final_price']:.0f}（原¥{g['original_price']:.0f}）"
+    # 2026-03-19: 构建完整清单（所有游戏），附在推送消息里方便排查
+    detail_lines = []
+    for r in all_results:
+        if r['final_price'] > 0:
+            if r['discount'] > 0:
+                detail_lines.append(
+                    f"🔥 {r['name']}  -{r['discount']}%  ¥{r['final_price']:.0f}（原¥{r['original_price']:.0f}）  appid={r['app_id']}"
+                )
+            else:
+                detail_lines.append(
+                    f"   {r['name']}  ¥{r['final_price']:.0f}  无折扣  appid={r['app_id']}"
+                )
+        else:
+            detail_lines.append(
+                f"   {r['name']}  {r['status']}  appid={r['app_id']}"
             )
+    full_report = '\n'.join(detail_lines)
 
-        title   = f"🎮 Steam {len(discounted)} 款游戏打折"
-        body    = '\n'.join(lines)
-        qq_msg  = f"{title}\n\n" + body + "\n\nhttps://store.steampowered.com/specials"
+    if not discounted:
+        title = f"🎮 Steam 折扣检测（{len(games)}款）"
+        body  = f"本次无打折\n\n── 全部清单 ──\n{full_report}"
+        send_bark(title, body)
+    else:
+        discounted.sort(key=lambda x: x['discount'], reverse=True)
+        title = f"🎮 Steam {len(discounted)}/{len(games)} 款打折"
+        body  = f"── 全部清单 ──\n{full_report}"
         send_bark(title, body, jump_url="https://store.steampowered.com/specials#p=0&tab=TopSellers")
-        # 2026-03-19: 暂时屏蔽 QQ 群推送
-        # send_openclaw(qq_msg)
 
     print("=" * 40)
     print("检测完成")
