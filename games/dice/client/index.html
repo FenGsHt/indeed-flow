@@ -388,68 +388,95 @@
     /* ── 啤酒小人 ──────────────────────────────── */
     .beer-guy {
       display: inline-flex; flex-direction: column; align-items: center;
-      position: relative; width: 36px; height: 52px;
+      position: relative; width: 56px; height: 80px;
+      transition: transform 0.3s;
     }
     .beer-guy .bg-head {
-      width: 18px; height: 18px; border-radius: 50%;
-      background: #fdd; border: 1.5px solid #c97;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(180deg, #ffe0cc, #fdd);
+      border: 2px solid #c97;
       position: relative; z-index: 2;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .beer-guy .bg-face {
       position: absolute; top: 4px; left: 2px; right: 2px;
-      text-align: center; font-size: 7px; line-height: 1;
+      text-align: center; font-size: 14px; line-height: 1;
     }
     .beer-guy .bg-body {
-      width: 16px; min-height: 14px; border-radius: 4px 4px 6px 6px;
+      width: 26px; min-height: 22px; border-radius: 6px 6px 8px 8px;
       background: linear-gradient(180deg, #8B4513, #A0522D);
-      margin-top: -3px; position: relative; z-index: 1;
-      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      margin-top: -5px; position: relative; z-index: 1;
+      transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .beer-guy .bg-belly {
       width: 0; height: 0; border-radius: 50%;
       background: radial-gradient(circle, #DEB887, #D2B48C);
-      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       position: absolute;
     }
     .beer-guy .bg-legs {
-      display: flex; gap: 3px; margin-top: -1px;
+      display: flex; gap: 5px; margin-top: -2px;
     }
     .beer-guy .bg-leg {
-      width: 5px; height: 10px; background: #654321;
-      border-radius: 0 0 2px 2px;
+      width: 8px; height: 14px; background: #654321;
+      border-radius: 0 0 3px 3px;
     }
     .beer-guy .bg-mug {
-      position: absolute; right: -8px; top: 20px;
-      font-size: 10px; opacity: 0;
+      position: absolute; right: -12px; top: 30px;
+      font-size: 16px; opacity: 0;
       transition: opacity 0.3s;
     }
     .beer-guy.has-beer .bg-mug { opacity: 1; }
 
+    /* 喝酒动画 — 更浮夸 */
+    .beer-guy.drinking {
+      animation: drunkBounce 1s ease;
+    }
     .beer-guy.drinking .bg-head {
-      animation: beerDrink 0.6s ease;
+      animation: beerDrink 1s ease;
     }
     @keyframes beerDrink {
       0%, 100% { transform: rotate(0); }
-      30% { transform: rotate(-15deg) translateY(-2px); }
-      60% { transform: rotate(10deg); }
+      15% { transform: rotate(-20deg) translateY(-4px); }
+      30% { transform: rotate(15deg) translateY(-2px); }
+      50% { transform: rotate(-10deg); }
+      70% { transform: rotate(8deg); }
     }
     .beer-guy.drinking .bg-mug {
-      animation: mugLift 0.6s ease;
+      animation: mugLift 1s ease;
     }
     @keyframes mugLift {
-      0%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-10px) rotate(-20deg); }
+      0%, 100% { transform: translateY(0) rotate(0); }
+      20% { transform: translateY(-18px) rotate(-30deg); }
+      40% { transform: translateY(-12px) rotate(-45deg); }
+      60% { transform: translateY(-15px) rotate(-20deg); }
+    }
+    @keyframes drunkBounce {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      20% { transform: translateY(-6px) rotate(-5deg); }
+      40% { transform: translateY(0) rotate(3deg); }
+      60% { transform: translateY(-3px) rotate(-2deg); }
+      80% { transform: translateY(0) rotate(1deg); }
+    }
+    .beer-guy.drinking .bg-body {
+      animation: bellyPop 1s ease;
+    }
+    @keyframes bellyPop {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.15); }
+      60% { transform: scale(0.95); }
     }
 
     .beer-chip {
-      display: flex; align-items: flex-end; gap: 0.3rem;
-      padding: 0.3rem; border-radius: 8px;
+      display: flex; align-items: flex-end; gap: 0.4rem;
+      padding: 0.4rem; border-radius: 10px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(212,166,70,0.1);
     }
     .beer-chip .bc-name {
-      font-size: 0.7rem; max-width: 50px;
+      font-size: 0.75rem; max-width: 60px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .beer-chip.active { border-color: var(--gold); background: rgba(212,166,70,0.1); }
@@ -847,17 +874,16 @@ socket.on('game-state', (state) => {
 });
 
 // ── 啤酒小人 HTML ────────────────────────────────────
-function beerGuyHTML(level) {
+function beerGuyHTML(level, isDrinking) {
   const lv = Math.max(0, Math.min(10, level || 0));
-  // 肚子从 0 到 24px 逐级变大
-  const bellyW = lv * 2.4;
-  const bellyH = lv * 2;
-  const bodyW = 16 + lv * 1.2;
-  const bodyH = 14 + lv * 1.5;
-  // 表情随等级变化
+  const bellyW = lv * 3.8;
+  const bellyH = lv * 3.2;
+  const bodyW = 26 + lv * 2;
+  const bodyH = 22 + lv * 2.4;
   const faces = ['😊','😄','😆','😁','🤪','😵','🥴','🤢','😵‍💫','🥴','💀'];
   const face = faces[lv] || '😊';
-  return `<div class="beer-guy ${lv > 0 ? 'has-beer' : ''}">
+  const cls = ['beer-guy', lv > 0 ? 'has-beer' : '', isDrinking ? 'drinking' : ''].filter(Boolean).join(' ');
+  return `<div class="${cls}">
     <div class="bg-head"><div class="bg-face">${face}</div></div>
     <div class="bg-body" style="width:${bodyW}px;min-height:${bodyH}px;">
       <div class="bg-belly" style="width:${bellyW}px;height:${bellyH}px;"></div>
@@ -868,7 +894,9 @@ function beerGuyHTML(level) {
 }
 
 let prevBeerLevels = {};
-let playerScores = {};  // name → points，游戏中显示积分
+let pendingBeerLevels = null; // 暂存本轮新 beerLevel，等结算关闭后触发动画
+let drinkingIds = [];         // 正在喝酒动画的玩家 id 列表
+let playerScores = {};        // name → points，游戏中显示积分
 
 async function fetchPlayerScores(names) {
   for (const name of names) {
@@ -889,15 +917,18 @@ function renderGame(state) {
   const beerMode = state.settings?.beerMode;
 
   if (beerMode) {
+    // roundEnd 时暂存新等级，等结算关闭后再触发动画
+    if (state.status === 'roundEnd' && !pendingBeerLevels) {
+      pendingBeerLevels = {};
+      state.players.forEach(p => { pendingBeerLevels[p.id] = p.beerLevel; });
+    }
     $('players-bar').innerHTML = state.players.map(p => {
       const active = p.id === state.currentPlayerId && state.status === 'playing';
-      const prevLv = prevBeerLevels[p.id] || 0;
-      const drinking = p.beerLevel > prevLv;
-      prevBeerLevels[p.id] = p.beerLevel;
+      const isDrinking = drinkingIds.includes(p.id);
       const pts = playerScores[p.name];
       const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
       return `<div class="beer-chip ${active ? 'active' : ''}">
-        <div class="${drinking ? 'drinking' : ''}">${beerGuyHTML(p.beerLevel)}</div>
+        ${beerGuyHTML(p.beerLevel, isDrinking)}
         <div>
           <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
           ${ptsStr}
@@ -1066,13 +1097,41 @@ function showResultOverlay(r) {
         </div>
         <div class="result-all-dice">${diceHTML}</div>
         <div class="result-actions">
-          <button class="btn btn-gold" onclick="socket.emit('next-round');$('result-container').innerHTML='';">🎲 下一轮</button>
-          <button class="btn btn-ghost" onclick="socket.emit('back-to-lobby');$('result-container').innerHTML='';">🚪 离桌</button>
+          <button class="btn btn-gold" onclick="closeResultAndDrink('next-round')">🎲 下一轮</button>
+          <button class="btn btn-ghost" onclick="closeResultAndDrink('back-to-lobby')">🚪 离桌</button>
         </div>
       </div>
     </div>`;
 
   fetchMyStats();
+}
+
+function closeResultAndDrink(action) {
+  $('result-container').innerHTML = '';
+
+  // 触发啤酒喝酒动画
+  if (pendingBeerLevels && gameState?.settings?.beerMode) {
+    drinkingIds = [];
+    for (const [id, newLv] of Object.entries(pendingBeerLevels)) {
+      if (newLv > (prevBeerLevels[id] || 0)) drinkingIds.push(id);
+    }
+    // 更新 prevBeerLevels
+    Object.assign(prevBeerLevels, pendingBeerLevels);
+    pendingBeerLevels = null;
+
+    if (drinkingIds.length > 0 && gameState) {
+      renderGame(gameState);
+      // 动画持续 1.2s 后清除 drinking 状态再发送 socket 事件
+      setTimeout(() => {
+        drinkingIds = [];
+        renderGame(gameState);
+        socket.emit(action);
+      }, 1500);
+      return;
+    }
+  }
+  pendingBeerLevels = null;
+  socket.emit(action);
 }
 </script>
 </body>
