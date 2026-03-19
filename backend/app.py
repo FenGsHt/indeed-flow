@@ -17,12 +17,16 @@ from flask_cors import CORS
 from pathlib import Path
 
 from games_api import games_bp, init_db
+# 2026-03-19: 接入 page-agent，新增 LLM 代理 Blueprint
+from llm_proxy import llm_bp
 
 app = Flask(__name__, template_folder='.')
 CORS(app)
 
 # 挂载游戏模块 Blueprint（所有 /api/games、/api/bookmarks 等路由）
 app.register_blueprint(games_bp)
+# 2026-03-19: 挂载 LLM 代理 Blueprint（page-agent 用）
+app.register_blueprint(llm_bp)
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
