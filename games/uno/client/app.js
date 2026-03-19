@@ -698,6 +698,54 @@ function flyCardFromDeck() {
   }, FLIGHT_MS + 10);
 }
 
+// 2026-03-19: 对手出牌飞牌动画（参考自己的 flyCardToDiscard）
+function flyCardFromOpponent(playerId, card) {
+  const opEl = document.querySelector(`.other-player[data-pid="${playerId}"]`);
+  if (!opEl) return;
+
+  const srcRect  = opEl.getBoundingClientRect();
+  const destRect = $('discard-top').getBoundingClientRect();
+
+  const clone = makeCard(card);
+  clone.classList.add('flying-card');
+  const W = destRect.width || 72;
+  const H = destRect.height || 100;
+  clone.style.cssText += `
+    left:${srcRect.left + srcRect.width / 2 - W / 2}px;
+    top:${srcRect.top + srcRect.height / 2 - H / 2}px;
+    width:${W}px; height:${H}px;
+    transform:rotate(0deg); opacity:1;
+  `;
+  document.body.appendChild(clone);
+
+  const dx  = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
+  const dy  = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+  const rot = (Math.random() - 0.5) * 22;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    clone.style.transition = `transform ${FLIGHT_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+    clone.style.transform  = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+  }));
+
+  setTimeout(() => {
+    clone.style.transition = 'opacity 80ms ease';
+    clone.style.opacity    = '0';
+    setTimeout(() => clone.remove(), 100);
+  }, FLIGHT_MS + 10);
+
+  const isWild = card.type === 'wild' || card.type === 'wild_draw4';
+  SoundEngine.playCard(isWild);
+
+  setTimeout(() => {
+    const dest = $('discard-top').getBoundingClientRect();
+    const cx = dest.left + dest.width  / 2;
+    const cy = dest.top  + dest.height / 2;
+    VFX.particles(cx, cy, card.color);
+    if (isWild) VFX.rainbowBurst(cx, cy);
+    if (card.type === 'draw2' || card.type === 'wild_draw4') VFX.screenFlash('rgba(239,83,80,0.25)');
+  }, FLIGHT_MS + 50);
+}
+
 function onCardClick(card) {
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
   if (el) flyCardToDiscard(el);
@@ -836,6 +884,12 @@ $('btn-back-lobby').addEventListener('click', () => {
 });
 
 // ─── 广播事件 ────────────────────────────────────────────────
+// 2026-03-19: 对手出牌动画
+socket.on('card-played', ({ playerId, playerName, card }) => {
+  if (playerId === myId) return;
+  flyCardFromOpponent(playerId, card);
+});
+
 socket.on('uno-called', ({ playerName }) => {
   toast(`🔔 ${playerName} 喊了 UNO！`, 3000);
   SoundEngine.sayUno();

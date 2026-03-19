@@ -141,6 +141,13 @@ io.on('connection', socket => {
     const result = game.playCard(socket.id, cardId, chosenColor || null);
     if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
 
+    // 2026-03-19: 广播出牌事件，供客户端播放对手出牌动画
+    const pName = game.players.find(p => p.id === socket.id)?.name || '';
+    io.to(roomId).emit('card-played', {
+      playerId: socket.id, playerName: pName,
+      card: game.topCard, chosenColor: chosenColor || null,
+    });
+
     broadcastGame(roomId);
     if (result.finished) {
       stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
