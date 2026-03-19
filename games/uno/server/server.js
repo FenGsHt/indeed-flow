@@ -202,6 +202,35 @@ io.on('connection', socket => {
     }
   });
 
+  // ── 质疑 +4 ────────────────────────────────
+  // 2026-03-19: 质疑机制——下家认为出 +4 者违规
+  socket.on('challenge-draw4', () => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.challengeDraw4(socket.id);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+    io.to(roomId).emit('challenge-result', {
+      success:       result.success,
+      challengerId:  socket.id,
+      penalizedId:   result.penalized,
+      penalizedName: result.penalizedName,
+      drawnCount:    result.drawnCount,
+    });
+    broadcastGame(roomId);
+  });
+
+  // 2026-03-19: 接受 +4（不质疑）
+  socket.on('accept-draw4', () => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.acceptDraw4(socket.id);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+    io.to(roomId).emit('challenge-accepted', { playerId: socket.id });
+    broadcastGame(roomId);
+  });
+
   // ── 再来一局 ──────────────────────────────
   socket.on('play-again', ({ resetScores } = {}) => {
     if (!roomId) return;

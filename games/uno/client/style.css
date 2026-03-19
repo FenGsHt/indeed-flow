@@ -1331,6 +1331,87 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── 质疑 +4 弹窗 ─────────────────────────── */
+/* 2026-03-19: 质疑机制 UI */
+.challenge-box {
+  background: linear-gradient(145deg, rgba(30,35,60,0.98), rgba(20,22,40,0.98));
+  border: 2px solid rgba(255,152,0,0.5);
+  border-radius: 18px;
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 0 40px rgba(255,152,0,0.15), 0 8px 32px rgba(0,0,0,0.5);
+  animation: challenge-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes challenge-in {
+  from { opacity: 0; transform: scale(0.8) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.challenge-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+  animation: challenge-shake 0.5s ease 0.2s;
+}
+
+@keyframes challenge-shake {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-12deg); }
+  50%      { transform: rotate(12deg); }
+  75%      { transform: rotate(-8deg); }
+}
+
+.challenge-box h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ff9800;
+  margin: 0 0 8px;
+}
+
+.challenge-box p {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.challenge-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.challenge-actions .btn {
+  min-width: 120px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 16px;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #e53935, #ff7043);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(229,57,53,0.4);
+}
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+.challenge-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 14px 0 0;
+}
+
 /* ── 响应式 ─────────────────────────────────── */
 @media (max-width: 640px) {
   body { padding: 0; }

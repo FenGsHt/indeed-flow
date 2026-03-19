@@ -155,8 +155,19 @@ const SoundEngine = (() => {
   function setSfx(v)    { _init(); sfxGain.gain.value    = v; _save('vol-sfx',    v); }
   function setBgm(v)    { _init(); bgmGain.gain.value    = v; _save('vol-bgm',    v); }
 
+  // 2026-03-19: 质疑音效
+  function challenge(success) {
+    _init(); _resume();
+    if (success) {
+      _osc('triangle', 523, 0.15, 0.3); setTimeout(() => _osc('triangle', 659, 0.15, 0.3), 100);
+      setTimeout(() => _osc('triangle', 784, 0.25, 0.35), 200);
+    } else {
+      _osc('sawtooth', 300, 0.3, 0.2); setTimeout(() => _osc('sawtooth', 200, 0.4, 0.2), 200);
+    }
+  }
+
   return { playCard, drawCard, playSkip, playDraw2, sayUno, yourTurn, playWin, playLose,
-           startBgm, stopBgm, setMaster, setSfx, setBgm };
+           startBgm, stopBgm, setMaster, setSfx, setBgm, challenge };
 })();
 
 // ══════════════════════════════════════════════════════════════
@@ -366,10 +377,11 @@ $('btn-create').addEventListener('click', () => {
     roomId: rid,
     playerName: name,
     settings: {
-      stackDraw:   $('opt-stack').checked,
-      sevensZero:  $('opt-sevens').checked,
-      forcePlay:   $('opt-force').checked,
-      targetScore: parseInt($('opt-target').value) || 0,
+      stackDraw:      $('opt-stack').checked,
+      sevensZero:     $('opt-sevens').checked,
+      forcePlay:      $('opt-force').checked,
+      allowChallenge: $('opt-challenge').checked, // 2026-03-19: 质疑 +4
+      targetScore:    parseInt($('opt-target').value) || 0,
     },
   });
 });
@@ -475,7 +487,15 @@ function renderGame(state) {
   // 回合横幅
   const banner = $('turn-banner');
   banner.classList.remove('hidden', 'my-turn', 'other-turn');
-  if (isMyTurn) {
+  // 2026-03-19: 质疑等待时显示专用提示
+  if (state.challenge && state.challenge.targetId === myId) {
+    banner.textContent = `⚠️ ${state.challenge.playedByName} 对你出了 +4！选择质疑或接受`;
+    banner.classList.add('my-turn');
+  } else if (state.challenge) {
+    const targetName = state.players.find(p => p.id === state.challenge.targetId)?.name || '';
+    banner.textContent = `等待 ${targetName} 决定是否质疑 +4…`;
+    banner.classList.add('other-turn');
+  } else if (isMyTurn) {
     const drawHint = state.pendingDraw > 0 ? `（需摸 +${state.pendingDraw} 或叠牌）` : '';
     banner.textContent = `⚡ 你的回合！出一张牌或摸牌${drawHint}`;
     banner.classList.add('my-turn');
@@ -543,6 +563,17 @@ function renderGame(state) {
   const canDraw = isMyTurn && !state.drawnThisTurn;
   $('btn-draw').style.opacity = canDraw ? '1' : '0.35';
   $('btn-draw').style.cursor  = canDraw ? 'pointer' : 'default';
+
+  // 2026-03-19: 质疑 +4 弹窗
+  const chModal = $('challenge-modal');
+  if (state.challenge && state.challenge.targetId === myId) {
+    $('challenge-desc').textContent = `${state.challenge.playedByName} 对你打出了 +4，你怀疑对方手上有 ${COLOR_NAMES[state.challenge.chosenColor] || ''}色牌吗？`;
+    chModal.classList.remove('hidden');
+    drawBtn.disabled = true;
+    passBtn.disabled = true;
+  } else {
+    chModal.classList.add('hidden');
+  }
 
   // 回合切换音效 + 视效
   if (isMyTurn && !wasMyTurn) {
@@ -856,6 +887,14 @@ $('btn-uno').addEventListener('click', () => {
   socket.emit('say-uno');
 });
 
+// 2026-03-19: 质疑 +4
+$('btn-challenge').addEventListener('click', () => {
+  socket.emit('challenge-draw4');
+});
+$('btn-accept-draw4').addEventListener('click', () => {
+  socket.emit('accept-draw4');
+});
+
 // 整理手牌（重新排序）
 $('btn-sort').addEventListener('click', () => {
   if (gameState) renderHand(gameState.players.find(p => p.isYou)?.hand || [], gameState);
@@ -938,6 +977,22 @@ socket.on('uno-called', ({ playerName }) => {
 
 socket.on('uno-caught', ({ targetName }) => {
   toast(`🚨 ${targetName} 忘喊 UNO，被抓了！摸 2 张`, 3000);
+});
+
+// 2026-03-19: 质疑 +4 结果
+socket.on('challenge-result', ({ success, penalizedName, drawnCount }) => {
+  $('challenge-modal').classList.add('hidden');
+  if (success) {
+    toast(`✅ 质疑成功！${penalizedName} 违规出 +4，罚摸 ${drawnCount} 张`, 4000);
+    SoundEngine.challenge(true);
+  } else {
+    toast(`❌ 质疑失败！${penalizedName} 罚摸 ${drawnCount} 张`, 4000);
+    SoundEngine.challenge(false);
+  }
+});
+
+socket.on('challenge-accepted', ({ playerId }) => {
+  $('challenge-modal').classList.add('hidden');
 });
 
 socket.on('error', ({ message }) => {

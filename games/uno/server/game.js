@@ -95,13 +95,16 @@ class UnoGame {
     this.winner = null;
     this.roundCount = 0;
     this.settings = {
-      stackDraw:   true,   // 叠加 +2/+4
-      sevensZero:  false,  // 7换牌/0传递
-      forcePlay:   true,   // 摸到的牌若能出必须出
-      targetScore: 0,      // 系列赛目标分（0=无限局）
+      stackDraw:      true,   // 叠加 +2/+4
+      allowChallenge: true,   // 2026-03-19: 允许质疑 +4
+      sevensZero:     false,  // 7换牌/0传递
+      forcePlay:      true,   // 摸到的牌若能出必须出
+      targetScore:    0,      // 系列赛目标分（0=无限局）
       ...settings,
     };
     this.eventLog = [];
+    // 2026-03-19: 质疑 +4 状态
+    this.challenge = null; // { targetIdx, wasIllegal, pendingDraw, chosenColor }
   }
 
   // ── 玩家管理 ──────────────────────────────
@@ -173,6 +176,7 @@ class UnoGame {
     this.pendingDraw = 0;
     this.currentIdx = 0;
     this.winner = null;
+    this.challenge = null; // 2026-03-19: 重置质疑状态
     this.roundCount++;
 
     for (const p of this.players) {
@@ -202,6 +206,9 @@ class UnoGame {
   // ── 判断是否可出牌 ────────────────────────
   canPlay(card) {
     if (this.status !== 'playing') return false;
+    // 2026-03-19: 质疑等待期间不能出牌（只能质疑或接受）
+    if (this.challenge) return false;
+
     const def = CardRegistry.get(card.type);
     const top = this.topCard;
 
@@ -244,11 +251,16 @@ class UnoGame {
       card: { ...card }, chosenColor, ts: Date.now(),
     });
 
+    // 2026-03-19: +4 出牌前记录是否违规（手上有同色牌），用于质疑判定
+    let wasIllegal = false;
+    if (card.type === 'wild_draw4' && this.settings.allowChallenge) {
+      wasIllegal = player.hand.some(c => c.color === this.currentColor);
+    }
+
     if (player.hand.length === 0) {
       this.status = 'finished';
       this.winner = player;
       player.score = (player.score || 0) + 1;
-      // 结算：其他玩家手牌分值之和归赢家
       const roundPoints = this.players
         .filter(p => p.id !== player.id)
         .reduce((sum, p) => sum + p.hand.reduce((s, c) => s + cardPoints(c), 0), 0);
@@ -258,7 +270,7 @@ class UnoGame {
       return { ok: true, finished: true, seriesOver, winner: { id: player.id, name: player.name, roundPoints } };
     }
 
-    this._applyEffect(card, chosenColor);
+    this._applyEffect(card, chosenColor, wasIllegal);
     return { ok: true };
   }
 
@@ -266,6 +278,8 @@ class UnoGame {
   drawCard(playerId) {
     if (this.status !== 'playing')         return { ok: false, reason: 'not_playing' };
     if (this.currentPlayer.id !== playerId) return { ok: false, reason: 'not_your_turn' };
+    // 2026-03-19: 质疑等待期间不能摸牌
+    if (this.challenge)                    return { ok: false, reason: 'challenge_pending' };
     if (this.drawnThisTurn && !this.pendingDraw) return { ok: false, reason: 'already_drawn' };
 
     const player = this.currentPlayer;
@@ -305,7 +319,9 @@ class UnoGame {
   passTurn(playerId) {
     if (this.status !== 'playing') return false;
     if (this.currentPlayer.id !== playerId) return false;
-    if (!this.drawnThisTurn) return false; // 必须先摸过牌
+    // 2026-03-19: 质疑等待期间不能跳过
+    if (this.challenge) return false;
+    if (!this.drawnThisTurn) return false;
     this._advance();
     return true;
   }
@@ -321,8 +337,74 @@ class UnoGame {
     return true;
   }
 
+  // ── 质疑 +4 ────────────────────────────────
+  // 2026-03-19: 质疑——下家认为出 +4 者手上有同色牌
+  challengeDraw4(playerId) {
+    if (!this.challenge) return { ok: false, reason: 'no_challenge' };
+    if (this.currentPlayer.id !== playerId) return { ok: false, reason: 'not_your_turn' };
+
+    const ch = this.challenge;
+    const attacker = this.players[ch.playedByIdx];
+    const defender = this.currentPlayer;
+    this.challenge = null;
+
+    if (ch.wasIllegal) {
+      // 质疑成功：出牌者违规，撤销 +4 罚牌，改由出牌者摸 4 张
+      this.pendingDraw = 0;
+      const drawn = [];
+      for (let i = 0; i < 4; i++) {
+        if (this.deck.length === 0) this._reshuffle();
+        if (this.deck.length > 0) drawn.push(this.deck.shift());
+      }
+      attacker.hand.push(...drawn);
+      this.eventLog.push({
+        type: 'challenge_success', challengerId: defender.id, challengerName: defender.name,
+        penalizedId: attacker.id, penalizedName: attacker.name, count: drawn.length, ts: Date.now(),
+      });
+      // 当前玩家正常回合继续（不跳过）
+      this.drawnThisTurn = false;
+      return { ok: true, success: true, penalized: attacker.id, penalizedName: attacker.name, drawnCount: drawn.length };
+    } else {
+      // 质疑失败：+4 合法，质疑者额外罚 2 张（共摸 6 张）
+      this.pendingDraw += 2; // 原来 4 + 额外 2
+      const count = this.pendingDraw;
+      this.pendingDraw = 0;
+      const drawn = [];
+      for (let i = 0; i < count; i++) {
+        if (this.deck.length === 0) this._reshuffle();
+        if (this.deck.length > 0) drawn.push(this.deck.shift());
+      }
+      defender.hand.push(...drawn);
+      this.eventLog.push({
+        type: 'challenge_fail', challengerId: defender.id, challengerName: defender.name,
+        count: drawn.length, ts: Date.now(),
+      });
+      this._advance(); // 质疑者被跳过
+      return { ok: true, success: false, penalized: defender.id, penalizedName: defender.name, drawnCount: drawn.length };
+    }
+  }
+
+  // 2026-03-19: 接受 +4——不质疑，正常承受罚牌
+  acceptDraw4(playerId) {
+    if (!this.challenge) return { ok: false, reason: 'no_challenge' };
+    if (this.currentPlayer.id !== playerId) return { ok: false, reason: 'not_your_turn' };
+
+    this.challenge = null;
+
+    // 如果 stackDraw 开启，玩家可能还想叠加，所以只是清除质疑状态让游戏继续
+    if (this.settings.stackDraw) {
+      // pendingDraw 保留，玩家回合继续（可叠加 +4 或摸牌）
+      this.drawnThisTurn = false;
+      return { ok: true, stackable: true };
+    }
+
+    // stackDraw 关闭时直接罚牌并跳过
+    this._forceDraw();
+    return { ok: true, stackable: false };
+  }
+
   // ── 私有方法 ─────────────────────────────
-  _applyEffect(card, chosenColor) {
+  _applyEffect(card, chosenColor, wasIllegal = false) {
     switch (card.type) {
       case 'reverse':
         this.direction *= -1;
@@ -348,9 +430,23 @@ class UnoGame {
         this.currentColor = chosenColor;
         this.pendingDraw += 4;
         this._advance();
-        // 2026-03-19: 同上修复
-        // if (!this.settings.stackDraw) this._advance();
-        if (!this.settings.stackDraw) this._forceDraw();
+        // 2026-03-19: 质疑机制——开启时进入等待状态，让下家选择质疑或接受
+        if (this.settings.allowChallenge) {
+          const playedByIdx = (this.currentIdx - this.direction + this.players.length) % this.players.length;
+          this.challenge = {
+            playedByIdx,
+            playedById: this.players[playedByIdx].id,
+            playedByName: this.players[playedByIdx].name,
+            targetIdx: this.currentIdx,
+            targetId: this.currentPlayer.id,
+            wasIllegal,
+            chosenColor,
+          };
+        } else {
+          // 2026-03-19: 同上修复
+          // if (!this.settings.stackDraw) this._advance();
+          if (!this.settings.stackDraw) this._forceDraw();
+        }
         break;
       default:
         if (this.settings.sevensZero) {
@@ -402,6 +498,17 @@ class UnoGame {
 
   // ── 状态序列化 ───────────────────────────
   getStateFor(playerId) {
+    // 2026-03-19: 包含质疑信息（不暴露 wasIllegal 给客户端）
+    let challengeInfo = null;
+    if (this.challenge) {
+      challengeInfo = {
+        playedById:   this.challenge.playedById,
+        playedByName: this.challenge.playedByName,
+        targetId:     this.challenge.targetId,
+        chosenColor:  this.challenge.chosenColor,
+      };
+    }
+
     return {
       status:          this.status,
       currentColor:    this.currentColor,
@@ -413,6 +520,7 @@ class UnoGame {
       deckCount:       this.deck.length,
       winner:          this.winner ? { id: this.winner.id, name: this.winner.name } : null,
       settings:        this.settings,
+      challenge:       challengeInfo,
       players: this.players.map(p => ({
         id:        p.id,
         name:      p.name,
