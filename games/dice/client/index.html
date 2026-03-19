@@ -779,11 +779,13 @@ socket.on('player-left', ({ name }) => showToast(`${name} 离开了`));
 socket.on('player-left-game', ({ name }) => showToast(`${name} 退出了对局`));
 
 // ── 游戏事件 ─────────────────────────────────────────
+let scoresInitialized = false;
 socket.on('game-started', () => {
   $('lobby-screen').style.display = 'none';
   $('game-screen').style.display = 'block';
   SFX.shake();
   showToast('🎲 摇骰子！');
+  scoresInitialized = false;
 });
 
 socket.on('new-round', () => {
@@ -808,11 +810,21 @@ socket.on('challenge-result', (result) => {
   setTimeout(() => {
     if (result.loserId === myId) SFX.lose(); else SFX.win();
     spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30, result.bidderWins ? '#d4a646' : '#e74c3c');
+    // 即时更新本地积分缓存
+    if (result.winnerName) playerScores[result.winnerName] = (playerScores[result.winnerName] || 1000) + 100;
+    if (result.loserNames) result.loserNames.forEach(n => { playerScores[n] = (playerScores[n] || 1000) - 50; });
     showResultOverlay(result);
   }, 400);
 });
 
-socket.on('game-state', (state) => { gameState = state; renderGame(state); });
+socket.on('game-state', (state) => {
+  gameState = state;
+  if (!scoresInitialized && state.players?.length) {
+    scoresInitialized = true;
+    fetchPlayerScores(state.players.map(p => p.name));
+  }
+  renderGame(state);
+});
 
 // ── 啤酒小人 HTML ────────────────────────────────────
 function beerGuyHTML(level) {
@@ -836,6 +848,20 @@ function beerGuyHTML(level) {
 }
 
 let prevBeerLevels = {};
+let playerScores = {};  // name → points，游戏中显示积分
+
+async function fetchPlayerScores(names) {
+  for (const name of names) {
+    try {
+      const res = await fetch('/api/dice/player', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (data.ok) playerScores[name] = data.player.points;
+    } catch {}
+  }
+}
 
 // ── 渲染游戏 ─────────────────────────────────────────
 function renderGame(state) {
@@ -848,10 +874,13 @@ function renderGame(state) {
       const prevLv = prevBeerLevels[p.id] || 0;
       const drinking = p.beerLevel > prevLv;
       prevBeerLevels[p.id] = p.beerLevel;
+      const pts = playerScores[p.name];
+      const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
       return `<div class="beer-chip ${active ? 'active' : ''}">
         <div class="${drinking ? 'drinking' : ''}">${beerGuyHTML(p.beerLevel)}</div>
         <div>
           <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
+          ${ptsStr}
           <div style="font-size:0.6rem;color:var(--gold-dim);">${'🍺'.repeat(p.beerLevel)}</div>
         </div>
       </div>`;
@@ -859,8 +888,10 @@ function renderGame(state) {
   } else {
     $('players-bar').innerHTML = state.players.map(p => {
       const active = p.id === state.currentPlayerId && state.status === 'playing';
+      const pts = playerScores[p.name];
+      const ptsStr = pts != null ? `<span style="font-size:0.7rem;color:var(--gold-bright);margin-left:0.3rem;">💰${pts}</span>` : '';
       return `<div class="player-chip ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}">
-        <span>${p.name}${p.id === myId ? '(你)' : ''}</span>
+        <span>${p.name}${p.id === myId ? '(你)' : ''}${ptsStr}</span>
         <span class="dice-dots">${'🎲'.repeat(p.diceCount) || '💀'}</span>
       </div>`;
     }).join('');
