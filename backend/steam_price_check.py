@@ -266,15 +266,15 @@ def main():
         if r['final_price'] > 0:
             if r['discount'] > 0:
                 detail_lines.append(
-                    f"🔥 {r['name']}  -{r['discount']}%  ¥{r['final_price']:.0f}（原¥{r['original_price']:.0f}）  appid={r['app_id']}"
+                    f"🔥 {r['name']}  -{r['discount']}%  ¥{r['final_price']:.0f}（原¥{r['original_price']:.0f}）"
                 )
             else:
                 detail_lines.append(
-                    f"   {r['name']}  ¥{r['final_price']:.0f}  无折扣  appid={r['app_id']}"
+                    f"   {r['name']}  ¥{r['final_price']:.0f}  无折扣"
                 )
         else:
             detail_lines.append(
-                f"   {r['name']}  {r['status']}  appid={r['app_id']}"
+                f"   {r['name']}  {r['status']}"
             )
     full_report = '\n'.join(detail_lines)
 
