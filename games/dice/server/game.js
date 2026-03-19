@@ -156,15 +156,12 @@ class DiceGame {
       actualCount = (counts[bid.face] || 0);
     }
 
-    // 实际 >= 叫价 → 叫价者赢，开的人输
+    // 实际 >= 叫价 → 叫价者赢（开的人猜错），否则叫价者吹牛被抓
     const bidderWins = actualCount >= bid.quantity;
-    const loser = bidderWins ? challenger : bidder;
+    const loser  = bidderWins ? challenger : bidder;
+    const winner = bidderWins ? bidder : challenger;
 
-    loser.diceCount--;
-    if (loser.diceCount <= 0) {
-      loser.eliminated = true;
-      loser.diceCount = 0;
-    }
+    // 不扣骰子、不淘汰，只看积分
 
     const result = {
       ok: true,
@@ -177,9 +174,10 @@ class DiceGame {
       wildOnes: this.wildOnes,
       straights,
       bidderWins,
+      winnerId: winner.id,
+      winnerName: winner.name,
       loserId: loser.id,
       loserName: loser.name,
-      loserEliminated: loser.eliminated,
       allDice: this.activePlayers.map(p => ({
         id: p.id, name: p.name, dice: [...p.dice],
         isStraight: straights.includes(p.id),
@@ -189,22 +187,10 @@ class DiceGame {
     this.lastResult = result;
     this.eventLog.push({ type: 'challenge', ...result, ts: Date.now() });
 
-    if (this.activePlayers.length <= 1) {
-      this.status = 'finished';
-      const winner = this.activePlayers[0];
-      if (winner) winner.wins++;
-      result.gameOver = true;
-      result.winner = winner ? { id: winner.id, name: winner.name } : null;
-    } else {
-      this.status = 'roundEnd';
-      const loserIdx = this.players.indexOf(loser);
-      if (loser.eliminated) {
-        this.currentIdx = loserIdx;
-        this._advance();
-      } else {
-        this.currentIdx = loserIdx;
-      }
-    }
+    // 每轮结束直接 roundEnd，由下一轮继续，输家先叫
+    this.status = 'roundEnd';
+    this.currentIdx = this.players.indexOf(loser);
+
     return result;
   }
 

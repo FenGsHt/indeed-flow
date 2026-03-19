@@ -663,6 +663,7 @@ socket.on('lobby-update', (state) => {
 
 socket.on('error-msg', msg => showToast(msg, true));
 socket.on('player-left', ({ name }) => showToast(`${name} 离开了`));
+socket.on('player-left-game', ({ name }) => showToast(`${name} 退出了对局`));
 
 // ── 游戏事件 ─────────────────────────────────────────
 socket.on('game-started', () => {
@@ -776,28 +777,19 @@ $('btn-challenge').onclick = () => { SFX.slam(); socket.emit('challenge'); };
 
 // ── 结果覆盖层 ──────────────────────────────────────
 function showResultOverlay(r) {
-  const isGameOver = r.gameOver;
   const bidFace = r.bid?.face;
 
-  if (r.playerLeft) {
-    $('result-container').innerHTML = `
-      <div class="result-overlay">
-        <div class="result-box">
-          <div class="game-over-title">🏆</div>
-          <div class="winner-name">${r.winner?.name || '?'} 获胜！</div>
-          <div class="result-detail">${r.playerLeft} 离开了游戏</div>
-          <div class="result-actions">
-            <button class="btn btn-gold" onclick="socket.emit('back-to-lobby');$('result-container').innerHTML='';">🍺 回到酒桌</button>
-          </div>
-        </div>
-      </div>`;
+  if (!r.bid) {
+    $('result-container').innerHTML = '';
     return;
   }
 
   const verdictText = r.bidderWins
     ? `✅ 叫价成立！实际有 ${r.actualCount} 个`
     : `❌ 吹牛失败！只有 ${r.actualCount} 个`;
-  const loserText = `${r.loserName} ${r.loserEliminated ? '淘汰出局！💀' : '失去一颗骰子'}`;
+
+  const winnerText = `${r.winnerName} <span style="color:var(--gold-bright);">+100</span>`;
+  const loserText  = `${r.loserName} <span style="color:var(--red);">-50</span>`;
 
   let diceHTML = '';
   if (r.allDice) {
@@ -812,29 +804,23 @@ function showResultOverlay(r) {
     }
   }
 
-  let gameOverHTML = '';
-  if (isGameOver && r.winner) {
-    gameOverHTML = `<div class="game-over-title">🏆</div><div class="winner-name">${r.winner.name} 获胜！</div>`;
-  }
-
   $('result-container').innerHTML = `
     <div class="result-overlay">
       <div class="result-box">
-        ${gameOverHTML}
         <div class="result-verdict ${r.bidderWins ? 'win' : 'lose'}">${verdictText}</div>
         <div class="result-detail">
           ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，${r.challengerName} 喊了 "开！"
-          <br>${loserText}
+          <br>🏆 ${winnerText} &nbsp; 💔 ${loserText}
         </div>
         <div class="result-all-dice">${diceHTML}</div>
         <div class="result-actions">
-          ${isGameOver
-            ? `<button class="btn btn-gold" onclick="socket.emit('back-to-lobby');$('result-container').innerHTML='';">🍺 回到酒桌</button>`
-            : `<button class="btn btn-gold" onclick="socket.emit('next-round');$('result-container').innerHTML='';">🎲 下一轮</button>`
-          }
+          <button class="btn btn-gold" onclick="socket.emit('next-round');$('result-container').innerHTML='';">🎲 下一轮</button>
+          <button class="btn btn-ghost" onclick="socket.emit('back-to-lobby');$('result-container').innerHTML='';">🚪 离桌</button>
         </div>
       </div>
     </div>`;
+
+  fetchMyStats();
 }
 </script>
 </body>

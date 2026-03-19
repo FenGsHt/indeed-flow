@@ -145,11 +145,9 @@ io.on('connection', (socket) => {
       if (sock) sock.emit('challenge-result', r);
     }
 
-    if (r.gameOver && r.winner) {
-      const loserNames = lobby.game.players
-        .filter(p => p.id !== r.winner.id)
-        .map(p => p.name);
-      reportResult(r.winner.name, loserNames);
+    // 每轮结束即上报：赢家 +100，输家 -50
+    if (r.winnerName && r.loserName) {
+      reportResult(r.winnerName, [r.loserName]);
     }
 
     setTimeout(() => broadcastGameState(), 100);
@@ -166,19 +164,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('back-to-lobby', () => {
-    const game = lobby.game;
-    if (!game) return;
-    if (game.status !== 'finished') return;
-
-    for (const s of lobby.gamePlayerIds) {
-      const p = lobby.players.get(s);
-      if (p) { p.inGame = false; p.ready = false; }
-    }
-    lobby.game = null;
-    lobby.gamePlayerIds = [];
-
-    io.emit('game-ended');
-    broadcastLobby();
+    if (!lobby.game) return;
+    endGame();
   });
 
   socket.on('disconnect', () => {
@@ -189,53 +176,18 @@ io.on('connection', (socket) => {
       lobby.game.removePlayer(sid);
       lobby.gamePlayerIds = lobby.gamePlayerIds.filter(s => s !== sid);
 
-      if (lobby.game.status === 'finished') {
-        const winner = lobby.game.activePlayers[0];
-        if (winner) {
-          const loserNames = lobby.game.players
-            .filter(pp => pp.id !== winner.id)
-            .map(pp => pp.name);
-          reportResult(winner.name, loserNames);
-        }
+      // 只剩不到 2 人，结束游戏回大厅
+      if (lobby.gamePlayerIds.length < 2) {
         for (const s of lobby.gamePlayerIds) {
-          const pp = lobby.players.get(s);
-          if (pp) { pp.inGame = false; pp.ready = false; }
           const sock = io.sockets.sockets.get(s);
-          if (sock) sock.emit('challenge-result', {
-            ...lobby.game.lastResult,
-            gameOver: true,
-            winner: winner ? { id: winner.id, name: winner.name } : null,
-            playerLeft: p.name,
-          });
+          if (sock) sock.emit('player-left-game', { name: p.name });
         }
-        lobby.game = null;
-        lobby.gamePlayerIds = [];
-        io.emit('game-ended');
-      } else if (lobby.game.activePlayers.length < 2) {
-        const winner = lobby.game.activePlayers[0];
-        lobby.game.status = 'finished';
-        if (winner) {
-          const loserNames = lobby.game.players
-            .filter(pp => pp.id !== winner.id)
-            .map(pp => pp.name);
-          reportResult(winner.name, loserNames);
-          for (const s of lobby.gamePlayerIds) {
-            const sock = io.sockets.sockets.get(s);
-            if (sock) sock.emit('challenge-result', {
-              gameOver: true,
-              winner: { id: winner.id, name: winner.name },
-              playerLeft: p.name,
-            });
-          }
-        }
-        for (const s of lobby.gamePlayerIds) {
-          const pp = lobby.players.get(s);
-          if (pp) { pp.inGame = false; pp.ready = false; }
-        }
-        lobby.game = null;
-        lobby.gamePlayerIds = [];
-        io.emit('game-ended');
+        endGame();
       } else {
+        for (const s of lobby.gamePlayerIds) {
+          const sock = io.sockets.sockets.get(s);
+          if (sock) sock.emit('player-left-game', { name: p.name });
+        }
         broadcastGameState();
       }
     }
@@ -243,6 +195,17 @@ io.on('connection', (socket) => {
     broadcastLobby();
     if (p) io.emit('player-left', { name: p.name });
   });
+
+  function endGame() {
+    for (const s of lobby.gamePlayerIds) {
+      const pp = lobby.players.get(s);
+      if (pp) { pp.inGame = false; pp.ready = false; }
+    }
+    lobby.game = null;
+    lobby.gamePlayerIds = [];
+    io.emit('game-ended');
+    broadcastLobby();
+  }
 });
 
 // ── 初始化默认设置 ───────────────────────────────────
