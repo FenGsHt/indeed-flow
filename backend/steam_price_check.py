@@ -54,7 +54,7 @@ def get_games_with_appid():
     try:
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute(
-            "SELECT id, name, steam_appid, url, source, status FROM games "
+            "SELECT id, name, steam_appid, source, status FROM games "
             "WHERE id != 'bookmarks' "
             "  AND status IN ('todo', 'playing') "
             "ORDER BY name"
@@ -67,15 +67,13 @@ def get_games_with_appid():
     for g in games:
         appid = (g.get('steam_appid') or '').strip()
 
-        # 尝试从 url / source 字段提取 appid
+        # 尝试从 source 字段提取 appid
         if not appid:
             import re
-            for field in ('url', 'source'):
-                val = g.get(field) or ''
-                m = re.search(r'steampowered\.com/app/(\d+)', val)
-                if m:
-                    appid = m.group(1)
-                    break
+            val = g.get('source') or ''
+            m = re.search(r'steampowered\.com/app/(\d+)', val)
+            if m:
+                appid = m.group(1)
 
         # 仍然没有 appid → 通过游戏名搜索 Steam
         if not appid:
