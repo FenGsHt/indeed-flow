@@ -109,7 +109,8 @@ io.on('connection', (socket) => {
     const game = new DiceGame({ diceCount: lobby.diceCount || 5, beerMode: !!lobby.beerMode, exactPenalty: !!lobby.exactPenalty });
     for (const sid of readyPlayers) {
       const p = lobby.players.get(sid);
-      game.addPlayer(sid, p.name);
+      const gp = game.addPlayer(sid, p.name);
+      gp.ready = true;
       p.inGame = true;
     }
     lobby.game = game;
