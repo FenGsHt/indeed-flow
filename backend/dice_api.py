@@ -130,7 +130,7 @@ def get_player():
 def report_result():
     """
     body: { winner: "name", losers: ["name1", ...] }
-    赢家 +100，输家 -50
+    赢家 +100，输家 -100
     """
     data = request.json or {}
     winner_name = (data.get('winner') or '').strip()
@@ -159,8 +159,8 @@ def report_result():
                 continue
             lo = _get_or_create(cursor, ln)
             cursor.execute(
-                'UPDATE dice_players SET points=GREATEST(0, points-50), losses=losses+1, '
-                'daily_losses=daily_losses+1, daily_points=daily_points-50 '
+                'UPDATE dice_players SET points=GREATEST(0, points-100), losses=losses+1, '
+                'daily_losses=daily_losses+1, daily_points=daily_points-100 '
                 'WHERE id=%s',
                 (lo['id'],)
             )

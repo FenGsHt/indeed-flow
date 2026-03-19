@@ -812,7 +812,7 @@ socket.on('challenge-result', (result) => {
     spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30, result.bidderWins ? '#d4a646' : '#e74c3c');
     // 即时更新本地积分缓存
     if (result.winnerName) playerScores[result.winnerName] = (playerScores[result.winnerName] || 1000) + 100;
-    if (result.loserNames) result.loserNames.forEach(n => { playerScores[n] = (playerScores[n] || 1000) - 50; });
+    if (result.loserNames) result.loserNames.forEach(n => { playerScores[n] = (playerScores[n] || 1000) - 100; });
     showResultOverlay(result);
   }, 400);
 });
@@ -979,8 +979,8 @@ function showResultOverlay(r) {
 
   const winnerText = `${r.winnerName} <span style="color:var(--gold-bright);">+100</span>`;
   const loserText = r.isExact
-    ? r.loserNames.map(n => `${n} <span style="color:var(--red);">-50</span>`).join('、')
-    : `${r.loserName} <span style="color:var(--red);">-50</span>`;
+    ? r.loserNames.map(n => `${n} <span style="color:var(--red);">-100</span>`).join('、')
+    : `${r.loserName} <span style="color:var(--red);">-100</span>`;
 
   let diceHTML = '';
   if (r.allDice) {
