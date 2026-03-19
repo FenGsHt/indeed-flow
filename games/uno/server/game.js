@@ -336,7 +336,9 @@ class UnoGame {
       case 'draw2':
         this.pendingDraw += 2;
         this._advance();
-        if (!this.settings.stackDraw) this._advance(); // 传统规则跳过
+        // 2026-03-19: 修复 stackDraw=false 时罚错玩家的 bug，原代码第二次 _advance() 导致跳过被罚玩家
+        // if (!this.settings.stackDraw) this._advance();
+        if (!this.settings.stackDraw) this._forceDraw();
         break;
       case 'wild':
         this.currentColor = chosenColor;
@@ -346,7 +348,9 @@ class UnoGame {
         this.currentColor = chosenColor;
         this.pendingDraw += 4;
         this._advance();
-        if (!this.settings.stackDraw) this._advance();
+        // 2026-03-19: 同上修复
+        // if (!this.settings.stackDraw) this._advance();
+        if (!this.settings.stackDraw) this._forceDraw();
         break;
       default:
         if (this.settings.sevensZero) {
@@ -361,6 +365,24 @@ class UnoGame {
         }
         this._advance();
     }
+  }
+
+  // 2026-03-19: stackDraw=false 时，让当前玩家立即摸掉罚牌并跳过回合
+  _forceDraw() {
+    const target = this.currentPlayer;
+    const count = this.pendingDraw;
+    this.pendingDraw = 0;
+    const drawn = [];
+    for (let i = 0; i < count; i++) {
+      if (this.deck.length === 0) this._reshuffle();
+      if (this.deck.length > 0) {
+        const card = this.deck.shift();
+        drawn.push(card);
+        target.hand.push(card);
+      }
+    }
+    this.eventLog.push({ type: 'draw', playerId: target.id, playerName: target.name, count: drawn.length, ts: Date.now() });
+    this._advance();
   }
 
   _advance() {
