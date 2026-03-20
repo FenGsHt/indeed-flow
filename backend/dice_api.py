@@ -14,20 +14,10 @@ try:
 except ImportError:
     pass
 
+# 2026-03-19: 使用共享连接池替代每次 pymysql.connect()
+from db_pool import get_db
+
 dice_bp = Blueprint('dice', __name__)
-
-DB_CONFIG = {
-    'host':     os.getenv('DB_HOST', 'localhost'),
-    'port':     int(os.getenv('DB_PORT', '3306')),
-    'user':     os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'indeed_flow'),
-    'charset':  'utf8mb4',
-}
-
-
-def get_db():
-    return pymysql.connect(**DB_CONFIG)
 
 
 def init_dice_db():
@@ -102,7 +92,7 @@ def get_player():
     data = request.json or {}
     name = (data.get('name') or '').strip()[:20]
     if not name:
-        return jsonify({'ok': False, 'error': 'name required'}), 400
+        return jsonify({'success': False, 'error': 'name required'}), 400
 
     conn = get_db()
     try:
@@ -110,7 +100,7 @@ def get_player():
         p = _get_or_create(cursor, name)
         conn.commit()
         return jsonify({
-            'ok': True,
+            'success': True,
             'player': {
                 'name':    p['name'],
                 'points':  p['points'],
@@ -137,7 +127,7 @@ def report_result():
     loser_names = data.get('losers') or []
 
     if not winner_name:
-        return jsonify({'ok': False, 'error': 'winner required'}), 400
+        return jsonify({'success': False, 'error': 'winner required'}), 400
 
     conn = get_db()
     try:
@@ -166,7 +156,7 @@ def report_result():
             )
 
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({'success': True})
     finally:
         conn.close()
 
@@ -224,6 +214,6 @@ def leaderboard():
             if 'daily_wr' in r:
                 r['daily_wr'] = round(float(r['daily_wr']) * 100, 1)
 
-        return jsonify({'ok': True, 'type': lb_type, 'list': rows})
+        return jsonify({'success': True, 'type': lb_type, 'list': rows})
     finally:
         conn.close()

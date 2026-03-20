@@ -23,14 +23,8 @@ try:
 except ImportError:
     pass
 
-DB_CONFIG = {
-    'host':     os.getenv('DB_HOST', 'localhost'),
-    'port':     int(os.getenv('DB_PORT', '3306')),
-    'user':     os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'indeed_flow'),
-    'charset':  'utf8mb4',
-}
+# 2026-03-19: 使用共享连接池替代每次 pymysql.connect()
+from db_pool import get_db
 
 BARK_KEY = os.getenv('BARK_KEY', '')
 
@@ -42,9 +36,7 @@ OPENCLAW_GROUP   = os.getenv('OPENCLAW_GROUP', '')
 
 
 # ── 数据库 ──────────────────────────────────────────────────────────────
-
-def get_db():
-    return pymysql.connect(**DB_CONFIG)
+# 2026-03-19: get_db() 已移至 db_pool.py 共享连接池
 
 
 # 2026-03-19: 原先只取 steam_appid 非空的游戏，导致遗漏；现在取所有 todo/playing 游戏，

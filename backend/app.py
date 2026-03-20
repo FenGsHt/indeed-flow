@@ -99,7 +99,7 @@ def get_skills():
 @app.route("/api/skills/<skill_id>", methods=["PUT"])
 def update_skill(skill_id):
     skills = load_json(SKILLS_FILE)
-    data = request.json
+    data = request.get_json(silent=True) or {}
     for skill in skills:
         if skill["id"] == skill_id:
             skill.update(data)
@@ -111,7 +111,7 @@ def update_skill(skill_id):
 @app.route("/api/skills", methods=["POST"])
 def add_skill():
     skills = load_json(SKILLS_FILE, [])
-    data = request.json
+    data = request.get_json(silent=True) or {}
     data["id"] = data.get("id") or f"skill-{len(skills) + 1}"
     data["enabled"] = data.get("enabled", True)
     skills.append(data)
@@ -794,7 +794,7 @@ def regenerate_summary():
 @app.route("/api/news/summary/item", methods=["POST"])
 def get_news_item_summary():
     """单个热点新闻的AI总结 - 尝试抓取原文内容进行总结"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     title = data.get('title', '')
     url = data.get('url', '')
     source = data.get('source', '')

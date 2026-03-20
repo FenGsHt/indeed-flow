@@ -8,48 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- 2026-03-19: 共享样式抽取到 shared.css -->
+  <link rel="stylesheet" href="./src/shared.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', 'Noto Sans SC', sans-serif;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
-      color: #fff;
-      overflow-x: hidden;
-    }
-
-    /* 背景动画 */
-    .bg-effect {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-
-    .bg-effect::before {
-      content: '';
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      top: -50%;
-      left: -50%;
-      background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
-      animation: bgMove 20s ease-in-out infinite;
-    }
-
-    @keyframes bgMove {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      50% { transform: translate(-5%, -5%) rotate(5deg); }
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     .container {
       position: relative;
       z-index: 1;
@@ -66,20 +27,8 @@
 
     .logo {
       font-size: clamp(2.5rem, 8vw, 4rem);
-      font-weight: 900;
       letter-spacing: 0.15em;
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
-      background-size: 300% 100%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: logoShine 3s ease-in-out infinite;
       margin-bottom: 0.5rem;
-    }
-
-    @keyframes logoShine {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
     }
 
     @keyframes fadeOut {
@@ -140,11 +89,6 @@
 
     .tab-content.active {
       display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     /* 新闻子Tab */
@@ -501,29 +445,6 @@
       line-height: 1.5;
     }
 
-    /* 空状态 */
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    .empty-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    .empty-text {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .empty-hint {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.3);
-    }
-
     /* 添加游戏按钮 */
     .add-game-btn {
       position: fixed;
@@ -573,136 +494,6 @@
       box-shadow: 0 4px 20px rgba(123,47,247,0.5);
     }
 
-    /* 弹窗 */
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      backdrop-filter: blur(5px);
-    }
-
-    .modal.show { display: flex; }
-
-    .modal-content {
-      background: #1a1a3e;
-      border-radius: 20px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 400px;
-      max-height: 85vh;
-      overflow-y: auto;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .modal-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.6);
-      margin-bottom: 0.4rem;
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #00d4ff;
-    }
-
-    /* 修复 select 下拉选项样式 - 深色背景白色文字 */
-    .form-group select {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      font-size: 0.95rem;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      padding-right: 2.5rem;
-      cursor: pointer;
-    }
-
-    .form-group select option {
-      background: #1a1a3e;
-      color: #fff;
-      padding: 0.5rem;
-    }
-
-    /* 针对 Webkit 浏览器的额外修复 */
-    @media screen and (-webkit-min-device-pixel-ratio: 0) {
-      .form-group select option {
-        background: #1a1a3e;
-        color: #fff;
-      }
-    }
-
-    /* Firefox */
-    @-moz-document url-prefix() {
-      .form-group select option {
-        background: #1a1a3e;
-        color: #fff;
-      }
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 0.8rem;
-      margin-top: 1.5rem;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-
-    .btn-danger {
-      background: #ff4757;
-      color: #fff;
-    }
-
     .btn-steam {
       background: linear-gradient(135deg, #1b2838, #2a475e);
       color: #fff;
@@ -711,25 +502,6 @@
 
     .btn-steam:hover {
       background: linear-gradient(135deg, #2a475e, #66c0f4);
-    }
-
-    .btn:active { transform: scale(0.95); }
-
-    /* 加载动画 */
-    .loading {
-      display: flex;
-      justify-content: center;
-      padding: 3rem;
-    }
-
-    .loading::after {
-      content: '';
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: #00d4ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
     }
 
     /* AI 加载转圈圈 */
@@ -742,10 +514,6 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
     }
 
     /* 在线游戏卡片悬停效果 */
@@ -1030,14 +798,12 @@
     const API_BASE = 'http://150.158.110.168:5001';
 
     // ============ 图片上传处理 ============
-    async function handleImageUpload(input) {
+    // 2026-03-19: 原先有两个几乎一样的函数，合并为通用版本
+    function uploadImage(input, previewId, urlInputId) {
       const file = input.files[0];
       if (!file) return;
-
-      const preview = document.getElementById('image-preview');
-      const urlInput = document.getElementById('game-image-url');
-
-      // 读取文件并转换为base64
+      const preview = document.getElementById(previewId);
+      const urlInput = document.getElementById(urlInputId);
       const reader = new FileReader();
       reader.onload = function(e) {
         const b64 = e.target.result;
@@ -1047,23 +813,8 @@
       };
       reader.readAsDataURL(file);
     }
-
-    async function handleDetailImageUpload(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      const preview = document.getElementById('detail-image-preview');
-      const urlInput = document.getElementById('detail-image');
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const b64 = e.target.result;
-        urlInput.value = b64;
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
-      };
-      reader.readAsDataURL(file);
-    }
+    function handleImageUpload(input) { uploadImage(input, 'image-preview', 'game-image-url'); }
+    function handleDetailImageUpload(input) { uploadImage(input, 'detail-image-preview', 'detail-image'); }
 
     // 显示临时提示（3秒后自动消失）
     function showTip(message, type = 'info') {
@@ -1104,7 +855,7 @@
       try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
     }
     function lsSet(key, val) {
-      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage写入失败:', e); }
     }
 
     // 内存缓存（同一页面内不重复请求）
@@ -1264,28 +1015,20 @@
     }
 
     // ============ Steam 搜图（自动下载转base64） ============
-    async function searchSteamForGame() {
-      const gameName = document.getElementById('game-name').value.trim();
-      const urlInput = document.getElementById('game-image-url');
-      const preview = document.getElementById('image-preview');
-
-      if (!gameName) {
-        showTip('请先输入游戏名称', 'error');
-        return;
-      }
-
+    // 2026-03-19: 原先有两个几乎一样的函数，合并为通用版本
+    async function searchSteamImage(gameName, urlInputId, previewId) {
+      if (!gameName) { showTip('请先输入游戏名称', 'error'); return; }
       const btn = event.target;
       const originalText = btn.textContent;
       btn.textContent = '⏳ 搜索中...';
       btn.disabled = true;
-
       try {
-        // 使用新的自动搜索接口，直接返回base64图片
         const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(gameName));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-
         if (data.success && data.image) {
-          urlInput.value = data.image;
+          document.getElementById(urlInputId).value = data.image;
+          const preview = document.getElementById(previewId);
           preview.style.display = 'block';
           preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
           btn.textContent = '✓ 已获取';
@@ -1296,44 +1039,19 @@
           setTimeout(() => { btn.textContent = originalText; }, 2000);
         }
       } catch(e) {
+        console.error('Steam搜图失败:', e);
         showTip('搜索失败，请手动上传图片', 'error');
         btn.textContent = originalText;
       } finally {
         btn.disabled = false;
       }
     }
-
-    // 详情页Steam搜图
-    async function searchSteamForDetail() {
+    function searchSteamForGame() {
+      searchSteamImage(document.getElementById('game-name').value.trim(), 'game-image-url', 'image-preview');
+    }
+    function searchSteamForDetail() {
       if (!currentGame) return;
-      
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = '⏳ 搜索中...';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(currentGame.name));
-        const data = await res.json();
-
-        if (data.success && data.image) {
-          document.getElementById('detail-image').value = data.image;
-          const preview = document.getElementById('detail-image-preview');
-          preview.style.display = 'block';
-          preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
-          btn.textContent = '✓ 已获取';
-          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
-        } else {
-          showTip(data.error || '未找到游戏图片', 'error');
-          btn.textContent = '✗ 未找到';
-          setTimeout(() => { btn.textContent = originalText; }, 2000);
-        }
-      } catch(e) {
-        showTip('搜索失败', 'error');
-        btn.textContent = originalText;
-      } finally {
-        btn.disabled = false;
-      }
+      searchSteamImage(currentGame.name, 'detail-image', 'detail-image-preview');
     }
 
     // Tab切换
@@ -1366,13 +1084,13 @@
         try {
           const res = await fetch(API_BASE + '/api/games');
           if (res.ok) games = await res.json();
-        } catch(e) { console.log('API fail'); }
+        } catch(e) { console.warn('游戏列表API加载失败:', e); }
 
         if (games.length === 0) {
           try {
             const res = await fetch('/data/games.json');
-            games = await res.json();
-          } catch {}
+            if (res.ok) games = await res.json();
+          } catch(e) { console.warn('fallback games.json加载失败:', e); }
         }
 
         if (games.length === 0) {

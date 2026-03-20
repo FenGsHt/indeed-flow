@@ -59,7 +59,7 @@ async function reportResult(winnerName, loserNames) {
       body,
     });
     const data = await resp.json();
-    if (!data.ok) console.error('[dice] report result error:', data);
+    if (!data.success) console.error('[dice] report result error:', data);
   } catch (e) {
     console.error('[dice] report result fetch error:', e.message);
   }

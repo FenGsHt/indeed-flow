@@ -724,12 +724,12 @@ async function fetchMyStats() {
       body: JSON.stringify({ name: myName }),
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.success) {
       const p = data.player;
       $('my-points').textContent = p.points;
       $('my-record').textContent = `${p.wins}胜 ${p.losses}负`;
     }
-  } catch {}
+  } catch(e) { console.warn('获取个人数据失败:', e); }
 }
 
 // ── 榜单 ─────────────────────────────────────────────
@@ -746,7 +746,7 @@ async function fetchLeaderboard(type) {
   try {
     const res = await fetch(`/api/dice/leaderboard?type=${type}`);
     const data = await res.json();
-    if (!data.ok || !data.list.length) {
+    if (!data.success || !data.list.length) {
       $('lb-content').innerHTML = '<div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.3);padding:1rem;">暂无数据</div>';
       return;
     }
@@ -764,7 +764,8 @@ async function fetchLeaderboard(type) {
         <span class="wr">${wr}</span>
       </div>`;
     }).join('');
-  } catch {
+  } catch(e) {
+    console.warn('榜单加载失败:', e);
     $('lb-content').innerHTML = '<div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.3);padding:1rem;">加载失败</div>';
   }
 }
@@ -881,8 +882,8 @@ async function fetchPlayerScores(names) {
         body: JSON.stringify({ name }),
       });
       const data = await res.json();
-      if (data.ok) playerScores[name] = data.player.points;
-    } catch {}
+      if (data.success) playerScores[name] = data.player.points;
+    } catch(e) { console.warn('获取玩家积分失败:', name, e); }
   }
 }
 

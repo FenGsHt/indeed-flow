@@ -333,7 +333,9 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py backend/llm_proxy.py backend/web_proxy.py backend/dice_api.py \
+            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py backend/llm_proxy.py backend/web_proxy.py backend/dice_api.py backend/db_pool.py \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
+            scp -i ~/.ssh/id_rsa requirements.txt \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
 
       - name: Restart Flask backend
@@ -357,6 +359,7 @@ jobs:
                echo 'OPENCLAW_TOKEN=${{ secrets.OPENCLAW_TOKEN }}' >> .env && \
                echo 'OPENCLAW_GROUP=${{ secrets.OPENCLAW_GROUP }}' >> .env && \
                echo 'RAWG_API_KEY=${{ secrets.RAWG_API_KEY }}' >> .env && \
+               pip3 install -q -r requirements.txt && \
                sudo systemctl restart flask-app && \
                sleep 2 && \
                sudo systemctl is-active flask-app"
