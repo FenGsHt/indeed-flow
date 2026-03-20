@@ -96,8 +96,10 @@ def search_steam_appid(game_name):
             f"https://store.steampowered.com/api/storesearch/"
             f"?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
         )
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        })
+        with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
             items = data.get('items', [])
             if items:
@@ -125,26 +127,40 @@ def save_steam_appid(game_id, app_id):
 
 # ── Steam API ────────────────────────────────────────────────────────────
 
-def fetch_steam_price(app_id):
+def fetch_steam_price(app_id, retries=3):
     """
     调用 Steam appdetails API 获取价格信息（只取 price_overview filter，速度快）。
     返回 price_overview dict，或 None（免费/不在中区/下架）。
+    带重试：默认 3 次，超时逐渐加长。
     """
     url = (
         f"https://store.steampowered.com/api/appdetails"
         f"?appids={app_id}&cc=CN&filters=price_overview"
     )
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-        app_data = data.get(str(app_id), {})
-        if not app_data.get('success'):
-            return None
-        return app_data.get('data', {}).get('price_overview')  # 免费游戏此字段不存在
-    except Exception as e:
-        print(f"  [WARN] fetch price error for appid={app_id}: {e}")
-        return None
+    for attempt in range(retries):
+        timeout = 15 + attempt * 10  # 15s, 25s, 35s
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode())
+            app_data = data.get(str(app_id), {})
+            if not app_data.get('success'):
+                return None
+            po = app_data.get('data', {}).get('price_overview')
+            if isinstance(po, dict):
+                return po
+            return None  # price_overview 格式异常（如 list），视为无价格
+        except Exception as e:
+            if attempt < retries - 1:
+                wait = 3 + attempt * 2
+                print(f"  [RETRY] appid={app_id} attempt {attempt+1} failed: {e}, waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"  [WARN] fetch price error for appid={app_id} after {retries} attempts: {e}")
+    return None
 
 
 # ── Bark 推送 ─────────────────────────────────────────────────────────────
@@ -282,13 +298,15 @@ def main():
         title = f"🎮 Steam 折扣检测（{len(games)}款）"
         body  = f"本次无打折\n\n── 全部清单 ──\n{full_report}"
         send_bark(title, body)
-        send_openclaw(f"{title}\n\n{body}")
+        # 2026-03-19: 暂时屏蔽 QQ 渠道
+        # send_openclaw(f"{title}\n\n{body}")
     else:
         discounted.sort(key=lambda x: x['discount'], reverse=True)
         title = f"🎮 Steam {len(discounted)}/{len(games)} 款打折"
         body  = f"── 全部清单 ──\n{full_report}"
         send_bark(title, body, jump_url="https://store.steampowered.com/specials#p=0&tab=TopSellers")
-        send_openclaw(f"{title}\n\n{body}\n\nhttps://store.steampowered.com/specials")
+        # 2026-03-19: 暂时屏蔽 QQ 渠道
+        # send_openclaw(f"{title}\n\n{body}\n\nhttps://store.steampowered.com/specials")
 
     print("=" * 40)
     print("检测完成")
