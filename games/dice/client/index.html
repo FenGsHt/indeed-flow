@@ -908,40 +908,28 @@ function renderGame(state) {
     return '';
   }
 
-  if (beerMode) {
-    if (state.status === 'roundEnd' && !pendingBeerLevels) {
-      pendingBeerLevels = {};
-      state.players.forEach(p => { pendingBeerLevels[p.id] = p.beerLevel; });
-    }
-    $('players-bar').innerHTML = state.players.map(p => {
-      const active = p.id === state.currentPlayerId && isPlaying;
-      const isNext = p.id === nextPlayerId;
-      const isDrinking = drinkingIds.includes(p.id);
-      const pts = playerScores[p.name];
-      const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
-      return `<div class="beer-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''}">
-        ${turnTag(p.id)}
-        ${beerGuyHTML(p.beerLevel, isDrinking)}
-        <div>
-          <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
-          ${ptsStr}
-          <div style="font-size:0.6rem;color:var(--gold-dim);">${'🍺'.repeat(p.beerLevel)}</div>
-        </div>
-      </div>`;
-    }).join('');
-  } else {
-    $('players-bar').innerHTML = state.players.map(p => {
-      const active = p.id === state.currentPlayerId && isPlaying;
-      const isNext = p.id === nextPlayerId;
-      const pts = playerScores[p.name];
-      const ptsStr = pts != null ? `<span style="font-size:0.7rem;color:var(--gold-bright);margin-left:0.3rem;">💰${pts}</span>` : '';
-      return `<div class="player-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''} ${p.eliminated ? 'eliminated' : ''}">
-        ${turnTag(p.id)}
-        <span>${p.name}${p.id === myId ? '(你)' : ''}${ptsStr}</span>
-        <span class="dice-dots">${'🎲'.repeat(p.diceCount) || '💀'}</span>
-      </div>`;
-    }).join('');
+  if (beerMode && state.status === 'roundEnd' && !pendingBeerLevels) {
+    pendingBeerLevels = {};
+    state.players.forEach(p => { pendingBeerLevels[p.id] = p.beerLevel; });
   }
+  $('players-bar').innerHTML = state.players.map(p => {
+    const active = p.id === state.currentPlayerId && isPlaying;
+    const isNext = p.id === nextPlayerId;
+    const isDrinking = drinkingIds.includes(p.id);
+    const pts = playerScores[p.name];
+    const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
+    const beerExtra = beerMode
+      ? `<div style="font-size:0.6rem;color:var(--gold-dim);">${'🍺'.repeat(p.beerLevel || 0)}</div>` : '';
+    return `<div class="beer-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''}">
+      ${turnTag(p.id)}
+      ${beerGuyHTML(beerMode ? p.beerLevel : 0, isDrinking)}
+      <div>
+        <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
+        ${ptsStr}
+        ${beerExtra}
+      </div>
+    </div>`;
+  }).join('');
 
   const banner = $('turn-banner');
   if (state.status === 'playing') {
