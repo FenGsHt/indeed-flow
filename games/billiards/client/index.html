@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多人台球</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
+
+/* ── Screens ── */
+.screen{display:none;width:100%;height:100%}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── LOBBY ── */
+#screen-lobby{background:radial-gradient(ellipse at 30% 40%,#1a3520 0%,#0a0805 60%);overflow-y:auto}
+.lobby-wrap{max-width:960px;margin:0 auto;padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;min-height:100%}
+@media(max-width:700px){.lobby-wrap{grid-template-columns:1fr}}
+.lobby-title{grid-column:1/-1;text-align:center;padding:1rem 0 0.5rem}
+.lobby-title h1{font-size:2.5rem;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(90deg,#d4a017,#7dbb5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lobby-title p{color:rgba(255,255,255,0.45);font-size:0.9rem;margin-top:0.3rem}
+
+.panel{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:1.4rem}
+.panel h3{font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;color:#d4a017;margin-bottom:1rem}
+
+.input-row{display:flex;gap:0.6rem;margin-bottom:0.8rem}
+.input-row input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;
+  padding:0.65rem 0.9rem;color:#fff;font-size:0.95rem;outline:none}
+.input-row input:focus{border-color:rgba(212,160,23,0.5)}
+.btn{padding:0.65rem 1.2rem;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-gold{background:linear-gradient(135deg,#d4a017,#b8870f);color:#1a0e02}
+.btn-gold:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7)}
+.btn-outline:hover{border-color:rgba(255,255,255,0.4);color:#fff}
+.btn-danger{background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);color:#ff7070}
+.btn-danger:hover{background:rgba(220,50,50,0.25)}
+
+/* Room options (expandable) */
+.room-opts{margin-bottom:1rem}
+.room-opts summary{cursor:pointer;font-size:0.82rem;color:rgba(255,255,255,0.45);user-select:none;padding:0.4rem 0}
+.room-opts summary:hover{color:rgba(255,255,255,0.7)}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.8rem}
+.opt-item label{font-size:0.78rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.25rem}
+.opt-item select,.opt-item input[type=number]{
+  width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+  border-radius:6px;padding:0.4rem 0.6rem;color:rgba(255,255,255,0.5);font-size:0.82rem}
+.opt-item.disabled{opacity:0.4;pointer-events:none}
+.coming-soon{font-size:0.7rem;color:#d4a017;margin-top:0.2rem}
+
+/* Room list */
+.rooms-list{display:flex;flex-direction:column;gap:0.5rem;max-height:260px;overflow-y:auto}
+.room-item{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.7rem 1rem}
+.room-item:hover{border-color:rgba(212,160,23,0.3)}
+.room-info .room-id{font-size:0.9rem;font-weight:700;color:#e8d5a3}
+.room-info .room-meta{font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:0.15rem}
+.room-status{font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:50px}
+.room-status.waiting{background:rgba(100,200,100,0.12);color:#80d080;border:1px solid rgba(100,200,100,0.2)}
+.room-status.playing{background:rgba(255,180,50,0.12);color:#ffc850;border:1px solid rgba(255,180,50,0.2)}
+.rooms-empty{text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1.5rem 0}
+
+/* Leaderboard */
+.lb-tabs{display:flex;gap:0.5rem;margin-bottom:1rem}
+.lb-tab{padding:0.35rem 0.8rem;border-radius:50px;font-size:0.78rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s}
+.lb-tab.active{background:rgba(212,160,23,0.15);border-color:rgba(212,160,23,0.4);color:#d4a017}
+.lb-tab:not(.active){color:rgba(255,255,255,0.4)}
+.lb-tab:not(.active):hover{color:rgba(255,255,255,0.7)}
+.lb-list{display:flex;flex-direction:column;gap:0.35rem;max-height:340px;overflow-y:auto}
+.lb-row{display:flex;align-items:center;gap:0.7rem;padding:0.45rem 0.6rem;border-radius:6px}
+.lb-row:nth-child(odd){background:rgba(255,255,255,0.02)}
+.lb-rank{width:22px;text-align:center;font-size:0.8rem;color:rgba(255,255,255,0.35);flex-shrink:0}
+.lb-rank.gold{color:#ffd700;font-weight:900}
+.lb-rank.silver{color:#c0c0c0;font-weight:700}
+.lb-rank.bronze{color:#cd7f32;font-weight:700}
+.lb-name{flex:1;font-size:0.85rem;color:#e8d5a3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-wins{font-size:0.8rem;color:#7dbb5e;font-weight:700;white-space:nowrap}
+.lb-rate{font-size:0.72rem;color:rgba(255,255,255,0.35);white-space:nowrap;margin-left:0.3rem}
+.lb-empty{color:rgba(255,255,255,0.25);font-size:0.82rem;text-align:center;padding:1.5rem 0}
+
+/* ── WAITING ── */
+#screen-waiting{background:radial-gradient(ellipse at center,#152b1a 0%,#0a0805 70%);
+  align-items:center;justify-content:center}
+.waiting-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;
+  padding:2.5rem;max-width:440px;width:90%;text-align:center}
+.waiting-title{font-size:1.5rem;font-weight:900;color:#d4a017;margin-bottom:0.3rem}
+.waiting-room-id{font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:2rem}
+.waiting-room-id span{color:#e8d5a3;font-weight:700;letter-spacing:3px;margin-left:0.5rem}
+.waiting-players{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+.player-slot{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:1rem;min-height:80px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.4rem}
+.player-slot.filled{border-color:rgba(125,187,94,0.3)}
+.player-slot .slot-avatar{width:36px;height:36px;border-radius:50%;background:rgba(212,160,23,0.2);
+  border:2px solid rgba(212,160,23,0.4);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.player-slot .slot-name{font-size:0.85rem;font-weight:700;color:#e8d5a3}
+.player-slot .slot-empty{font-size:0.8rem;color:rgba(255,255,255,0.25)}
+.ready-badge{font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(100,200,100,0.15);color:#80d080;border:1px solid rgba(100,200,100,0.25)}
+.not-ready-badge{font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35)}
+.waiting-actions{display:flex;gap:0.8rem;justify-content:center}
+.waiting-hint{font-size:0.78rem;color:rgba(255,255,255,0.3);margin-top:1.2rem}
+
+/* ── GAME ── */
+#screen-game{flex-direction:column;overflow:hidden}
+.game-hud{display:flex;align-items:center;justify-content:space-between;
+  padding:0.5rem 1rem;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+.hud-player{display:flex;align-items:center;gap:0.7rem}
+.hud-player .p-name{font-size:0.9rem;font-weight:700}
+.hud-player .p-type{font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(255,255,255,0.08)}
+.hud-player .p-type.solid{color:#f5c518;background:rgba(245,197,24,0.12)}
+.hud-player .p-type.stripe{color:#64b5f6;background:rgba(100,181,246,0.12)}
+.hud-player .p-score{font-size:1.1rem;font-weight:900;color:#d4a017}
+.hud-player .p-balls{display:flex;gap:2px;align-items:center}
+.ball-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hud-turn{text-align:center;font-size:0.78rem;color:rgba(255,255,255,0.5);min-width:120px}
+.hud-turn .turn-name{font-weight:700;color:#e8d5a3;display:block}
+.hud-turn .turn-indicator{color:#d4a017;font-size:0.7rem;margin-top:0.1rem}
+.hud-turn.my-turn .turn-name{color:#7dbb5e}
+
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#050302}
+#game-canvas{display:block;cursor:crosshair;image-rendering:pixelated}
+
+.game-footer{padding:0.4rem 1rem;background:rgba(0,0,0,0.6);border-top:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;gap:1rem;flex-shrink:0;min-height:44px}
+#status-msg{flex:1;font-size:0.85rem;color:rgba(255,255,255,0.6);text-align:center}
+#status-msg.my{color:#7dbb5e;font-weight:600}
+#status-msg.warn{color:#ffc850}
+.power-wrap{display:flex;align-items:center;gap:0.6rem;flex-shrink:0}
+.power-wrap label{font-size:0.72rem;color:rgba(255,255,255,0.4)}
+.power-bar-outer{width:120px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.power-bar-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#4caf50,#ffeb3b,#f44336);transition:width .05s linear}
+
+/* Chat */
+.chat-wrap{position:absolute;right:1rem;bottom:50px;width:240px;pointer-events:none}
+.chat-msg{background:rgba(0,0,0,0.7);border-left:2px solid rgba(212,160,23,0.5);
+  padding:0.35rem 0.6rem;border-radius:0 6px 6px 0;font-size:0.78rem;margin-bottom:0.3rem;
+  animation:fadeChat 4s forwards}
+@keyframes fadeChat{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.chat-input-row{display:flex;gap:0.4rem;position:absolute;bottom:4px;right:1rem;width:240px;pointer-events:all}
+.chat-input-row input{flex:1;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:6px;
+  padding:0.35rem 0.6rem;color:#fff;font-size:0.78rem;outline:none}
+
+/* Game over overlay */
+#overlay-gameover{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  align-items:center;justify-content:center;z-index:100}
+#overlay-gameover.show{display:flex}
+.gameover-box{background:linear-gradient(135deg,#1a2010,#0a1208);border:1px solid rgba(125,187,94,0.3);
+  border-radius:20px;padding:2.5rem;text-align:center;max-width:380px;width:90%}
+.gameover-result{font-size:2.5rem;font-weight:900;margin-bottom:0.5rem}
+.gameover-result.win{color:#7dbb5e}
+.gameover-result.lose{color:#e07070}
+.gameover-reason{font-size:0.85rem;color:rgba(255,255,255,0.45);margin-bottom:2rem}
+.gameover-actions{display:flex;gap:0.8rem;justify-content:center}
+.rematch-hint{font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.8rem}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ══ LOBBY ══════════════════════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="lobby-title">
+      <h1>🎱 BILLIARDS</h1>
+      <p>多人在线台球 · 八球制 · 实时对战</p>
+    </div>
+
+    <!-- Left: Create/Join -->
+    <div>
+      <div class="panel" style="margin-bottom:1rem">
+        <h3>加入游戏</h3>
+        <div class="input-row">
+          <input id="player-name" type="text" placeholder="输入昵称…" maxlength="16" autocomplete="off">
+          <button class="btn btn-gold" onclick="createRoom()">创建房间</button>
+        </div>
+
+        <details class="room-opts">
+          <summary>▶ 房间选项</summary>
+          <div class="opts-grid">
+            <div class="opt-item">
+              <label>玩法</label>
+              <select id="opt-gametype">
+                <option value="8ball">八球 (8-Ball)</option>
+                <option value="9ball" disabled>九球 (即将)</option>
+              </select>
+            </div>
+            <div class="opt-item disabled">
+              <label>回合限时 <span class="coming-soon">即将开放</span></label>
+              <select disabled>
+                <option>无限制</option>
+                <option>30 秒</option>
+                <option>60 秒</option>
+              </select>
+            </div>
+            <div class="opt-item disabled">
+              <label>球在手规则 <span class="coming-soon">即将开放</span></label>
+              <select disabled><option>任意位置</option><option>头区</option></select>
+            </div>
+            <div class="opt-item disabled">
+              <label>ELO 匹配 <span class="coming-soon">即将开放</span></label>
+              <select disabled><option>关闭</option><option>开启</option></select>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h3>在线房间</h3>
+        <div id="rooms-list" class="rooms-list">
+          <div class="rooms-empty">暂无房间，创建一个吧</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Leaderboard -->
+    <div class="panel">
+      <h3>排行榜</h3>
+      <div class="lb-tabs">
+        <div class="lb-tab active" onclick="switchLbTab('daily',this)">今日</div>
+        <div class="lb-tab" onclick="switchLbTab('allTime',this)">历史</div>
+      </div>
+      <div id="lb-content" class="lb-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WAITING ════════════════════════════════════════════════════════════ -->
+<div id="screen-waiting" class="screen">
+  <div class="waiting-box">
+    <div class="waiting-title">台球室</div>
+    <div class="waiting-room-id">房间号 <span id="w-room-id">—</span></div>
+    <div class="waiting-players">
+      <div class="player-slot" id="slot-0"><div class="slot-empty">等待玩家…</div></div>
+      <div class="player-slot" id="slot-1"><div class="slot-empty">等待玩家…</div></div>
+    </div>
+    <div class="waiting-actions">
+      <button class="btn btn-gold" id="ready-btn" onclick="toggleReady()">准备</button>
+      <button class="btn btn-outline" onclick="leaveRoom()">离开</button>
+    </div>
+    <div class="waiting-hint" id="waiting-hint">等待对手加入…</div>
+  </div>
+</div>
+
+<!-- ══ GAME ════════════════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <div class="game-hud">
+    <div class="hud-player" id="hud-p0">
+      <div class="p-score" id="hud-score-0">0</div>
+      <div>
+        <div class="p-name" id="hud-name-0">—</div>
+        <div class="p-type" id="hud-type-0">—</div>
+      </div>
+      <div class="p-balls" id="hud-balls-0"></div>
+    </div>
+    <div class="hud-turn" id="hud-turn">
+      <span class="turn-name" id="turn-name">—</span>
+      <div class="turn-indicator">⬤ 回合中</div>
+    </div>
+    <div class="hud-player" style="flex-direction:row-reverse" id="hud-p1">
+      <div class="p-score" id="hud-score-1">0</div>
+      <div style="text-align:right">
+        <div class="p-name" id="hud-name-1">—</div>
+        <div class="p-type" id="hud-type-1">—</div>
+      </div>
+      <div class="p-balls" id="hud-balls-1"></div>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-footer">
+    <div id="status-msg">—</div>
+    <div class="power-wrap" id="power-wrap" style="display:none">
+      <label>力度</label>
+      <div class="power-bar-outer"><div class="power-bar-fill" id="power-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-wrap" id="chat-msgs"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="发送消息…" maxlength="80" onkeydown="if(e.key==='Enter')sendChat()">
+    <button class="btn btn-outline" style="padding:.3rem .6rem;font-size:.75rem" onclick="sendChat()">发送</button>
+  </div>
+</div>
+
+<!-- ══ GAME OVER OVERLAY ══════════════════════════════════════════════════ -->
+<div id="overlay-gameover">
+  <div class="gameover-box">
+    <div class="gameover-result" id="go-result">—</div>
+    <div class="gameover-reason" id="go-reason">—</div>
+    <div class="gameover-actions">
+      <button class="btn btn-gold" onclick="requestRematch()">再来一局</button>
+      <button class="btn btn-outline" onclick="backToLobby()">返回大厅</button>
+    </div>
+    <div class="rematch-hint" id="rematch-hint"></div>
+  </div>
+</div>
+
+<!-- ══ Socket.io ══════════════════════════════════════════════════════════ -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ── Connection ──────────────────────────────────────────────────────────────
+const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const socket = io(IS_LOCAL ? 'http://localhost:3006' : '/', {
+  path: IS_LOCAL ? '/socket.io' : '/billiards/socket.io',
+  transports: ['websocket'],
+  reconnectionAttempts: 5,
+});
+
+// ── Physics constants ───────────────────────────────────────────────────────
+const LW = 920, LH = 500;          // Logical canvas size
+const TX = 50, TY = 55;            // Table origin
+const TW = 820, TH = 390;          // Table playable area
+const BALL_R = 13;
+const POCKET_R = 22;
+const FRICTION = 0.983;
+const WALL_REST = 0.72;
+const BALL_REST = 0.96;
+const MIN_V = 0.08;
+const MAX_POWER = 28;
+
+const POCKETS = [
+  {x:TX,       y:TY},
+  {x:TX+TW/2,  y:TY-6},
+  {x:TX+TW,    y:TY},
+  {x:TX,       y:TY+TH},
+  {x:TX+TW/2,  y:TY+TH+6},
+  {x:TX+TW,    y:TY+TH},
+];
+
+const BALL_COLORS = {
+  1:'#f5c518', 2:'#1565c0', 3:'#c62828', 4:'#6a1fa2',
+  5:'#e65100', 6:'#2e7d32', 7:'#4e342e', 8:'#111111',
+  9:'#f5c518',10:'#1565c0',11:'#c62828',12:'#6a1fa2',
+  13:'#e65100',14:'#2e7d32',15:'#4e342e',
+};
+
+// Standard 8-ball rack order (rows, 1-indexed from head)
+const RACK_ORDER = [
+  [1],
+  [2,9],
+  [3,8,10],
+  [4,11,12,5],
+  [13,6,14,7,15],
+];
+
+// ── App state ───────────────────────────────────────────────────────────────
+let playerName = '';
+let roomId = null;
+let playerIndex = -1;  // 0,1 = player, -1 = spectator
+let gameState = null;
+let isReady = false;
+
+// Client-side physics state
+let balls = [];
+let phase = 'idle';  // idle | aiming | simulating | placing_cue
+let aimAngle = 0;
+let power = 0;
+let charging = false;
+let chargeStart = 0;
+let justPocketed = [];
+let scratch = false;
+let shootingPlayerIdx = -1;
+let cueBallPlaceable = false;
+
+// Canvas & rendering
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let rafId = null;
+let canvasScale = 1;
+let mouseX = LW/2, mouseY = LH/2;
+
+// Leaderboard state
+let lbData = { daily:[], allTime:[] };
+let lbTab = 'daily';
+
+// ── Utility ─────────────────────────────────────────────────────────────────
+function ballTypeOf(n) {
+  if (n===0) return 'cue';
+  if (n===8) return 'eight';
+  return n<=7 ? 'solid' : 'stripe';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setStatus(msg, cls='') {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = cls;
+}
+
+// ── Canvas resize ────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const area = canvas.parentElement;
+  const aw = area.clientWidth, ah = area.clientHeight;
+  const scale = Math.min(aw/LW, ah/LH) * 0.98;
+  canvas.width = LW;
+  canvas.height = LH;
+  canvas.style.width  = (LW*scale)+'px';
+  canvas.style.height = (LH*scale)+'px';
+  canvasScale = scale;
+}
+window.addEventListener('resize', resizeCanvas);
+
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x:(cx-r.left)/canvasScale, y:(cy-r.top)/canvasScale };
+}
+
+// ── Ball init ────────────────────────────────────────────────────────────────
+function initBalls(serverPositions) {
+  balls = [];
+  const sp = BALL_R*2.02;
+  const rh = sp * Math.sin(Math.PI/3);
+  const footX = TX + TW*0.75;
+  const centerY = TY + TH/2;
+
+  if (serverPositions && Object.keys(serverPositions).length > 0) {
+    // Restore from server state (after re-sync)
+    for (let n=0; n<=15; n++) {
+      const pos = serverPositions[n];
+      if (pos) balls.push({num:n, x:pos.x, y:pos.y, vx:0, vy:0, pocketed:false});
+    }
+    // Mark pocketed balls from gameState
+    if (gameState?.pocketed) {
+      gameState.pocketed.forEach(num=>{
+        const b = balls.find(b=>b.num===num);
+        if (b) b.pocketed=true;
+      });
+    }
+  } else {
+    // Standard rack setup
+    // Cue ball
+    balls.push({num:0, x:TX+TW*0.25, y:centerY, vx:0, vy:0, pocketed:false});
+    // Rack
+    RACK_ORDER.forEach((row,r)=>{
+      row.forEach((num,c)=>{
+        balls.push({
+          num, pocketed:false, vx:0, vy:0,
+          x: footX + r*rh,
+          y: centerY + (c-(row.length-1)/2)*sp,
+        });
+      });
+    });
+  }
+}
+
+function syncBalls(serverPositions) {
+  if (!serverPositions) return;
+  Object.entries(serverPositions).forEach(([numStr,pos])=>{
+    const num = parseInt(numStr);
+    const b = balls.find(b=>b.num===num);
+    if (b) { b.x=pos.x; b.y=pos.y; b.vx=0; b.vy=0; b.pocketed=false; }
+  });
+  // Mark pocketed
+  if (gameState?.pocketed) {
+    gameState.pocketed.forEach(num=>{
+      const b = balls.find(b=>b.num===num);
+      if (b) b.pocketed=true;
+    });
+  }
+}
+
+// ── Physics ──────────────────────────────────────────────────────────────────
+function physicsStep() {
+  // Move + friction
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    b.x += b.vx; b.y += b.vy;
+    b.vx *= FRICTION; b.vy *= FRICTION;
+    if (Math.abs(b.vx)<MIN_V) b.vx=0;
+    if (Math.abs(b.vy)<MIN_V) b.vy=0;
+  }
+
+  // Pocket detection
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    for (const p of POCKETS) {
+      if (Math.hypot(b.x-p.x, b.y-p.y) < POCKET_R) {
+        b.pocketed=true; b.vx=0; b.vy=0;
+        justPocketed.push(b.num);
+        if (b.num===0) scratch=true;
+        break;
+      }
+    }
+  }
+
+  // Wall collisions (skip near pocket areas)
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    const nearPocket = POCKETS.some(p=>Math.hypot(b.x-p.x,b.y-p.y) < POCKET_R*2);
+    if (!nearPocket) {
+      if (b.x-b.r < TX)    { b.x=TX+b.r;       b.vx=Math.abs(b.vx)*WALL_REST; }
+      if (b.x+b.r > TX+TW) { b.x=TX+TW-b.r;    b.vx=-Math.abs(b.vx)*WALL_REST; }
+      if (b.y-b.r < TY)    { b.y=TY+b.r;       b.vy=Math.abs(b.vy)*WALL_REST; }
+      if (b.y+b.r > TY+TH) { b.y=TY+TH-b.r;    b.vy=-Math.abs(b.vy)*WALL_REST; }
+    }
+  }
+
+  // Ball-ball collisions (2 passes)
+  for (let pass=0; pass<2; pass++) {
+    for (let i=0; i<balls.length; i++) {
+      for (let j=i+1; j<balls.length; j++) {
+        const a=balls[i], b=balls[j];
+        if (a.pocketed||b.pocketed) continue;
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const dist=Math.hypot(dx,dy);
+        if (dist===0||dist>BALL_R*2) continue;
+        const overlap=(BALL_R*2-dist)/2;
+        const nx=dx/dist, ny=dy/dist;
+        a.x-=overlap*nx; a.y-=overlap*ny;
+        b.x+=overlap*nx; b.y+=overlap*ny;
+        const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
+        const dot=dvx*nx+dvy*ny;
+        if (dot<=0) continue;
+        const j2=dot*BALL_REST;
+        a.vx-=j2*nx; a.vy-=j2*ny;
+        b.vx+=j2*nx; b.vy+=j2*ny;
+      }
+    }
+  }
+
+  // Check all stopped
+  const allStopped = balls.every(b=>b.pocketed||(b.vx===0&&b.vy===0));
+  if (allStopped && phase==='simulating') {
+    onSimulationEnd();
+  }
+}
+
+function onSimulationEnd() {
+  phase = 'idle';
+  // Only shooter reports result
+  if (playerIndex === shootingPlayerIdx) {
+    const positions = {};
+    balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
+    socket.emit('shot-complete',{
+      roomId, pocketed:justPocketed, scratch, ballPositions:positions
+    });
+  }
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderTable() {
+  // Outer wood
+  ctx.fillStyle='#2a1505';
+  ctx.beginPath();
+  ctx.roundRect(0,0,LW,LH,12);
+  ctx.fill();
+
+  // Rail area
+  const railPad=8;
+  ctx.fillStyle='#1a4a2a';
+  ctx.fillRect(TX-railPad,TY-railPad,TW+railPad*2,TH+railPad*2);
+
+  // Cushion shadows
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(TX-2,TY-2,TW+4,TH+4);
+
+  // Felt
+  ctx.fillStyle='#2d6a42';
+  ctx.fillRect(TX,TY,TW,TH);
+
+  // Felt texture lines (subtle)
+  ctx.strokeStyle='rgba(0,60,20,0.2)';
+  ctx.lineWidth=1;
+  for (let x=TX;x<TX+TW;x+=40) {
+    ctx.beginPath(); ctx.moveTo(x,TY); ctx.lineTo(x,TY+TH); ctx.stroke();
+  }
+
+  // Center line
+  ctx.strokeStyle='rgba(255,255,255,0.06)';
+  ctx.setLineDash([4,8]);
+  ctx.beginPath(); ctx.moveTo(TX+TW/2,TY); ctx.lineTo(TX+TW/2,TY+TH); ctx.stroke();
+
+  // Head string (break line)
+  ctx.strokeStyle='rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.moveTo(TX+TW/4,TY); ctx.lineTo(TX+TW/4,TY+TH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Foot/head spot dots
+  [[TX+TW*3/4,TY+TH/2],[TX+TW/4,TY+TH/2]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fill();
+  });
+
+  // Pockets
+  POCKETS.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R+3,0,Math.PI*2);
+    ctx.fillStyle='#0a0805'; ctx.fill();
+    ctx.strokeStyle='rgba(60,30,0,0.8)'; ctx.lineWidth=3; ctx.stroke();
+    // Inner shadow
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R,0,Math.PI*2);
+    ctx.fillStyle='#050403'; ctx.fill();
+  });
+}
+
+function renderAimLine() {
+  const cue = balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+
+  const dx=Math.cos(aimAngle), dy=Math.sin(aimAngle);
+  const sx=cue.x+dx*(BALL_R+3), sy=cue.y+dy*(BALL_R+3);
+
+  // Find first ball hit
+  let minDist=Infinity, ghostX=0, ghostY=0, hitBall=false;
+  for (const b of balls) {
+    if (b.pocketed||b.num===0) continue;
+    const tbx=b.x-sx, tby=b.y-sy;
+    const proj=tbx*dx+tby*dy;
+    if (proj<0) continue;
+    const perpX=tbx-proj*dx, perpY=tby-proj*dy;
+    const pd2=perpX*perpX+perpY*perpY;
+    if (pd2>(BALL_R*2)**2) continue;
+    const cd=proj-Math.sqrt((BALL_R*2)**2-pd2);
+    if (cd>0&&cd<minDist) { minDist=cd; hitBall=true; }
+  }
+
+  // Wall distance
+  let wDist=Infinity;
+  if (dx>0) wDist=Math.min(wDist,(TX+TW-BALL_R-sx)/dx);
+  if (dx<0) wDist=Math.min(wDist,(TX+BALL_R-sx)/dx);
+  if (dy>0) wDist=Math.min(wDist,(TY+TH-BALL_R-sy)/dy);
+  if (dy<0) wDist=Math.min(wDist,(TY+BALL_R-sy)/dy);
+
+  const endDist=Math.min(hitBall?minDist:Infinity, wDist);
+  const ex=sx+dx*endDist, ey=sy+dy*endDist;
+
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,220,0.28)';
+  ctx.lineWidth=1.2;
+  ctx.setLineDash([6,9]);
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (hitBall) {
+    ctx.strokeStyle='rgba(255,255,255,0.18)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(ex,ey,BALL_R,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderCueStick() {
+  const cue = balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+
+  const pullback = charging ? Math.min((Date.now()-chargeStart)/1200,1)*24 : 0;
+  const tipGap = BALL_R+4+pullback;
+  const len = 200;
+  const angle = aimAngle + Math.PI; // cue points away from shot
+
+  const tipX = cue.x+Math.cos(angle)*tipGap;
+  const tipY = cue.y+Math.sin(angle)*tipGap;
+  const buttX = tipX+Math.cos(angle)*len;
+  const buttY = tipY+Math.sin(angle)*len;
+
+  ctx.save();
+  const grad=ctx.createLinearGradient(tipX,tipY,buttX,buttY);
+  grad.addColorStop(0,'#c4902a');
+  grad.addColorStop(0.3,'#7a4f22');
+  grad.addColorStop(1,'#3a2010');
+  ctx.strokeStyle=grad;
+  ctx.lineWidth=5;
+  ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(tipX,tipY); ctx.lineTo(buttX,buttY); ctx.stroke();
+  // Chalk tip
+  ctx.strokeStyle='#3e82c4';
+  ctx.lineWidth=6;
+  ctx.beginPath(); ctx.moveTo(tipX,tipY); ctx.lineTo(tipX+Math.cos(angle)*7,tipY+Math.sin(angle)*7); ctx.stroke();
+  ctx.restore();
+}
+
+function renderBall(b) {
+  if (b.pocketed) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+
+  if (b.num===0) {
+    // Cue ball
+    const g=ctx.createRadialGradient(b.x-4,b.y-4,1,b.x,b.y,BALL_R);
+    g.addColorStop(0,'#fff'); g.addColorStop(1,'#d8d4c8');
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=0.5; ctx.stroke();
+  } else if (b.num===8) {
+    ctx.fillStyle='#111'; ctx.fill();
+    // White circle
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.52,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.fillStyle='#111';
+    ctx.font=`bold ${Math.round(BALL_R*0.78)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('8',b.x,b.y+0.5);
+  } else if (b.num<=7) {
+    // Solid
+    const g=ctx.createRadialGradient(b.x-4,b.y-4,1,b.x,b.y,BALL_R);
+    g.addColorStop(0,lighten(BALL_COLORS[b.num],40)); g.addColorStop(1,BALL_COLORS[b.num]);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=0.5; ctx.stroke();
+    // Number circle
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.46,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.88)'; ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.font=`bold ${Math.round(BALL_R*0.68)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(b.num,b.x,b.y+0.5);
+  } else {
+    // Stripe
+    ctx.fillStyle='#f0ede4'; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
+    // Stripe band
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle=BALL_COLORS[b.num];
+    ctx.fillRect(b.x-BALL_R,b.y-BALL_R*0.42,BALL_R*2,BALL_R*0.84);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
+    // Number
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.46,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.font=`bold ${Math.round(BALL_R*0.62)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(b.num,b.x,b.y+0.5);
+  }
+  ctx.restore();
+}
+
+function lighten(hex, amount) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,(n>>16)+amount);
+  const g=Math.min(255,((n>>8)&0xff)+amount);
+  const b=Math.min(255,(n&0xff)+amount);
+  return `#${((r<<16)|(g<<8)|b).toString(16).padStart(6,'0')}`;
+}
+
+function renderPlaceCue() {
+  // Show ghost cue ball at mouse position
+  if (!cueBallPlaceable) return;
+  const inTable = mouseX>TX+BALL_R&&mouseX<TX+TW-BALL_R&&mouseY>TY+BALL_R&&mouseY<TY+TH-BALL_R;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(mouseX,mouseY,BALL_R,0,Math.PI*2);
+  ctx.fillStyle=inTable?'rgba(255,255,255,0.4)':'rgba(255,80,80,0.35)';
+  ctx.fill();
+  ctx.strokeStyle=inTable?'rgba(255,255,255,0.7)':'rgba(255,80,80,0.7)';
+  ctx.lineWidth=1.5; ctx.stroke();
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0,0,LW,LH);
+  renderTable();
+  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
+    renderAimLine();
+    renderCueStick();
+  }
+  balls.forEach(renderBall);
+  if (phase==='placing_cue') renderPlaceCue();
+  if (phase==='simulating') physicsStep();
+  rafId = requestAnimationFrame(render);
+}
+
+// ── Power bar ─────────────────────────────────────────────────────────────────
+function updatePowerUI() {
+  if (!charging) return;
+  const p = Math.min((Date.now()-chargeStart)/1200,1);
+  document.getElementById('power-fill').style.width=(p*100)+'%';
+  requestAnimationFrame(updatePowerUI);
+}
+
+// ── Input ────────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e=>{
+  const pos = canvasPos(e);
+  mouseX=pos.x; mouseY=pos.y;
+  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
+    const cue=balls.find(b=>b.num===0&&!b.pocketed);
+    if (cue) aimAngle=Math.atan2(pos.y-cue.y,pos.x-cue.x);
+  }
+});
+
+canvas.addEventListener('mousedown', e=>{
+  if (e.button!==0) return;
+  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
+    charging=true; chargeStart=Date.now();
+    document.getElementById('power-wrap').style.display='flex';
+    updatePowerUI();
+  } else if (phase==='placing_cue' && cueBallPlaceable) {
+    const pos=canvasPos(e);
+    if (pos.x>TX+BALL_R&&pos.x<TX+TW-BALL_R&&pos.y>TY+BALL_R&&pos.y<TY+TH-BALL_R) {
+      socket.emit('place-cue-ball',{roomId,x:pos.x,y:pos.y});
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', e=>{
+  if (!charging) return;
+  charging=false;
+  document.getElementById('power-wrap').style.display='none';
+  document.getElementById('power-fill').style.width='0%';
+  const powerFrac = Math.min((Date.now()-chargeStart)/1200,1);
+  if (powerFrac < 0.03) return; // ignore tiny taps
+  shoot(powerFrac);
+});
+
+canvas.addEventListener('mouseleave', ()=>{ charging=false; });
+
+// Touch support
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousedown',{button:0,clientX:e.touches[0].clientX,clientY:e.touches[0].clientY})); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY})); },{passive:false});
+canvas.addEventListener('touchend',   e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mouseup',{button:0})); },{passive:false});
+
+function shoot(powerFrac) {
+  if (phase!=='aiming'||playerIndex!==gameState?.currentTurn) return;
+  const cue=balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+  const positions={};
+  balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
+  socket.emit('shoot',{roomId,angle:aimAngle,power:powerFrac,ballPositions:positions});
+}
+
+// ── Socket events ────────────────────────────────────────────────────────────
+socket.on('connect', ()=>{ socket.emit('get-init'); });
+
+socket.on('rooms-update', list=>{
+  const el=document.getElementById('rooms-list');
+  if (!list.length){ el.innerHTML='<div class="rooms-empty">暂无房间，创建一个吧</div>'; return; }
+  el.innerHTML=list.map(r=>`
+    <div class="room-item">
+      <div class="room-info">
+        <div class="room-id">${r.id}</div>
+        <div class="room-meta">${r.playerNames.join(' vs ') || '等待玩家'} · ${r.players}/2</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.6rem">
+        <span class="room-status ${r.status}">${r.status==='waiting'?'等待中':'游戏中'}</span>
+        ${r.status==='waiting'&&r.players<2?`<button class="btn btn-outline" style="padding:.3rem .7rem;font-size:.78rem" onclick="joinRoom('${r.id}')">加入</button>`:''}
+      </div>
+    </div>`).join('');
+});
+
+socket.on('stats-update', data=>{ lbData=data; renderLeaderboard(); });
+
+socket.on('room-joined', ({roomId:rid, playerIndex:pi, gameState:gs})=>{
+  roomId=rid; playerIndex=pi; gameState=gs;
+  document.getElementById('w-room-id').textContent=rid;
+  isReady=false;
+  updateWaitingScreen();
+  showScreen('screen-waiting');
+});
+
+socket.on('join-error', msg=>alert(msg));
+
+socket.on('game-state', gs=>{
+  gameState=gs;
+  if (gs.status==='playing' && phase==='idle') {
+    startGame();
+  } else if (gs.status==='playing') {
+    updateGamePhaseFromServer(gs);
+  }
+  updateWaitingScreen();
+  updateHUD();
+});
+
+socket.on('shot-fired', ({angle, power:pw, shooterIdx, ballPositions})=>{
+  if (phase!=='simulating') {
+    shootingPlayerIdx=shooterIdx;
+    justPocketed=[];
+    scratch=false;
+    syncBalls(ballPositions);
+    const cue=balls.find(b=>b.num===0&&!b.pocketed);
+    if (cue) {
+      cue.vx=Math.cos(angle)*pw*MAX_POWER;
+      cue.vy=Math.sin(angle)*pw*MAX_POWER;
+    }
+    phase='simulating';
+    setStatus('飞球中…','warn');
+  }
+});
+
+socket.on('shot-result', ({result, gameState:gs})=>{
+  gameState=gs;
+  phase='idle';
+  cueBallPlaceable=false;
+
+  if (result.type==='game_over') {
+    const isWin = gs.players[result.winner]?.socketId===socket.id;
+    showGameOver(isWin, result.reason, gs);
+    updateHUD();
+    return;
+  }
+
+  // Update ball state from server
+  syncBalls(gs.ballPositions);
+
+  if (gs.phase==='placing_cue') {
+    phase='placing_cue';
+    // Is it MY job to place? (opponent of scratched player)
+    const scratchedIdx = result.nextTurn === undefined ? gs.currentTurn : (gs.currentTurn===0?1:0);
+    cueBallPlaceable = (playerIndex !== scratchedIdx) && playerIndex>=0;
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':'等待对手放置母球…', cueBallPlaceable?'my':'');
+  } else {
+    phase='aiming';
+    updateTurnUI(gs);
+  }
+  updateHUD();
+});
+
+socket.on('player-left', ({name, gameState:gs})=>{
+  gameState=gs;
+  updateHUD();
+  if (gs.status==='finished') showGameOver(true,'opponent_left',gs);
+});
+
+socket.on('rematch-start', ({gameState:gs})=>{
+  gameState=gs;
+  document.getElementById('overlay-gameover').classList.remove('show');
+  document.getElementById('rematch-hint').textContent='';
+  startGame();
+});
+
+socket.on('rematch-requested', ({name})=>{
+  document.getElementById('rematch-hint').textContent=`${name} 想再来一局`;
+});
+
+socket.on('chat', ({name,msg})=>{
+  addChatMsg(name,msg);
+});
+
+// ── Game start ───────────────────────────────────────────────────────────────
+function startGame() {
+  initBalls(gameState.ballPositions&&Object.keys(gameState.ballPositions).length>0?gameState.ballPositions:null);
+  phase='aiming';
+  cueBallPlaceable=false;
+  justPocketed=[];
+  scratch=false;
+  showScreen('screen-game');
+  resizeCanvas();
+  if (rafId) cancelAnimationFrame(rafId);
+  render();
+  updateHUD();
+  updateTurnUI(gameState);
+}
+
+function updateGamePhaseFromServer(gs) {
+  if (gs.phase==='placing_cue' && phase!=='placing_cue') {
+    phase='placing_cue';
+    const idx = gs.currentTurn===0?1:0; // who scratched (before turn swap)
+    cueBallPlaceable = playerIndex>=0 && playerIndex!==idx;
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':'等待对手放置母球…', cueBallPlaceable?'my':'');
+  } else if (gs.phase==='aiming' && phase!=='aiming') {
+    phase='aiming';
+    updateTurnUI(gs);
+  }
+}
+
+function updateTurnUI(gs) {
+  const isMyTurn = playerIndex===gs.currentTurn;
+  const turnerName = gs.players[gs.currentTurn]?.name || '—';
+  document.getElementById('turn-name').textContent = isMyTurn?'你的回合':turnerName;
+  const hudTurn = document.getElementById('hud-turn');
+  hudTurn.className = 'hud-turn'+(isMyTurn?' my-turn':'');
+  if (isMyTurn) setStatus('你的回合，按住鼠标蓄力，松开出杆','my');
+  else setStatus(`${turnerName} 的回合…`);
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+const TYPE_LABELS = {solid:'实心球',stripe:'条纹球',null:'—'};
+const BALL_DOTS_SOLID = [1,2,3,4,5,6,7];
+const BALL_DOTS_STRIPE = [9,10,11,12,13,14,15];
+
+function updateHUD() {
+  if (!gameState) return;
+  const ps = gameState.players;
+  [0,1].forEach(i=>{
+    const p=ps[i];
+    if (!p) return;
+    document.getElementById(`hud-name-${i}`).textContent=p.name||'—';
+    document.getElementById(`hud-score-${i}`).textContent=p.score||0;
+    const typeEl=document.getElementById(`hud-type-${i}`);
+    typeEl.textContent=p.type?TYPE_LABELS[p.type]:'未定';
+    typeEl.className='p-type '+(p.type||'');
+    // Ball dots
+    const dotsEl=document.getElementById(`hud-balls-${i}`);
+    const myBalls=p.type==='solid'?BALL_DOTS_SOLID:p.type==='stripe'?BALL_DOTS_STRIPE:[];
+    dotsEl.innerHTML=myBalls.map(n=>{
+      const pocketed=gameState.pocketed?.includes(n);
+      return `<span class="ball-dot" style="background:${pocketed?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${pocketed?'opacity:.3':''}"></span>`;
+    }).join('');
+  });
+}
+
+// ── Waiting screen ────────────────────────────────────────────────────────────
+function updateWaitingScreen() {
+  if (!gameState) return;
+  const ps=gameState.players;
+  [0,1].forEach(i=>{
+    const slot=document.getElementById(`slot-${i}`);
+    const p=ps[i];
+    if (p) {
+      const isMe=p.socketId===socket.id;
+      slot.className='player-slot filled';
+      slot.innerHTML=`
+        <div class="slot-avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="slot-name">${p.name}${isMe?' (你)':''}</div>
+        <span class="${p.ready?'ready-badge':'not-ready-badge'}">${p.ready?'✓ 已准备':'未准备'}</span>`;
+    } else {
+      slot.className='player-slot';
+      slot.innerHTML='<div class="slot-empty">等待玩家…</div>';
+    }
+  });
+  const hint=document.getElementById('waiting-hint');
+  const readyBtn=document.getElementById('ready-btn');
+  if (ps.length<2) {
+    hint.textContent='等待对手加入…';
+    readyBtn.disabled=true; readyBtn.style.opacity='0.4';
+  } else {
+    hint.textContent='双方准备后自动开始';
+    readyBtn.disabled=false; readyBtn.style.opacity='1';
+    readyBtn.textContent=isReady?'取消准备':'准备';
+  }
+}
+
+// ── Game over ─────────────────────────────────────────────────────────────────
+const REASON_TEXT = {
+  win: '球技精湛，完美获胜！',
+  early_eight: '对手提前打进8号球',
+  scratch_on_eight: '打进8号球时犯规',
+  opponent_left: '对手已离开',
+  loss_early_eight: '失误提前打进8号球',
+};
+
+function showGameOver(win, reason, gs) {
+  const overlay=document.getElementById('overlay-gameover');
+  document.getElementById('go-result').textContent=win?'🏆 胜利！':'😔 失败';
+  document.getElementById('go-result').className='gameover-result '+(win?'win':'lose');
+  document.getElementById('go-reason').textContent=REASON_TEXT[reason]||reason;
+  document.getElementById('rematch-hint').textContent='';
+  overlay.classList.add('show');
+  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function addChatMsg(name, msg) {
+  const wrap=document.getElementById('chat-msgs');
+  const el=document.createElement('div');
+  el.className='chat-msg';
+  el.textContent=`${name}: ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(),4200);
+}
+
+function sendChat() {
+  const input=document.getElementById('chat-input');
+  const msg=input.value.trim();
+  if (!msg||!roomId) return;
+  socket.emit('chat',{roomId,msg});
+  input.value='';
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+function switchLbTab(tab, el) {
+  lbTab=tab;
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const list=lbData[lbTab]||[];
+  const el=document.getElementById('lb-content');
+  if (!list.length){ el.innerHTML='<div class="lb-empty">暂无数据</div>'; return; }
+  const rankClass=['gold','silver','bronze'];
+  el.innerHTML=list.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${rankClass[i]||''}">${i<3?['🥇','🥈','🥉'][i]:i+1}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-wins">${p.wins}胜</div>
+      <div class="lb-rate">${p.winRate}%</div>
+    </div>`).join('');
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function createRoom() {
+  playerName=document.getElementById('player-name').value.trim();
+  if (!playerName) { alert('请输入昵称'); return; }
+  const options = { gameType: document.getElementById('opt-gametype').value };
+  socket.emit('create-room',{name:playerName,options});
+}
+
+function joinRoom(rid) {
+  playerName=document.getElementById('player-name').value.trim();
+  if (!playerName) { alert('请输入昵称'); return; }
+  socket.emit('join-room',{name:playerName,roomId:rid});
+}
+
+function toggleReady() {
+  isReady=!isReady;
+  socket.emit('set-ready',{roomId,ready:isReady});
+  document.getElementById('ready-btn').textContent=isReady?'取消准备':'准备';
+}
+
+function leaveRoom() {
+  if (roomId) socket.emit('leave-room',{roomId});
+  roomId=null; playerIndex=-1; gameState=null; isReady=false;
+  phase='idle';
+  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+  showScreen('screen-lobby');
+}
+
+function requestRematch() {
+  socket.emit('request-rematch',{roomId});
+  document.getElementById('rematch-hint').textContent='等待对手确认…';
+}
+
+function backToLobby() {
+  document.getElementById('overlay-gameover').classList.remove('show');
+  leaveRoom();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+resizeCanvas();
+showScreen('screen-lobby');
+</script>
+</body>
+</html>
