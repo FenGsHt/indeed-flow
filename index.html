@@ -855,7 +855,15 @@
       try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
     }
     function lsSet(key, val) {
-      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('localStorage写入失败:', e); }
+      try {
+        const str = JSON.stringify(val);
+        // 2026-03-19: 防止缓存累积过大（>500KB 时清除该 key 重新写入）
+        if (str.length > 512000) {
+          localStorage.removeItem(key);
+          return;
+        }
+        localStorage.setItem(key, str);
+      } catch(e) { console.warn('localStorage写入失败:', e); }
     }
 
     // 内存缓存（同一页面内不重复请求）
@@ -1054,13 +1062,21 @@
       searchSteamImage(currentGame.name, 'detail-image', 'detail-image-preview');
     }
 
-    // Tab切换
+    // Tab切换 + 懒加载
+    // 2026-03-19: 新闻数据延迟到用户首次点击 news tab 时加载
+    const _tabLoaded = {};
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', function() {
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+        const tabName = this.dataset.tab;
+        document.getElementById('tab-' + tabName).classList.add('active');
+        if (tabName === 'news' && !_tabLoaded.news) {
+          _tabLoaded.news = true;
+          loadHot();
+          loadIran();
+        }
       });
     });
 
@@ -1894,8 +1910,7 @@
 
     loadGames();
     loadSteamRecommendations();
-    loadHot();
-    loadIran();
+    // 2026-03-19: loadHot() 和 loadIran() 改为懒加载，点击 news tab 时才触发
   </script>
 
   <!-- 2026-03-19: page-agent AI 助手（模块化接入，不影响其他功能） -->
