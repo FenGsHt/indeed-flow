@@ -207,8 +207,10 @@
       </ul>
       <div class="theme-switcher">
         <div class="theme-switcher-title">主题切换</div>
-        <button class="theme-option active" data-theme="nexus">Nexus 赛博</button>
-        <button class="theme-option" data-theme="classic">Classic 经典</button>
+        <div class="theme-switcher-options">
+          <button class="theme-option active" data-theme="nexus">Nexus</button>
+          <button class="theme-option" data-theme="classic">Classic</button>
+        </div>
       </div>
       <div class="mini-games-widget">
         <a href="./games.html" style="text-decoration:none;color:inherit;">
@@ -258,43 +260,43 @@
       <!-- 游戏内容 -->
       <div id="tab-game" class="tab-content active">
       <!-- 在线游戏入口 -->
-      <div class="online-games-section" style="margin-bottom: 2rem;">
-        <div style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.8);">🎮 在线游戏</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-          <a href="./games/snake/client/index.html" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(0,255,136,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">🐍</div>
+      <!-- 2026-03-20: 重构在线游戏卡片，移除内联样式，支持主题切换 -->
+      <div class="online-games-section">
+        <div class="online-games-title">🎮 在线游戏</div>
+        <div class="online-games-grid">
+          <a href="./games/snake/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="green">
+              <div class="game-card-icon">🐍</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">多人贪吃蛇</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">实时多人 • 吃豆变长 • 积分榜</div>
+                <div class="game-card-name">多人贪吃蛇</div>
+                <div class="game-card-desc">实时多人 · 吃豆变长 · 积分榜</div>
               </div>
             </div>
           </a>
-          <a href="./games/minesweeper/client/" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,215,0,0.2)); border: 1px solid rgba(255,107,107,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">💣</div>
+          <a href="./games/minesweeper/client/" class="online-game-link">
+            <div class="online-game-card" data-accent="red">
+              <div class="game-card-icon">💣</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">扫雷</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">经典怀旧 • 排雷专家</div>
+                <div class="game-card-name">扫雷</div>
+                <div class="game-card-desc">经典怀旧 · 排雷专家</div>
               </div>
             </div>
           </a>
-          <a href="./games/uno/client/index.html" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(229,57,53,0.2), rgba(255,112,67,0.2)); border: 1px solid rgba(229,57,53,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">🃏</div>
+          <a href="./games/uno/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="orange">
+              <div class="game-card-icon">🃏</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">UNO 对战</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">多人实时 • 喊UNO • 2~10人</div>
+                <div class="game-card-name">UNO 对战</div>
+                <div class="game-card-desc">多人实时 · 喊UNO · 2~10人</div>
               </div>
             </div>
           </a>
-          <!-- 2026-03-19: 吹牛骰入口 -->
-          <a href="./games/dice/client/index.html" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(212,166,70,0.2), rgba(232,195,106,0.2)); border: 1px solid rgba(212,166,70,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">🎲</div>
+          <a href="./games/dice/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="gold">
+              <div class="game-card-icon">🎲</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">吹牛骰</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">酒馆骰子 • 2~8人 • 真话与谎言</div>
+                <div class="game-card-name">吹牛骰</div>
+                <div class="game-card-desc">酒馆骰子 · 2~8人 · 真话与谎言</div>
               </div>
             </div>
           </a>

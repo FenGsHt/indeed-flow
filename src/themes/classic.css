@@ -565,6 +565,23 @@
   margin: 0 auto;
 }
 
+/* 2026-03-20: 经典主题在线游戏卡片配色 */
+[data-theme="classic"] .online-game-card[data-accent="green"] {
+  background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,212,255,0.2));
+  border: 1px solid rgba(0,255,136,0.3);
+}
+[data-theme="classic"] .online-game-card[data-accent="red"] {
+  background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,215,0,0.2));
+  border: 1px solid rgba(255,107,107,0.3);
+}
+[data-theme="classic"] .online-game-card[data-accent="orange"] {
+  background: linear-gradient(135deg, rgba(229,57,53,0.2), rgba(255,112,67,0.2));
+  border: 1px solid rgba(229,57,53,0.3);
+}
+[data-theme="classic"] .online-game-card[data-accent="gold"] {
+  background: linear-gradient(135deg, rgba(212,166,70,0.2), rgba(232,195,106,0.2));
+  border: 1px solid rgba(212,166,70,0.3);
+}
 [data-theme="classic"] .online-game-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0,255,136,0.3);
