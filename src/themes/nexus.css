@@ -406,11 +406,19 @@
 }
 
 /* ===== 游戏卡片 (Nexus) ===== */
+/* Mobile-first: 2 columns default, expands on desktop */
 [data-theme="nexus"] .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
   padding-bottom: 60px;
+}
+
+@media (min-width: 769px) {
+  [data-theme="nexus"] .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 24px;
+  }
 }
 
 [data-theme="nexus"] .game-card {
@@ -621,10 +629,18 @@
   color: var(--text-muted);
 }
 
+/* Mobile-first: 2 columns default */
 [data-theme="nexus"] .steam-rec-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 769px) {
+  [data-theme="nexus"] .steam-rec-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
 }
 
 [data-theme="nexus"] .steam-rec-card {
@@ -810,6 +826,19 @@
 }
 
 /* ===== 在线游戏区域 ===== */
+/* Mobile-first: 2 columns, desktop expands via auto-fit */
+[data-theme="nexus"] .online-games-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 769px) {
+  [data-theme="nexus"] .online-games-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+}
+
 [data-theme="nexus"] .online-games-section .online-games-title {
   font-family: var(--font-title) !important;
   font-size: 0.85rem !important;
@@ -1016,7 +1045,7 @@
 
   /* ── 页头统计 ── */
   [data-theme="nexus"] .page-header {
-    flex-direction: row;
+    flex-direction: row !important;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
@@ -1051,10 +1080,6 @@
   }
 
   /* ── 在线游戏 ── */
-  [data-theme="nexus"] .online-games-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
   [data-theme="nexus"] .online-game-card {
     padding: 0.85rem 0.9rem !important;
     gap: 0.65rem !important;
@@ -1065,19 +1090,11 @@
   [data-theme="nexus"] .online-game-card .game-card-desc { font-size: 0.68rem; }
 
   /* ── 游戏卡片网格 ── */
-  [data-theme="nexus"] .games-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
   [data-theme="nexus"] .game-cover { height: 100px; }
   [data-theme="nexus"] .game-name { font-size: 1rem; }
   [data-theme="nexus"] .game-info { padding: 12px; }
 
   /* ── Steam 推荐 ── */
-  [data-theme="nexus"] .steam-rec-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
   [data-theme="nexus"] .steam-rec-image { height: 80px; }
   [data-theme="nexus"] .steam-recommendations {
     padding: 1rem;
