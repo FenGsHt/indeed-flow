@@ -199,6 +199,7 @@
 [data-theme="nexus"] .theme-switcher-options {
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 
 [data-theme="nexus"] .theme-option {
