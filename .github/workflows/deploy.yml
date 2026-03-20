@@ -64,6 +64,8 @@ jobs:
                       ${{ secrets.SERVER_PATH }}/games/snake/server \
                       ${{ secrets.SERVER_PATH }}/games/dice/client \
                       ${{ secrets.SERVER_PATH }}/games/dice/server \
+                      ${{ secrets.SERVER_PATH }}/games/billiards/client \
+                      ${{ secrets.SERVER_PATH }}/games/billiards/server \
                       ${{ secrets.SERVER_PATH }}/backend && \
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
@@ -311,6 +313,63 @@ jobs:
              || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
                && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload \
                && echo 'nginx reloaded OK (sudo)') \
+             || echo 'WARNING: nginx reload failed'"
+
+      - name: Deploy billiards client
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa \
+              games/billiards/client/index.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/client/
+            scp -i ~/.ssh/id_rsa \
+              games/billiards/ecosystem.config.js \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/
+
+      - name: Deploy billiards server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r games/billiards/server/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/server/
+
+      - name: Start billiards server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+               cd ${{ secrets.SERVER_PATH }}/games/billiards/server && \
+               ([ ! -d node_modules ] && npm install --no-audit || \
+                (md5sum package.json > /tmp/billiards_pkg_hash_new && \
+                 (diff -q /tmp/billiards_pkg_hash_new /tmp/billiards_pkg_hash_old > /dev/null 2>&1 || \
+                  (npm install --no-audit && cp /tmp/billiards_pkg_hash_new /tmp/billiards_pkg_hash_old)))) && \
+               pm2 stop billiards-server 2>/dev/null; \
+               pm2 delete billiards-server 2>/dev/null; \
+               fuser -k 3006/tcp 2>/dev/null || true; \
+               pm2 start server.js --name billiards-server && \
+               pm2 save"
+
+      - name: Configure nginx proxy for billiards WebSocket
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_billiards_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_billiards_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_billiards_proxy.py; \
+             rm -f /tmp/nginx_add_billiards_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
              || echo 'WARNING: nginx reload failed'"
 
       - name: Configure nginx proxy for Flask API
