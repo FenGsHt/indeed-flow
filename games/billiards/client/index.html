@@ -494,67 +494,86 @@ function syncBalls(serverPositions) {
 }
 
 // ── Physics ──────────────────────────────────────────────────────────────────
+const SUBSTEPS = 3;
+const DIAMETER  = BALL_R * 2;
+const DIAMETER2 = DIAMETER * DIAMETER;
+const POCKET_R2 = POCKET_R * POCKET_R;
+
 function physicsStep() {
-  // Move + friction
+  // Friction once per frame (velocity update)
   for (const b of balls) {
     if (b.pocketed) continue;
-    b.x += b.vx; b.y += b.vy;
     b.vx *= FRICTION; b.vy *= FRICTION;
-    if (Math.abs(b.vx)<MIN_V) b.vx=0;
-    if (Math.abs(b.vy)<MIN_V) b.vy=0;
+    if (Math.abs(b.vx) < MIN_V) b.vx = 0;
+    if (Math.abs(b.vy) < MIN_V) b.vy = 0;
   }
 
-  // Pocket detection
-  for (const b of balls) {
-    if (b.pocketed) continue;
-    for (const p of POCKETS) {
-      if (Math.hypot(b.x-p.x, b.y-p.y) < POCKET_R) {
-        b.pocketed=true; b.vx=0; b.vy=0;
-        justPocketed.push(b.num);
-        if (b.num===0) scratch=true;
-        break;
+  // Sub-stepped integration: smaller position steps = accurate pocket/wall/ball detection
+  for (let s = 0; s < SUBSTEPS; s++) {
+
+    // ── Move ──
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      b.x += b.vx / SUBSTEPS;
+      b.y += b.vy / SUBSTEPS;
+    }
+
+    // ── Pocket detection (squared distance, no sqrt) ──
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      for (const p of POCKETS) {
+        const pdx=b.x-p.x, pdy=b.y-p.y;
+        if (pdx*pdx+pdy*pdy < POCKET_R2) {
+          b.pocketed=true; b.vx=0; b.vy=0;
+          justPocketed.push(b.num);
+          if (b.num===0) scratch=true;
+          break;
+        }
+      }
+    }
+
+    // ── Wall collisions (skip near pockets so balls don't bounce back out) ──
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      const np = POCKETS.some(p=>{ const dx=b.x-p.x,dy=b.y-p.y; return dx*dx+dy*dy<(POCKET_R*2.2)**2; });
+      if (!np) {
+        if (b.x - BALL_R < TX)    { b.x = TX+BALL_R;    b.vx =  Math.abs(b.vx)*WALL_REST; }
+        if (b.x + BALL_R > TX+TW) { b.x = TX+TW-BALL_R; b.vx = -Math.abs(b.vx)*WALL_REST; }
+        if (b.y - BALL_R < TY)    { b.y = TY+BALL_R;    b.vy =  Math.abs(b.vy)*WALL_REST; }
+        if (b.y + BALL_R > TY+TH) { b.y = TY+TH-BALL_R; b.vy = -Math.abs(b.vy)*WALL_REST; }
+      }
+    }
+
+    // ── Ball-ball collisions (4 passes, squared-dist fast reject) ──
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i+1; j < balls.length; j++) {
+          const a = balls[i], b = balls[j];
+          if (a.pocketed || b.pocketed) continue;
+          const dx = b.x-a.x, dy = b.y-a.y;
+          const dist2 = dx*dx + dy*dy;
+          if (dist2 === 0 || dist2 >= DIAMETER2) continue;
+          const dist = Math.sqrt(dist2);
+          const nx = dx/dist, ny = dy/dist;
+          // Separate overlapping balls
+          const push = (DIAMETER - dist) * 0.5;
+          a.x -= push*nx; a.y -= push*ny;
+          b.x += push*nx; b.y += push*ny;
+          // Velocity impulse along collision normal
+          const dvx = a.vx-b.vx, dvy = a.vy-b.vy;
+          const dot = dvx*nx + dvy*ny;
+          if (dot <= 0) continue;
+          const imp = dot * BALL_REST;
+          a.vx -= imp*nx; a.vy -= imp*ny;
+          b.vx += imp*nx; b.vy += imp*ny;
+        }
       }
     }
   }
 
-  // Wall collisions (skip near pocket areas)
-  for (const b of balls) {
-    if (b.pocketed) continue;
-    const nearPocket = POCKETS.some(p=>Math.hypot(b.x-p.x,b.y-p.y) < POCKET_R*2);
-    if (!nearPocket) {
-      if (b.x-BALL_R < TX)    { b.x=TX+BALL_R;       b.vx=Math.abs(b.vx)*WALL_REST; }
-      if (b.x+BALL_R > TX+TW) { b.x=TX+TW-BALL_R;    b.vx=-Math.abs(b.vx)*WALL_REST; }
-      if (b.y-BALL_R < TY)    { b.y=TY+BALL_R;       b.vy=Math.abs(b.vy)*WALL_REST; }
-      if (b.y+BALL_R > TY+TH) { b.y=TY+TH-BALL_R;    b.vy=-Math.abs(b.vy)*WALL_REST; }
-    }
-  }
-
-  // Ball-ball collisions (2 passes)
-  for (let pass=0; pass<2; pass++) {
-    for (let i=0; i<balls.length; i++) {
-      for (let j=i+1; j<balls.length; j++) {
-        const a=balls[i], b=balls[j];
-        if (a.pocketed||b.pocketed) continue;
-        const dx=b.x-a.x, dy=b.y-a.y;
-        const dist=Math.hypot(dx,dy);
-        if (dist===0||dist>BALL_R*2) continue;
-        const overlap=(BALL_R*2-dist)/2;
-        const nx=dx/dist, ny=dy/dist;
-        a.x-=overlap*nx; a.y-=overlap*ny;
-        b.x+=overlap*nx; b.y+=overlap*ny;
-        const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
-        const dot=dvx*nx+dvy*ny;
-        if (dot<=0) continue;
-        const j2=dot*BALL_REST;
-        a.vx-=j2*nx; a.vy-=j2*ny;
-        b.vx+=j2*nx; b.vy+=j2*ny;
-      }
-    }
-  }
-
-  // Check all stopped
-  const allStopped = balls.every(b=>b.pocketed||(b.vx===0&&b.vy===0));
-  if (allStopped && phase==='simulating') {
+  // All stopped?
+  const allStopped = balls.every(b => b.pocketed || (b.vx === 0 && b.vy === 0));
+  if (allStopped && phase === 'simulating') {
     onSimulationEnd();
   }
 }
@@ -657,7 +676,8 @@ function renderAimLine() {
   const cue = balls.find(b=>b.num===0&&!b.pocketed);
   if (!cue) return;
 
-  const dx=Math.cos(aimAngle), dy=Math.sin(aimAngle);
+  // aimAngle points towards mouse (pull-back direction); shoot = opposite
+  const dx=-Math.cos(aimAngle), dy=-Math.sin(aimAngle);
   const sx=cue.x+dx*(BALL_R+3), sy=cue.y+dy*(BALL_R+3);
 
   // Find first ball hit
@@ -886,8 +906,8 @@ function shoot(powerFrac) {
     practiceShots++;
     justPocketed=[];
     scratch=false;
-    cue.vx=Math.cos(aimAngle)*powerFrac*MAX_POWER;
-    cue.vy=Math.sin(aimAngle)*powerFrac*MAX_POWER;
+    cue.vx=-Math.cos(aimAngle)*powerFrac*MAX_POWER;
+    cue.vy=-Math.sin(aimAngle)*powerFrac*MAX_POWER;
     phase='simulating';
     setStatus('飞球中…','warn');
     return;
@@ -948,8 +968,8 @@ socket.on('shot-fired', ({angle, power:pw, shooterIdx, ballPositions})=>{
     syncBalls(ballPositions);
     const cue=balls.find(b=>b.num===0&&!b.pocketed);
     if (cue) {
-      cue.vx=Math.cos(angle)*pw*MAX_POWER;
-      cue.vy=Math.sin(angle)*pw*MAX_POWER;
+      cue.vx=-Math.cos(angle)*pw*MAX_POWER;
+      cue.vy=-Math.sin(angle)*pw*MAX_POWER;
     }
     phase='simulating';
     setStatus('飞球中…','warn');
