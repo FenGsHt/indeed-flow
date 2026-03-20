@@ -134,6 +134,7 @@
   gap: 6px;
   padding: 0;
   margin: 0;
+  flex: 1 1 auto;
 }
 
 [data-theme="nexus"] .nav-item {
@@ -177,8 +178,6 @@
 }
 
 /* 主题切换器 */
-/* 主题切换器 */
-/* 2026-03-20: flex-shrink:0 + 去掉 margin-top:auto 避免撑满剩余空间 */
 [data-theme="nexus"] .theme-switcher {
   margin: 16px 24px 12px;
   padding: 10px 12px;
@@ -231,6 +230,8 @@
 /* 迷你游戏卡片 */
 [data-theme="nexus"] .mini-games-widget {
   margin: 12px 24px 24px;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 [data-theme="nexus"] .widget-card {
