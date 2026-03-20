@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>多人台球</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -165,6 +168,87 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+
+/* ── Portrait lock overlay ─────────────────────────────────────────────── */
+#portrait-overlay{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:#0a0805;
+  flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;
+  padding:2rem;text-align:center;
+}
+#portrait-overlay.show{display:flex}
+.rotate-icon{font-size:3.8rem;animation:rotHint 1.6s ease-in-out infinite}
+@keyframes rotHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+.rotate-title{font-size:1.15rem;font-weight:800;color:#d4a017}
+.rotate-sub{font-size:0.82rem;color:rgba(255,255,255,0.45);line-height:1.5;max-width:240px}
+
+/* ── Mobile landscape game UI ──────────────────────────────────────────── */
+/* max-height:520px covers iPhone SE landscape (568px) and most phones     */
+@media (max-height:520px) and (orientation:landscape){
+
+  /* HUD: one tight row */
+  .game-hud{
+    padding:0.2rem 0.6rem;
+    min-height:34px;
+  }
+  .hud-player .p-type,.hud-player .p-balls{display:none}
+  .hud-player .p-name{font-size:0.75rem}
+  .hud-player .p-score{font-size:0.88rem}
+  .hud-turn{min-width:72px;font-size:0.68rem}
+  .hud-turn .turn-name{font-size:0.8rem}
+  .hud-turn .turn-indicator{display:none}
+
+  /* Footer: super compact */
+  .game-footer{
+    padding:0.18rem 0.7rem;
+    min-height:30px;
+    gap:0.6rem;
+  }
+  #status-msg{font-size:0.7rem}
+  .power-wrap label{display:none}
+  .power-bar-outer{width:72px;height:6px}
+  #practice-controls{gap:0.3rem}
+  .practice-badge{display:none}
+  #practice-shot-count{font-size:0.66rem}
+  #practice-controls .btn{padding:0.15rem 0.45rem;font-size:0.68rem}
+
+  /* Chat: hide on mobile – too cramped */
+  .chat-wrap,.chat-input-row{display:none!important}
+
+  /* Lobby: tighten padding */
+  .lobby-wrap{padding:0.7rem;gap:1rem}
+  .lobby-title{padding:0.3rem 0 0.2rem}
+  .lobby-title h1{font-size:1.5rem}
+  .lobby-title p{display:none}
+  .panel{padding:0.75rem}
+  .panel h3{margin-bottom:0.55rem;font-size:0.72rem}
+  .rooms-list{max-height:140px}
+  .lb-list{max-height:160px}
+  .input-row input{padding:0.45rem 0.7rem;font-size:0.85rem}
+  .btn{padding:0.45rem 0.85rem;font-size:0.8rem}
+  .waiting-box{padding:1.2rem}
+  .waiting-title{font-size:1.1rem;margin-bottom:0.2rem}
+  .waiting-players{gap:0.6rem;margin-bottom:1rem}
+  .player-slot{min-height:56px;padding:0.6rem}
+  .player-slot .slot-avatar{width:28px;height:28px;font-size:0.85rem}
+
+  /* Gameover overlay compact */
+  .gameover-box{padding:1.4rem}
+  .gameover-result{font-size:1.8rem}
+  .gameover-reason{margin-bottom:1.2rem;font-size:0.78rem}
+}
+
+/* Safe-area padding for notched phones (landscape) */
+@supports (padding-left: env(safe-area-inset-left)){
+  .game-hud,.game-footer{
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
+  .canvas-area{
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
 </style>
 </head>
 <body>
@@ -319,10 +403,43 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
   </div>
 </div>
 
+<!-- ══ PORTRAIT OVERLAY ══════════════════════════════════════════════════ -->
+<div id="portrait-overlay">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-title">请旋转设备</div>
+  <div class="rotate-sub">台球游戏需要横屏模式<br>请将手机横过来以获得最佳体验</div>
+</div>
+
 <!-- ══ Socket.io ══════════════════════════════════════════════════════════ -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 'use strict';
+
+// ── Orientation management ───────────────────────────────────────────────────
+const portraitOverlay = document.getElementById('portrait-overlay');
+
+function isMobile() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+         (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+}
+
+function checkOrientation() {
+  if (!isMobile()) { portraitOverlay.classList.remove('show'); return; }
+  const portrait = window.innerHeight > window.innerWidth;
+  portraitOverlay.classList.toggle('show', portrait);
+}
+
+// Try native lock (works on Android Chrome / PWA)
+async function tryLockLandscape() {
+  try {
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+  } catch(_) { /* fallback: overlay */ }
+}
+
+window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 80));
+window.addEventListener('resize', checkOrientation);
+checkOrientation();
+tryLockLandscape();
 
 // ── Connection ──────────────────────────────────────────────────────────────
 const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
@@ -413,6 +530,7 @@ function ballTypeOf(n) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id === 'screen-game') tryLockLandscape();
 }
 
 function setStatus(msg, cls='') {
