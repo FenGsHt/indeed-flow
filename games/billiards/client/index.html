@@ -152,6 +152,17 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
 .gameover-actions{display:flex;gap:0.8rem;justify-content:center}
 .rematch-hint{font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.8rem}
 
+/* Practice mode */
+.practice-divider{display:flex;align-items:center;gap:0.7rem;margin:0.8rem 0;color:rgba(255,255,255,0.2);font-size:0.75rem}
+.practice-divider::before,.practice-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1)}
+.btn-practice{background:rgba(125,187,94,0.12);border:1px solid rgba(125,187,94,0.35);color:#7dbb5e}
+.btn-practice:hover{background:rgba(125,187,94,0.22);transform:translateY(-1px)}
+#practice-controls{display:none;align-items:center;gap:0.6rem;flex-shrink:0}
+#practice-shot-count{font-size:0.78rem;color:rgba(255,255,255,0.35);white-space:nowrap}
+.practice-badge{font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:#7dbb5e;background:rgba(125,187,94,0.12);border:1px solid rgba(125,187,94,0.3);
+  border-radius:20px;padding:0.15rem 0.5rem}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
 </style>
@@ -172,8 +183,10 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
         <h3>加入游戏</h3>
         <div class="input-row">
           <input id="player-name" type="text" placeholder="输入昵称…" maxlength="16" autocomplete="off">
-          <button class="btn btn-gold" onclick="createRoom()">创建房间</button>
+            <button class="btn btn-gold" onclick="createRoom()">创建房间</button>
         </div>
+        <div class="practice-divider">或</div>
+        <button class="btn btn-practice" style="width:100%;padding:.6rem" onclick="startPractice()">🎱 单人练习</button>
 
         <details class="room-opts">
           <summary>▶ 房间选项</summary>
@@ -277,6 +290,12 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
       <label>力度</label>
       <div class="power-bar-outer"><div class="power-bar-fill" id="power-fill"></div></div>
     </div>
+    <div id="practice-controls">
+      <span class="practice-badge">练习</span>
+      <span id="practice-shot-count">0 杆</span>
+      <button class="btn btn-outline" style="padding:.3rem .65rem;font-size:.78rem" onclick="practiceRerack()">🔄 重新开球</button>
+      <button class="btn btn-danger" style="padding:.3rem .65rem;font-size:.78rem" onclick="backToLobby()">← 退出</button>
+    </div>
   </div>
 
   <!-- Chat -->
@@ -293,7 +312,7 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
     <div class="gameover-result" id="go-result">—</div>
     <div class="gameover-reason" id="go-reason">—</div>
     <div class="gameover-actions">
-      <button class="btn btn-gold" onclick="requestRematch()">再来一局</button>
+      <button class="btn btn-gold" id="rematch-btn" onclick="requestRematch()">再来一局</button>
       <button class="btn btn-outline" onclick="backToLobby()">返回大厅</button>
     </div>
     <div class="rematch-hint" id="rematch-hint"></div>
@@ -356,6 +375,8 @@ let roomId = null;
 let playerIndex = -1;  // 0,1 = player, -1 = spectator
 let gameState = null;
 let isReady = false;
+let practiceMode = false;
+let practiceShots = 0;
 
 // Client-side physics state
 let balls = [];
@@ -540,7 +561,34 @@ function physicsStep() {
 
 function onSimulationEnd() {
   phase = 'idle';
-  // Only shooter reports result
+
+  if (practiceMode) {
+    if (scratch) {
+      // Cue ball pocketed — place it back
+      phase = 'placing_cue';
+      cueBallPlaceable = true;
+      setStatus('🎱 母球进袋 — 点击桌面放置母球', 'my');
+    } else {
+      const remaining = balls.filter(b=>!b.pocketed && b.num!==0);
+      if (remaining.length === 0) {
+        // All balls cleared
+        document.getElementById('go-result').textContent = '🎱 清台！';
+        document.getElementById('go-result').className = 'gameover-result win';
+        document.getElementById('go-reason').textContent = `共用了 ${practiceShots} 杆`;
+        document.getElementById('rematch-hint').textContent = '';
+        document.getElementById('rematch-btn').textContent = '再练一局';
+        document.getElementById('overlay-gameover').classList.add('show');
+        if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+      } else {
+        phase = 'aiming';
+        updatePracticeHUD();
+        setStatus(`练习模式 — 按住蓄力，松开出杆`, 'my');
+      }
+    }
+    return;
+  }
+
+  // Online mode — only shooter reports result
   if (playerIndex === shootingPlayerIdx) {
     const positions = {};
     balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
@@ -798,7 +846,16 @@ canvas.addEventListener('mousedown', e=>{
   } else if (phase==='placing_cue' && cueBallPlaceable) {
     const pos=canvasPos(e);
     if (pos.x>TX+BALL_R&&pos.x<TX+TW-BALL_R&&pos.y>TY+BALL_R&&pos.y<TY+TH-BALL_R) {
-      socket.emit('place-cue-ball',{roomId,x:pos.x,y:pos.y});
+      if (practiceMode) {
+        // Place cue ball locally without server
+        let cueBall=balls.find(b=>b.num===0);
+        if (!cueBall) { cueBall={num:0,x:0,y:0,vx:0,vy:0,pocketed:false}; balls.push(cueBall); }
+        cueBall.x=pos.x; cueBall.y=pos.y; cueBall.vx=0; cueBall.vy=0; cueBall.pocketed=false;
+        phase='aiming'; cueBallPlaceable=false; scratch=false;
+        setStatus('练习模式 — 按住蓄力，松开出杆','my');
+      } else {
+        socket.emit('place-cue-ball',{roomId,x:pos.x,y:pos.y});
+      }
     }
   }
 });
@@ -824,6 +881,18 @@ function shoot(powerFrac) {
   if (phase!=='aiming'||playerIndex!==gameState?.currentTurn) return;
   const cue=balls.find(b=>b.num===0&&!b.pocketed);
   if (!cue) return;
+
+  if (practiceMode) {
+    practiceShots++;
+    justPocketed=[];
+    scratch=false;
+    cue.vx=Math.cos(aimAngle)*powerFrac*MAX_POWER;
+    cue.vy=Math.sin(aimAngle)*powerFrac*MAX_POWER;
+    phase='simulating';
+    setStatus('飞球中…','warn');
+    return;
+  }
+
   const positions={};
   balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
   socket.emit('shoot',{roomId,angle:aimAngle,power:powerFrac,ballPositions:positions});
@@ -1045,6 +1114,7 @@ function showGameOver(win, reason, gs) {
   document.getElementById('go-result').className='gameover-result '+(win?'win':'lose');
   document.getElementById('go-reason').textContent=REASON_TEXT[reason]||reason;
   document.getElementById('rematch-hint').textContent='';
+  document.getElementById('rematch-btn').textContent='再来一局';
   overlay.classList.add('show');
   if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
 }
@@ -1112,12 +1182,22 @@ function toggleReady() {
 function leaveRoom() {
   if (roomId) socket.emit('leave-room',{roomId});
   roomId=null; playerIndex=-1; gameState=null; isReady=false;
+  practiceMode=false; practiceShots=0;
   phase='idle';
   if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+  document.getElementById('practice-controls').style.display='none';
+  document.getElementById('chat-msgs').style.display='';
+  document.querySelector('.chat-input-row').style.display='';
   showScreen('screen-lobby');
 }
 
 function requestRematch() {
+  if (practiceMode) {
+    document.getElementById('overlay-gameover').classList.remove('show');
+    practiceRerack();
+    if (!rafId) render();
+    return;
+  }
   socket.emit('request-rematch',{roomId});
   document.getElementById('rematch-hint').textContent='等待对手确认…';
 }
@@ -1125,6 +1205,60 @@ function requestRematch() {
 function backToLobby() {
   document.getElementById('overlay-gameover').classList.remove('show');
   leaveRoom();
+}
+
+// ── Practice mode ─────────────────────────────────────────────────────────────
+function startPractice() {
+  playerName = document.getElementById('player-name').value.trim() || '练习者';
+  practiceMode = true;
+  practiceShots = 0;
+  playerIndex = 0;
+  // Minimal mock game state so turn/aiming checks pass
+  gameState = {
+    players: [{name:playerName, socketId:null, score:0, type:null}, null],
+    currentTurn: 0, status:'playing', phase:'aiming', pocketed:[], ballPositions:{}
+  };
+  initBalls(null);
+  phase = 'aiming';
+  cueBallPlaceable = false;
+  justPocketed = [];
+  scratch = false;
+  showScreen('screen-game');
+  resizeCanvas();
+  if (rafId) cancelAnimationFrame(rafId);
+  render();
+  updatePracticeHUD();
+  document.getElementById('practice-controls').style.display = 'flex';
+  // Hide chat in practice
+  document.getElementById('chat-msgs').style.display = 'none';
+  document.querySelector('.chat-input-row').style.display = 'none';
+  setStatus('练习模式 — 按住蓄力，松开出杆', 'my');
+}
+
+function practiceRerack() {
+  practiceShots = 0;
+  initBalls(null);
+  phase = 'aiming';
+  scratch = false;
+  justPocketed = [];
+  cueBallPlaceable = false;
+  updatePracticeHUD();
+  setStatus('练习模式 — 按住蓄力，松开出杆', 'my');
+}
+
+function updatePracticeHUD() {
+  document.getElementById('hud-name-0').textContent = playerName;
+  document.getElementById('hud-score-0').textContent = practiceShots;
+  const t0 = document.getElementById('hud-type-0');
+  t0.textContent = '练习模式'; t0.className = 'p-type';
+  document.getElementById('hud-balls-0').innerHTML = '';
+  document.getElementById('hud-name-1').textContent = '';
+  document.getElementById('hud-score-1').textContent = '';
+  document.getElementById('hud-type-1').textContent = '';
+  document.getElementById('hud-balls-1').innerHTML = '';
+  document.getElementById('turn-name').textContent = '练习模式';
+  document.getElementById('hud-turn').className = 'hud-turn my-turn';
+  document.getElementById('practice-shot-count').textContent = practiceShots + ' 杆';
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
