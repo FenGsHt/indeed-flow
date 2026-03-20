@@ -532,15 +532,36 @@ function physicsStep() {
       }
     }
 
-    // ── Wall collisions (skip near pockets so balls don't bounce back out) ──
+    // ── Wall collisions (per-wall pocket exclusion) ──
+    // Each wall check is independently skipped only when a pocket
+    // sits on THAT wall face AND the ball is within capture range.
+    // This prevents mid-wall (top/bottom) pockets from disabling
+    // the left/right wall checks, which caused balls to tunnel out.
+    const PR_skip = (POCKET_R * 1.9) ** 2;
+    const wallTol = BALL_R * 3; // pocket must be "on" this wall to suppress it
     for (const b of balls) {
       if (b.pocketed) continue;
-      const np = POCKETS.some(p=>{ const dx=b.x-p.x,dy=b.y-p.y; return dx*dx+dy*dy<(POCKET_R*2.2)**2; });
-      if (!np) {
-        if (b.x - BALL_R < TX)    { b.x = TX+BALL_R;    b.vx =  Math.abs(b.vx)*WALL_REST; }
-        if (b.x + BALL_R > TX+TW) { b.x = TX+TW-BALL_R; b.vx = -Math.abs(b.vx)*WALL_REST; }
-        if (b.y - BALL_R < TY)    { b.y = TY+BALL_R;    b.vy =  Math.abs(b.vy)*WALL_REST; }
-        if (b.y + BALL_R > TY+TH) { b.y = TY+TH-BALL_R; b.vy = -Math.abs(b.vy)*WALL_REST; }
+      const bx = b.x, by = b.y;
+
+      // Left wall
+      if (bx - BALL_R < TX) {
+        const skip = POCKETS.some(p => Math.abs(p.x - TX) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { b.x = TX+BALL_R; b.vx = Math.abs(b.vx)*WALL_REST; }
+      }
+      // Right wall
+      if (bx + BALL_R > TX+TW) {
+        const skip = POCKETS.some(p => Math.abs(p.x - (TX+TW)) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { b.x = TX+TW-BALL_R; b.vx = -Math.abs(b.vx)*WALL_REST; }
+      }
+      // Top wall
+      if (by - BALL_R < TY) {
+        const skip = POCKETS.some(p => Math.abs(p.y - TY) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { b.y = TY+BALL_R; b.vy = Math.abs(b.vy)*WALL_REST; }
+      }
+      // Bottom wall
+      if (by + BALL_R > TY+TH) {
+        const skip = POCKETS.some(p => Math.abs(p.y - (TY+TH)) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { b.y = TY+TH-BALL_R; b.vy = -Math.abs(b.vy)*WALL_REST; }
       }
     }
 
@@ -569,6 +590,15 @@ function physicsStep() {
         }
       }
     }
+  }
+
+  // Hard-clamp safety: ensure no ball escaped the table boundary
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    if (b.x - BALL_R < TX)    { b.x = TX+BALL_R;    if (b.vx < 0) b.vx = -b.vx*WALL_REST; }
+    if (b.x + BALL_R > TX+TW) { b.x = TX+TW-BALL_R; if (b.vx > 0) b.vx = -b.vx*WALL_REST; }
+    if (b.y - BALL_R < TY)    { b.y = TY+BALL_R;    if (b.vy < 0) b.vy = -b.vy*WALL_REST; }
+    if (b.y + BALL_R > TY+TH) { b.y = TY+TH-BALL_R; if (b.vy > 0) b.vy = -b.vy*WALL_REST; }
   }
 
   // All stopped?
@@ -726,7 +756,7 @@ function renderCueStick() {
   const pullback = charging ? Math.min((Date.now()-chargeStart)/1200,1)*24 : 0;
   const tipGap = BALL_R+4+pullback;
   const len = 200;
-  const angle = aimAngle + Math.PI; // cue points away from shot
+  const angle = aimAngle; // cue sits on player side (toward mouse)
 
   const tipX = cue.x+Math.cos(angle)*tipGap;
   const tipY = cue.y+Math.sin(angle)*tipGap;
