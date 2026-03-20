@@ -383,8 +383,10 @@ let balls = [];
 let phase = 'idle';  // idle | aiming | simulating | placing_cue
 let aimAngle = 0;
 let power = 0;
-let charging = false;
-let chargeStart = 0;
+let dragging = false;       // drag-to-aim active
+let dragStartX = 0, dragStartY = 0;
+let dragPower  = 0;         // 0–1, determined by drag distance
+const MAX_DRAG = 160;       // pixels → 100 % power
 let justPocketed = [];
 let scratch = false;
 let shootingPlayerIdx = -1;
@@ -631,7 +633,7 @@ function onSimulationEnd() {
       } else {
         phase = 'aiming';
         updatePracticeHUD();
-        setStatus(`练习模式 — 按住蓄力，松开出杆`, 'my');
+        setStatus(`练习模式 — 拖拽瞄准，松手出杆`, 'my');
       }
     }
     return;
@@ -753,7 +755,7 @@ function renderCueStick() {
   const cue = balls.find(b=>b.num===0&&!b.pocketed);
   if (!cue) return;
 
-  const pullback = charging ? Math.min((Date.now()-chargeStart)/1200,1)*24 : 0;
+  const pullback = dragging ? dragPower * 30 : 0;
   const tipGap = BALL_R+4+pullback;
   const len = 200;
   const angle = aimAngle; // cue sits on player side (toward mouse)
@@ -862,6 +864,20 @@ function render() {
   if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
     renderAimLine();
     renderCueStick();
+    // Drag-origin indicator while dragging
+    if (dragging) {
+      ctx.save();
+      // Line from drag start to current mouse (visual rubber-band)
+      ctx.strokeStyle='rgba(255,255,255,0.18)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,6]);
+      ctx.beginPath(); ctx.moveTo(dragStartX,dragStartY); ctx.lineTo(mouseX,mouseY); ctx.stroke();
+      ctx.setLineDash([]);
+      // Drag origin dot
+      ctx.fillStyle='rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.arc(dragStartX,dragStartY,5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
   }
   balls.forEach(renderBall);
   if (phase==='placing_cue') renderPlaceCue();
@@ -869,63 +885,63 @@ function render() {
   rafId = requestAnimationFrame(render);
 }
 
-// ── Power bar ─────────────────────────────────────────────────────────────────
-function updatePowerUI() {
-  if (!charging) return;
-  const p = Math.min((Date.now()-chargeStart)/1200,1);
-  document.getElementById('power-fill').style.width=(p*100)+'%';
-  requestAnimationFrame(updatePowerUI);
-}
-
 // ── Input ────────────────────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', e=>{
-  const pos = canvasPos(e);
-  mouseX=pos.x; mouseY=pos.y;
-  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
-    const cue=balls.find(b=>b.num===0&&!b.pocketed);
-    if (cue) aimAngle=Math.atan2(pos.y-cue.y,pos.x-cue.x);
-  }
-});
+// Drag-to-aim: click/touch anywhere → drag vector sets direction & power.
+// Drag direction (start→current) = pull-back side; ball fires opposite.
+// Drag distance (0 → MAX_DRAG px) = power 0 → 100 %.
 
-canvas.addEventListener('mousedown', e=>{
-  if (e.button!==0) return;
+function onDragStart(pos) {
   if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
-    charging=true; chargeStart=Date.now();
+    dragStartX=pos.x; dragStartY=pos.y;
+    dragPower=0; dragging=true;
     document.getElementById('power-wrap').style.display='flex';
-    updatePowerUI();
+    document.getElementById('power-fill').style.width='0%';
   } else if (phase==='placing_cue' && cueBallPlaceable) {
-    const pos=canvasPos(e);
     if (pos.x>TX+BALL_R&&pos.x<TX+TW-BALL_R&&pos.y>TY+BALL_R&&pos.y<TY+TH-BALL_R) {
       if (practiceMode) {
-        // Place cue ball locally without server
         let cueBall=balls.find(b=>b.num===0);
         if (!cueBall) { cueBall={num:0,x:0,y:0,vx:0,vy:0,pocketed:false}; balls.push(cueBall); }
         cueBall.x=pos.x; cueBall.y=pos.y; cueBall.vx=0; cueBall.vy=0; cueBall.pocketed=false;
         phase='aiming'; cueBallPlaceable=false; scratch=false;
-        setStatus('练习模式 — 按住蓄力，松开出杆','my');
+        setStatus('练习模式 — 拖拽瞄准，松手出杆','my');
       } else {
         socket.emit('place-cue-ball',{roomId,x:pos.x,y:pos.y});
       }
     }
   }
-});
+}
 
-canvas.addEventListener('mouseup', e=>{
-  if (!charging) return;
-  charging=false;
+function onDragMove(pos) {
+  mouseX=pos.x; mouseY=pos.y;
+  if (!dragging || phase!=='aiming' || playerIndex!==gameState?.currentTurn) return;
+  const dx=pos.x-dragStartX, dy=pos.y-dragStartY;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if (dist > 4) {
+    aimAngle=Math.atan2(dy,dx);
+    dragPower=Math.min(dist/MAX_DRAG,1);
+  }
+  document.getElementById('power-fill').style.width=(dragPower*100)+'%';
+}
+
+function onDragEnd() {
+  if (!dragging) return;
+  dragging=false;
   document.getElementById('power-wrap').style.display='none';
   document.getElementById('power-fill').style.width='0%';
-  const powerFrac = Math.min((Date.now()-chargeStart)/1200,1);
-  if (powerFrac < 0.03) return; // ignore tiny taps
-  shoot(powerFrac);
-});
+  const pf=dragPower; dragPower=0;
+  if (pf < 0.03) return; // ignore accidental taps
+  shoot(pf);
+}
 
-canvas.addEventListener('mouseleave', ()=>{ charging=false; });
+canvas.addEventListener('mousedown',  e=>{ if(e.button!==0)return; onDragStart(canvasPos(e)); });
+canvas.addEventListener('mousemove',  e=>{ onDragMove(canvasPos(e)); });
+canvas.addEventListener('mouseup',    e=>{ onDragEnd(); });
+canvas.addEventListener('mouseleave', ()=>{ dragging=false; dragPower=0; document.getElementById('power-wrap').style.display='none'; });
 
 // Touch support
-canvas.addEventListener('touchstart', e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousedown',{button:0,clientX:e.touches[0].clientX,clientY:e.touches[0].clientY})); },{passive:false});
-canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY})); },{passive:false});
-canvas.addEventListener('touchend',   e=>{ e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mouseup',{button:0})); },{passive:false});
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); onDragStart(canvasPos(e.touches[0])); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); onDragMove(canvasPos(e.touches[0]));  },{passive:false});
+canvas.addEventListener('touchend',   e=>{ e.preventDefault(); onDragEnd(); },{passive:false});
 
 function shoot(powerFrac) {
   if (phase!=='aiming'||playerIndex!==gameState?.currentTurn) return;
@@ -1088,7 +1104,7 @@ function updateTurnUI(gs) {
   document.getElementById('turn-name').textContent = isMyTurn?'你的回合':turnerName;
   const hudTurn = document.getElementById('hud-turn');
   hudTurn.className = 'hud-turn'+(isMyTurn?' my-turn':'');
-  if (isMyTurn) setStatus('你的回合，按住鼠标蓄力，松开出杆','my');
+  if (isMyTurn) setStatus('你的回合，拖拽任意处瞄准，松手出杆','my');
   else setStatus(`${turnerName} 的回合…`);
 }
 
@@ -1282,7 +1298,7 @@ function startPractice() {
   // Hide chat in practice
   document.getElementById('chat-msgs').style.display = 'none';
   document.querySelector('.chat-input-row').style.display = 'none';
-  setStatus('练习模式 — 按住蓄力，松开出杆', 'my');
+  setStatus('练习模式 — 拖拽瞄准，松手出杆', 'my');
 }
 
 function practiceRerack() {
@@ -1293,7 +1309,7 @@ function practiceRerack() {
   justPocketed = [];
   cueBallPlaceable = false;
   updatePracticeHUD();
-  setStatus('练习模式 — 按住蓄力，松开出杆', 'my');
+  setStatus('练习模式 — 拖拽瞄准，松手出杆', 'my');
 }
 
 function updatePracticeHUD() {
