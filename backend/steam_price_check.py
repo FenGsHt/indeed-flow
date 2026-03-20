@@ -127,18 +127,20 @@ def save_steam_appid(game_id, app_id):
 
 # ── Steam API ────────────────────────────────────────────────────────────
 
+# 2026-03-19: 原先用 filters=price_overview，部分游戏返回空或格式异常；
+#              改为获取完整 appdetails 再提取价格，并加 fallback 从 package_groups 取价
 def fetch_steam_price(app_id, retries=3):
     """
-    调用 Steam appdetails API 获取价格信息（只取 price_overview filter，速度快）。
+    调用 Steam appdetails API 获取价格信息。
     返回 price_overview dict，或 None（免费/不在中区/下架）。
     带重试：默认 3 次，超时逐渐加长。
     """
     url = (
         f"https://store.steampowered.com/api/appdetails"
-        f"?appids={app_id}&cc=CN&filters=price_overview"
+        f"?appids={app_id}&cc=CN"
     )
     for attempt in range(retries):
-        timeout = 15 + attempt * 10  # 15s, 25s, 35s
+        timeout = 15 + attempt * 10
         req = urllib.request.Request(url, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json',
@@ -149,10 +151,34 @@ def fetch_steam_price(app_id, retries=3):
             app_data = data.get(str(app_id), {})
             if not app_data.get('success'):
                 return None
-            po = app_data.get('data', {}).get('price_overview')
+            detail = app_data.get('data', {})
+
+            po = detail.get('price_overview')
             if isinstance(po, dict):
                 return po
-            return None  # price_overview 格式异常（如 list），视为无价格
+
+            # fallback: 从 package_groups 提取价格（部分游戏没有 price_overview 但有此字段）
+            pkgs = detail.get('package_groups')
+            if isinstance(pkgs, list):
+                for pg in pkgs:
+                    subs = pg.get('subs', [])
+                    if isinstance(subs, list):
+                        for sub in subs:
+                            price_cents = sub.get('price_in_cents_with_discount', 0)
+                            if price_cents and isinstance(price_cents, (int, float)) and price_cents > 0:
+                                option_text = sub.get('option_text', '')
+                                original_cents = _extract_original_price(option_text)
+                                return {
+                                    'final': int(price_cents),
+                                    'initial': original_cents or int(price_cents),
+                                    'discount_percent': sub.get('percent_savings_text', '0').strip('-%') or 0,
+                                    'currency': 'CNY',
+                                }
+
+            if detail.get('is_free'):
+                return None
+
+            return None
         except Exception as e:
             if attempt < retries - 1:
                 wait = 3 + attempt * 2
@@ -161,6 +187,18 @@ def fetch_steam_price(app_id, retries=3):
             else:
                 print(f"  [WARN] fetch price error for appid={app_id} after {retries} attempts: {e}")
     return None
+
+
+def _extract_original_price(option_text):
+    """从 package_groups sub 的 option_text 中提取原价（分），如 '¥88.00' → 8800"""
+    import re
+    m = re.search(r'¥\s*([\d,.]+)', option_text or '')
+    if m:
+        try:
+            return int(float(m.group(1).replace(',', '')) * 100)
+        except ValueError:
+            pass
+    return 0
 
 
 # ── Bark 推送 ─────────────────────────────────────────────────────────────
@@ -243,7 +281,7 @@ def main():
         name   = game['name']
 
         price = fetch_steam_price(app_id)
-        time.sleep(0.8)  # 避免请求过快被 Steam 限流
+        time.sleep(2)  # 2026-03-19: 从 0.8s 提到 2s，降低 Steam 限流风险
 
         if price is None:
             print(f"  {name} (appid={app_id}): 无价格信息（免费/不在中区/已下架）")
@@ -254,7 +292,9 @@ def main():
             })
             continue
 
-        discount         = price.get('discount_percent', 0)
+        # 2026-03-19: discount_percent 可能是 int 或 str（从 package_groups fallback）
+        raw_discount     = price.get('discount_percent', 0)
+        discount         = int(raw_discount) if str(raw_discount).strip('-%').isdigit() else 0
         final_price      = price.get('final',   0) / 100
         original_price   = price.get('initial', 0) / 100
 
