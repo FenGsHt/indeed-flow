@@ -501,10 +501,10 @@ function physicsStep() {
     if (b.pocketed) continue;
     const nearPocket = POCKETS.some(p=>Math.hypot(b.x-p.x,b.y-p.y) < POCKET_R*2);
     if (!nearPocket) {
-      if (b.x-b.r < TX)    { b.x=TX+b.r;       b.vx=Math.abs(b.vx)*WALL_REST; }
-      if (b.x+b.r > TX+TW) { b.x=TX+TW-b.r;    b.vx=-Math.abs(b.vx)*WALL_REST; }
-      if (b.y-b.r < TY)    { b.y=TY+b.r;       b.vy=Math.abs(b.vy)*WALL_REST; }
-      if (b.y+b.r > TY+TH) { b.y=TY+TH-b.r;    b.vy=-Math.abs(b.vy)*WALL_REST; }
+      if (b.x-BALL_R < TX)    { b.x=TX+BALL_R;       b.vx=Math.abs(b.vx)*WALL_REST; }
+      if (b.x+BALL_R > TX+TW) { b.x=TX+TW-BALL_R;    b.vx=-Math.abs(b.vx)*WALL_REST; }
+      if (b.y-BALL_R < TY)    { b.y=TY+BALL_R;       b.vy=Math.abs(b.vy)*WALL_REST; }
+      if (b.y+BALL_R > TY+TH) { b.y=TY+TH-BALL_R;    b.vy=-Math.abs(b.vy)*WALL_REST; }
     }
   }
 
