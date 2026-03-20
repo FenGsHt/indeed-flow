@@ -216,6 +216,16 @@
   box-shadow: 4px 4px 0 var(--black);
 }
 
+/* ===== Tab 内容切换 ===== */
+[data-theme="joypad"] .tab-content {
+  display: none;
+  animation: joypad-cardIn 0.3s ease;
+}
+
+[data-theme="joypad"] .tab-content.active {
+  display: block;
+}
+
 /* ===== 在线游戏区域 ===== */
 [data-theme="joypad"] .online-games-title {
   font-family: var(--font-display) !important;
