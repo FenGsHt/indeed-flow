@@ -1,0 +1,606 @@
+/* 2026-03-20: 从 index.html 内联 CSS 抽取，经典主题 */
+
+/* ===== 经典主题：居中布局 + 渐变暗色 ===== */
+
+[data-theme="classic"] {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
+  color: #fff;
+  overflow-x: hidden;
+}
+
+[data-theme="classic"] .bg-effect {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+[data-theme="classic"] .bg-effect::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
+  animation: bgMove 20s ease-in-out infinite;
+}
+
+@keyframes bgMove {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-5%, -5%) rotate(5deg); }
+}
+
+/* 隐藏 nexus 专属元素 */
+[data-theme="classic"] .sidebar { display: none !important; }
+[data-theme="classic"] #gl-canvas { display: none !important; }
+[data-theme="classic"] .bg-watermark { display: none !important; }
+[data-theme="classic"] .deco-leaf { display: none !important; }
+[data-theme="classic"] .page-header { display: none !important; }
+[data-theme="classic"] .section-title-nexus { display: none !important; }
+
+/* 显示 classic 专属元素 */
+[data-theme="classic"] .classic-header { display: block; }
+[data-theme="classic"] .bg-effect { display: block; }
+
+/* 布局 */
+[data-theme="classic"] .app-container {
+  display: block;
+}
+
+[data-theme="classic"] .main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* 头部 */
+[data-theme="classic"] .classic-header {
+  text-align: center;
+  padding: 2rem 0 3rem;
+}
+
+[data-theme="classic"] .classic-header .logo {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+  font-weight: 900;
+  background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: logoShine 3s ease-in-out infinite;
+}
+
+@keyframes logoShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+[data-theme="classic"] .slogan {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.3em;
+}
+
+/* Tab导航 */
+[data-theme="classic"] .nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+[data-theme="classic"] .nav-tab {
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.6);
+  border-radius: 50px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-theme="classic"] .nav-tab:hover {
+  background: rgba(255,255,255,0.1);
+  transform: translateY(-2px);
+}
+
+[data-theme="classic"] .nav-tab.active {
+  background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0,212,255,0.3);
+}
+
+[data-theme="classic"] .nav-tab .icon {
+  font-size: 1.2rem;
+}
+
+/* 内容区 */
+[data-theme="classic"] .tab-content {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+
+[data-theme="classic"] .tab-content.active {
+  display: block;
+}
+
+/* 新闻子Tab */
+[data-theme="classic"] .sub-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.3rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50px;
+  width: fit-content;
+}
+
+[data-theme="classic"] .sub-tab {
+  padding: 0.5rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  border-radius: 50px;
+  transition: all 0.3s;
+}
+
+[data-theme="classic"] .sub-tab.active {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+[data-theme="classic"] .btn-ai-summary {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, rgba(123,47,247,0.3), rgba(0,212,255,0.3));
+  color: #fff;
+  border-radius: 50px;
+  transition: all 0.3s;
+  border: 1px solid rgba(123,47,247,0.5);
+}
+
+[data-theme="classic"] .btn-ai-summary:hover {
+  background: linear-gradient(135deg, rgba(123,47,247,0.5), rgba(0,212,255,0.5));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(123,47,247,0.3);
+}
+
+/* Steam 每日推荐区域 */
+[data-theme="classic"] .steam-recommendations {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(123,47,247,0.1) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(0,212,255,0.2);
+}
+
+[data-theme="classic"] .steam-rec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+[data-theme="classic"] .steam-rec-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-theme="classic"] .steam-rec-date {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+[data-theme="classic"] .steam-rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+[data-theme="classic"] .steam-rec-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+}
+
+[data-theme="classic"] .steam-rec-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  border-color: rgba(0,212,255,0.3);
+}
+
+[data-theme="classic"] .steam-rec-image {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
+}
+
+[data-theme="classic"] .steam-rec-info {
+  padding: 0.8rem;
+}
+
+[data-theme="classic"] .steam-rec-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="classic"] .steam-rec-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+[data-theme="classic"] .steam-rec-discount {
+  background: #4c6b22;
+  color: #beee11;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+[data-theme="classic"] .steam-rec-original {
+  text-decoration: line-through;
+  color: rgba(255,255,255,0.4);
+  font-size: 0.75rem;
+}
+
+[data-theme="classic"] .steam-rec-current {
+  color: #beee11;
+  font-weight: 600;
+}
+
+[data-theme="classic"] .steam-rec-new {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: linear-gradient(135deg, #ff006e, #ff4d6d);
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* 游戏网格 */
+[data-theme="classic"] .games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+
+[data-theme="classic"] .game-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+[data-theme="classic"] .game-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  background: rgba(255,255,255,0.1);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  border-color: rgba(0,212,255,0.3);
+}
+
+[data-theme="classic"] .game-cover {
+  width: 100%;
+  height: 140px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="classic"] .game-cover.has-image {
+  background: none;
+}
+
+[data-theme="classic"] .cover-placeholder {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+[data-theme="classic"] .steam-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="classic"] .steam-btn:hover {
+  background: #171a21;
+  transform: scale(1.1);
+}
+
+[data-theme="classic"] .steam-btn.success {
+  background: #4caf50;
+}
+
+[data-theme="classic"] .steam-card-link {
+  position: absolute;
+  bottom: 7px;
+  right: 7px;
+  background: rgba(23, 26, 33, 0.82);
+  border: 1px solid rgba(102, 192, 244, 0.45);
+  border-radius: 6px;
+  color: #66c0f4;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  text-decoration: none;
+  line-height: 1.5;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  z-index: 2;
+}
+
+[data-theme="classic"] .steam-card-link:hover {
+  background: rgba(23, 26, 33, 0.97);
+  border-color: #66c0f4;
+  color: #fff;
+}
+
+[data-theme="classic"] .status-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 1.2rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+[data-theme="classic"] .rating-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+[data-theme="classic"] .game-info {
+  padding: 1rem;
+}
+
+[data-theme="classic"] .game-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="classic"] .game-meta {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* 新闻列表 */
+[data-theme="classic"] .news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+[data-theme="classic"] .news-item {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+
+[data-theme="classic"] .news-item:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.1);
+  transform: translateX(4px);
+}
+
+[data-theme="classic"] .news-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="classic"] .news-source {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+[data-theme="classic"] .news-source.tieba { background: #00aaff; color: #fff; }
+[data-theme="classic"] .news-source.douyin { background: #000; color: #fff; }
+[data-theme="classic"] .news-source.weibo { background: #ff0000; color: #fff; }
+[data-theme="classic"] .news-source.bilibili { background: #00aaff; color: #fff; }
+[data-theme="classic"] .news-source.iran { background: #ff6b6b; color: #fff; }
+
+[data-theme="classic"] .news-time {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+}
+
+[data-theme="classic"] .news-title {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+[data-theme="classic"] .news-summary {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+/* 添加游戏按钮 */
+[data-theme="classic"] .add-game-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+  color: #fff;
+  font-size: 1.8rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+  transition: all 0.3s;
+  z-index: 100;
+}
+
+[data-theme="classic"] .add-game-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(0,212,255,0.5);
+}
+
+[data-theme="classic"] .ai-fab {
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(123,47,247,0.6), rgba(0,212,255,0.6));
+  border: 1px solid rgba(123,47,247,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(123,47,247,0.3);
+  transition: all 0.3s;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="classic"] .ai-fab:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 20px rgba(123,47,247,0.5);
+}
+
+[data-theme="classic"] .btn-steam {
+  background: linear-gradient(135deg, #1b2838, #2a475e);
+  color: #fff;
+  border: 1px solid #66c0f4;
+}
+
+[data-theme="classic"] .btn-steam:hover {
+  background: linear-gradient(135deg, #2a475e, #66c0f4);
+}
+
+[data-theme="classic"] .ai-loading {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #00d4ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+[data-theme="classic"] .online-game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0,255,136,0.3);
+  border-color: rgba(0,255,136,0.6) !important;
+}
+
+/* Classic 模式浮动主题切换按钮 */
+[data-theme="classic"] .theme-fab {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="classic"] .theme-fab:hover {
+  background: rgba(255,255,255,0.15);
+  transform: scale(1.1);
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  [data-theme="classic"] .main-content { padding: 1rem; }
+  [data-theme="classic"] .nav-tab { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
+  [data-theme="classic"] .games-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  [data-theme="classic"] .game-cover { height: 100px; }
+}

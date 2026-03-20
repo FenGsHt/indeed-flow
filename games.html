@@ -8,8 +8,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- 2026-03-19: 共享样式抽取到 shared.css -->
+  <!-- 2026-03-20: Nexus 主题字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Outfit:wght@300;500;800;900&display=swap" rel="stylesheet">
+  <!-- 2026-03-19: 共享样式 -->
   <link rel="stylesheet" href="./src/shared.css">
+  <!-- 2026-03-20: 主题样式 -->
+  <link rel="stylesheet" href="./src/themes/classic.css">
+  <link rel="stylesheet" href="./src/themes/nexus.css">
   <style>
     .container {
       position: relative;
@@ -259,7 +264,7 @@
     }
   </style>
 </head>
-<body>
+<body data-theme="nexus">
   <div class="bg-effect"></div>
 
   <div class="container">
@@ -352,6 +357,12 @@
 
     </div>
   </div>
+
+  <!-- 2026-03-20: 主题引擎 -->
+  <script type="module">
+    import { initTheme } from './src/theme-engine.js';
+    initTheme();
+  </script>
 
   <!-- 2026-03-19: page-agent AI 助手（模块化接入，不影响其他功能） -->
   <script type="module" src="./src/page-agent-init.js"></script>

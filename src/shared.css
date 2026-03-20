@@ -1,40 +1,11 @@
 /* 2026-03-19: 共享基础样式，index.html 和 games.html 通用 */
+/* 2026-03-20: 精简为主题无关的基础样式，body/logo/bg-effect 由主题 CSS 控制 */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Inter', 'Noto Sans SC', sans-serif;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
-  color: #fff;
   overflow-x: hidden;
-}
-
-/* 背景动画 */
-.bg-effect {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.bg-effect::before {
-  content: '';
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  top: -50%;
-  left: -50%;
-  background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
-  animation: bgMove 20s ease-in-out infinite;
-}
-
-@keyframes bgMove {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-5%, -5%) rotate(5deg); }
 }
 
 @keyframes spin {
@@ -46,20 +17,9 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.logo {
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: logoShine 3s ease-in-out infinite;
-}
-
-@keyframes logoShine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
 
 /* 弹窗通用 */
@@ -85,12 +45,14 @@ body {
   max-height: 85vh;
   overflow-y: auto;
   border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
 }
 
 .modal-title {
   font-size: 1.3rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
+  color: #fff;
 }
 
 /* 表单通用 */
@@ -153,6 +115,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  color: #fff;
 }
 
 .btn-primary {

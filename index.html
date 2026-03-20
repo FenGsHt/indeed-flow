@@ -8,532 +8,39 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- 2026-03-19: 共享样式抽取到 shared.css -->
+  <!-- 2026-03-20: Nexus 主题字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Outfit:wght@300;500;800;900&display=swap" rel="stylesheet">
+  <!-- 2026-03-19: 共享样式 -->
   <link rel="stylesheet" href="./src/shared.css">
-  <style>
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    /* 头部 */
-    .header {
-      text-align: center;
-      padding: 2rem 0 3rem;
-    }
-
-    .logo {
-      font-size: clamp(2.5rem, 8vw, 4rem);
-      letter-spacing: 0.15em;
-      margin-bottom: 0.5rem;
-    }
-
-    @keyframes fadeOut {
-      from { opacity: 1; transform: translateX(-50%) translateY(0); }
-      to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-    }
-
-    .slogan {
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 0.3em;
-    }
-
-    /* Tab导航 */
-    .nav-tabs {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .nav-tab {
-      padding: 0.8rem 2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.6);
-      border-radius: 50px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .nav-tab:hover {
-      background: rgba(255,255,255,0.1);
-      transform: translateY(-2px);
-    }
-
-    .nav-tab.active {
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.3);
-    }
-
-    .nav-tab .icon {
-      font-size: 1.2rem;
-    }
-
-    /* 内容区 */
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.4s ease;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* 新闻子Tab */
-    .sub-tabs {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      padding: 0.3rem;
-      background: rgba(255,255,255,0.05);
-      border-radius: 50px;
-      width: fit-content;
-    }
-
-    .sub-tab {
-      padding: 0.5rem 1.2rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.6);
-      border-radius: 50px;
-      transition: all 0.3s;
-    }
-
-    .sub-tab.active {
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-    }
-
-    .btn-ai-summary {
-      padding: 0.5rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      background: linear-gradient(135deg, rgba(123,47,247,0.3), rgba(0,212,255,0.3));
-      color: #fff;
-      border-radius: 50px;
-      transition: all 0.3s;
-      border: 1px solid rgba(123,47,247,0.5);
-    }
-
-    .btn-ai-summary:hover {
-      background: linear-gradient(135deg, rgba(123,47,247,0.5), rgba(0,212,255,0.5));
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(123,47,247,0.3);
-    }
-
-    /* Steam 每日推荐区域 */
-    .steam-recommendations {
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(123,47,247,0.1) 100%);
-      border-radius: 20px;
-      border: 1px solid rgba(0,212,255,0.2);
-    }
-
-    .steam-rec-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .steam-rec-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .steam-rec-date {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.5);
-    }
-
-    .steam-rec-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .steam-rec-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255,255,255,0.05);
-      position: relative;
-    }
-
-    .steam-rec-card:hover {
-      transform: translateY(-5px);
-      background: rgba(255,255,255,0.1);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      border-color: rgba(0,212,255,0.3);
-    }
-
-    .steam-rec-image {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
-    }
-
-    .steam-rec-info {
-      padding: 0.8rem;
-    }
-
-    .steam-rec-name {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 0.3rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .steam-rec-price {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-    }
-
-    .steam-rec-discount {
-      background: #4c6b22;
-      color: #beee11;
-      padding: 0.1rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .steam-rec-original {
-      text-decoration: line-through;
-      color: rgba(255,255,255,0.4);
-      font-size: 0.75rem;
-    }
-
-    .steam-rec-current {
-      color: #beee11;
-      font-weight: 600;
-    }
-
-    .steam-rec-new {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: linear-gradient(135deg, #ff006e, #ff4d6d);
-      color: #fff;
-      padding: 0.2rem 0.5rem;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
-
-    /* 游戏网格 */
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .game-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .game-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      background: rgba(255,255,255,0.1);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-      border-color: rgba(0,212,255,0.3);
-    }
-
-    .game-cover {
-      width: 100%;
-      height: 140px;
-      background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
-      background-size: cover;
-      background-position: center center;
-      background-repeat: no-repeat;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .game-cover.has-image {
-      background: none;
-    }
-
-    .cover-placeholder {
-      font-size: 3rem;
-      opacity: 0.5;
-    }
-
-    .steam-btn {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .steam-btn:hover {
-      background: #171a21;
-      transform: scale(1.1);
-    }
-
-    .steam-btn.success {
-      background: #4caf50;
-    }
-
-    .steam-card-link {
-      position: absolute;
-      bottom: 7px;
-      right: 7px;
-      background: rgba(23, 26, 33, 0.82);
-      border: 1px solid rgba(102, 192, 244, 0.45);
-      border-radius: 6px;
-      color: #66c0f4;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      padding: 2px 7px;
-      text-decoration: none;
-      line-height: 1.5;
-      backdrop-filter: blur(4px);
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-      z-index: 2;
-    }
-    .steam-card-link:hover {
-      background: rgba(23, 26, 33, 0.97);
-      border-color: #66c0f4;
-      color: #fff;
-    }
-
-    .status-badge {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 1.2rem;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .rating-badge {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      padding: 0.2rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
-
-    .game-info {
-      padding: 1rem;
-    }
-
-    .game-name {
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 0.3rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .game-meta {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    /* 新闻列表 */
-    .news-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .news-item {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 1.25rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      border: 1px solid transparent;
-    }
-
-    .news-item:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.1);
-      transform: translateX(4px);
-    }
-
-    .news-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .news-source {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      text-transform: uppercase;
-    }
-
-    .news-source.tieba { background: #00aaff; color: #fff; }
-    .news-source.douyin { background: #000; color: #fff; }
-    .news-source.weibo { background: #ff0000; color: #fff; }
-    .news-source.bilibili { background: #00aaff; color: #fff; }
-    .news-source.iran { background: #ff6b6b; color: #fff; }
-
-    .news-time {
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    .news-title {
-      font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.4;
-    }
-
-    .news-summary {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.5);
-      margin-top: 0.5rem;
-      line-height: 1.5;
-    }
-
-    /* 添加游戏按钮 */
-    .add-game-btn {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      font-size: 1.8rem;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
-      transition: all 0.3s;
-      z-index: 100;
-    }
-
-    .add-game-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 30px rgba(0,212,255,0.5);
-    }
-
-    /* 2026-03-19: AI 助手左下角浮动入口 */
-    .ai-fab {
-      position: fixed;
-      bottom: 2rem;
-      left: 2rem;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, rgba(123,47,247,0.6), rgba(0,212,255,0.6));
-      border: 1px solid rgba(123,47,247,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      text-decoration: none;
-      cursor: pointer;
-      box-shadow: 0 2px 12px rgba(123,47,247,0.3);
-      transition: all 0.3s;
-      z-index: 100;
-      backdrop-filter: blur(8px);
-    }
-    .ai-fab:hover {
-      transform: scale(1.15);
-      box-shadow: 0 4px 20px rgba(123,47,247,0.5);
-    }
-
-    .btn-steam {
-      background: linear-gradient(135deg, #1b2838, #2a475e);
-      color: #fff;
-      border: 1px solid #66c0f4;
-    }
-
-    .btn-steam:hover {
-      background: linear-gradient(135deg, #2a475e, #66c0f4);
-    }
-
-    /* AI 加载转圈圈 */
-    .ai-loading {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #00d4ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-
-    /* 在线游戏卡片悬停效果 */
-    .online-game-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(0,255,136,0.3);
-      border-color: rgba(0,255,136,0.6) !important;
-    }
-
-    /* 移动端适配 */
-    @media (max-width: 600px) {
-      .container { padding: 1rem; }
-      .nav-tab { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
-      .games-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-      .game-cover { height: 100px; }
-    }
-  </style>
+  <!-- 2026-03-20: 主题样式 -->
+  <link rel="stylesheet" href="./src/themes/classic.css">
+  <link rel="stylesheet" href="./src/themes/nexus.css">
 </head>
-<body>
+<body data-theme="nexus">
+  <!-- 2026-03-20: Three.js WebGL 背景 (nexus 主题) -->
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- 2026-03-20: 装饰水印 (nexus 主题) -->
+  <div class="bg-watermark">INDEED<br>SYSTEM</div>
+
+  <!-- 2026-03-20: 装饰 SVG 叶片 (nexus 主题) -->
+  <svg class="deco-leaf leaf-1" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="grad-mc" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff00a0"/><stop offset="50%" stop-color="#7a00ff"/><stop offset="100%" stop-color="#00d2ff"/></linearGradient></defs>
+    <path d="M250 480 C 150 450, 50 350, 60 200 C 70 50, 200 20, 350 80 C 450 120, 480 250, 450 350 C 420 450, 300 480, 250 480 Z" fill="url(#grad-mc)" opacity="0.7"/>
+    <path d="M60 200 Q 150 250 250 250 Q 200 150 150 100 Q 100 150 60 200 Z" fill="#030303"/>
+    <path d="M450 350 Q 350 300 250 250 Q 350 200 400 150 Q 450 250 450 350 Z" fill="#030303"/>
+  </svg>
+  <svg class="deco-leaf leaf-2" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="grad-gy" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00d053"/><stop offset="100%" stop-color="#ffee00"/></linearGradient></defs>
+    <path d="M250 480 C 150 450, 50 350, 60 200 C 70 50, 200 20, 350 80 C 450 120, 480 250, 450 350 C 420 450, 300 480, 250 480 Z" fill="url(#grad-gy)" opacity="0.5"/>
+    <path d="M60 200 Q 150 250 250 250 Q 200 150 150 100 Q 100 150 60 200 Z" fill="#030303"/>
+  </svg>
+
+  <!-- Classic 主题背景 -->
   <div class="bg-effect"></div>
+
+  <!-- 2026-03-20: Classic 模式下的主题切换浮动按钮 -->
+  <button class="theme-fab" onclick="switchTheme('nexus')" title="切换到 Nexus 主题">🎨</button>
 
   <!-- 添加游戏弹窗 -->
   <div id="add-modal" class="modal">
@@ -689,24 +196,67 @@
     </div>
   </div>
 
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">INDEED</h1>
-      <p class="slogan">发现 · 评分 · 推荐</p>
-    </header>
+  <!-- 2026-03-20: 侧边栏 + 主内容 Grid 布局 -->
+  <div class="app-container">
+    <!-- 侧边栏 (nexus 主题) -->
+    <nav class="sidebar">
+      <div class="logo">INDEED<span class="logo-sub">SYSTEMS</span></div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-tab="game">游戏库</li>
+        <li class="nav-item" data-tab="news">新闻</li>
+      </ul>
+      <div class="theme-switcher">
+        <div class="theme-switcher-title">主题切换</div>
+        <button class="theme-option active" data-theme="nexus">Nexus 赛博</button>
+        <button class="theme-option" data-theme="classic">Classic 经典</button>
+      </div>
+      <div class="mini-games-widget">
+        <a href="./games.html" style="text-decoration:none;color:inherit;">
+          <div class="widget-card">
+            <div class="widget-title">ARCADE LINK</div>
+            <div class="widget-desc">在线小游戏大厅 — 骰子 · 贪吃蛇 · UNO</div>
+          </div>
+        </a>
+      </div>
+    </nav>
 
-    <!-- 主导航 -->
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-tab="game">
-        <span class="icon">🎮</span> 游戏库
-      </button>
-      <button class="nav-tab" data-tab="news">
-        <span class="icon">📰</span> 新闻
-      </button>
-    </div>
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- Classic 主题头部 (居中布局) -->
+      <div class="classic-header">
+        <h1 class="logo">INDEED</h1>
+        <p class="slogan">发现 · 评分 · 推荐</p>
+        <div class="nav-tabs" style="margin-top:2rem;">
+          <button class="nav-tab active" data-tab="game">
+            <span class="icon">🎮</span> 游戏库
+          </button>
+          <button class="nav-tab" data-tab="news">
+            <span class="icon">📰</span> 新闻
+          </button>
+        </div>
+      </div>
 
-    <!-- 游戏内容 -->
-    <div id="tab-game" class="tab-content active">
+      <!-- Nexus 主题统计面板 -->
+      <header class="page-header">
+        <h1 class="page-title" data-text="BACKLOG">BACKLOG</h1>
+        <div class="stats-cluster">
+          <div class="stat-box">
+            <div class="stat-val" id="stat-pending">--</div>
+            <div class="stat-label">待玩</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" id="stat-cleared">--</div>
+            <div class="stat-label">已完</div>
+          </div>
+          <div class="stat-box" style="border-color:var(--green,#00ff55);">
+            <div class="stat-val green" id="stat-active">--</div>
+            <div class="stat-label">游玩中</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 游戏内容 -->
+      <div id="tab-game" class="tab-content active">
       <!-- 在线游戏入口 -->
       <div class="online-games-section" style="margin-bottom: 2rem;">
         <div style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.8);">🎮 在线游戏</div>
@@ -762,6 +312,9 @@
         </div>
       </div>
       
+      <!-- Nexus 分区标题 -->
+      <h3 class="section-title-nexus">GAME LIBRARY</h3>
+
       <div id="games-list" class="games-grid">
         <div class="loading"></div>
       </div>
@@ -792,6 +345,7 @@
         </div>
       </div>
     </div>
+    </main>
   </div>
 
   <script>
@@ -1064,20 +618,26 @@
 
     // Tab切换 + 懒加载
     // 2026-03-19: 新闻数据延迟到用户首次点击 news tab 时加载
+    // 2026-03-20: 同时绑定侧边栏 nav-item 和经典模式 nav-tab
     const _tabLoaded = {};
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll(`.nav-tab[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+      document.querySelectorAll(`.nav-item[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+      document.getElementById('tab-' + tabName).classList.add('active');
+      if (tabName === 'news' && !_tabLoaded.news) {
+        _tabLoaded.news = true;
+        loadHot();
+        loadIran();
+      }
+    }
     document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        const tabName = this.dataset.tab;
-        document.getElementById('tab-' + tabName).classList.add('active');
-        if (tabName === 'news' && !_tabLoaded.news) {
-          _tabLoaded.news = true;
-          loadHot();
-          loadIran();
-        }
-      });
+      tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
+    });
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() { switchTab(this.dataset.tab); });
     });
 
     // 新闻子Tab
@@ -1089,6 +649,20 @@
         document.getElementById('news-iran').style.display = this.dataset.news === 'iran' ? 'block' : 'none';
       });
     });
+
+    // 2026-03-20: 更新 Nexus 统计面板
+    function updateStatsPanel(games) {
+      const pending = document.getElementById('stat-pending');
+      const cleared = document.getElementById('stat-cleared');
+      const active = document.getElementById('stat-active');
+      if (!pending) return;
+      const todoCount = games.filter(g => g.status === 'todo' || !g.status).length;
+      const completedCount = games.filter(g => g.status === 'completed').length;
+      const playingCount = games.filter(g => g.status === 'playing').length;
+      pending.textContent = todoCount;
+      cleared.textContent = completedCount;
+      active.textContent = playingCount;
+    }
 
     // 加载游戏
     async function loadGames() {
@@ -1119,6 +693,9 @@
           return;
         }
 
+        // 2026-03-20: 更新统计面板
+        updateStatsPanel(games);
+
         // 排序：优先级（越小越前）+ 字母顺序
         games.sort((a, b) => {
           const pa = a.priority || 100;
@@ -1131,49 +708,64 @@
         // Steam 评分会异步加载并更新
         const gamesWithRatings = games.map(g => ({ ...g, steamRating: null }));
 
+        // 2026-03-20: 检测当前主题
+        const isNexus = document.body.getAttribute('data-theme') === 'nexus';
+
         list.innerHTML = gamesWithRatings.slice(0, 12).map((g, i) => {
-          // 根据游戏名生成唯一渐变色
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
           const hue1 = hash % 360;
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
 
-          const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
-          const statusIcon = statusMap[g.status] || '📋 待玩';
-
-          // Steam 好评率显示
-          let ratingDisplay = '';
-          let ratingBadge = '';
-          
-          const ratingData = g.steamRating;
-          if (ratingData && ratingData.success && ratingData.rating_percent !== undefined) {
-            const percent = ratingData.rating_percent;
-            const total = ratingData.total_reviews || 0;
-            const desc = ratingData.review_score_desc || '';
-            
-            // 卡片右下角显示好评率
-            ratingDisplay = `${percent}% 好评`;
-            ratingBadge = `<span class="rating-badge" style="background: ${percent >= 70 ? 'linear-gradient(135deg, #4caf50, #8bc34a)' : (percent >= 40 ? 'linear-gradient(135deg, #ff9800, #ffc107)' : 'linear-gradient(135deg, #f44336, #ff5722)')}">${percent}%</span>`;
-          } else {
-            // 没有 Steam 评价时显示暂无
-            ratingDisplay = '<span style="color:rgba(255,255,255,0.4);font-size:0.75rem;">暂无评价</span>';
-          }
-
-          // 显示推荐人（如果有）和好评率（同行，推荐人左对齐，好评率右对齐）
+          const status = g.status || 'todo';
           const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
-          
-          // 好评率显示（放在推荐人右边）- 初始显示加载动画
-          let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
-          
           const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
           const steamCardBtn = knownAppid
             ? `<a class="steam-card-link" href="https://store.steampowered.com/app/${knownAppid}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Steam</a>`
             : `<a class="steam-card-link" style="display:none" data-pending-steam></a>`;
 
+          if (isNexus) {
+            const statusLabels = {todo: 'Queued', playing: 'Active', completed: 'Cleared'};
+            const statusLabel = statusLabels[status] || 'Queued';
+            const coverStyle = g.image
+              ? `background-image:url(${g.image});background-size:cover;background-position:center;`
+              : `background:${gradient};`;
+            return `
+            <div class="game-card status-${status}" style="animation-delay:${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
+              <div class="card-hover-border"></div>
+              <div class="game-cover" style="${coverStyle}">
+                <span class="status-badge ${status}">${statusLabel}</span>
+                ${steamCardBtn}
+              </div>
+              <div class="game-info">
+                <div class="game-name">${g.name}</div>
+                <div class="game-meta">
+                  <span>${recommenderText}</span>
+                  <span class="steam-rating-tag" style="font-size:0.8rem;">...</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-header">
+                    <span>Rating</span>
+                    <span class="steam-rating-pct">--</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill ${status}" style="width:0%;transition:width 0.6s ease;"></div>
+                  </div>
+                </div>
+                <div class="game-price-row" style="font-size:0.72rem;margin-top:0.3rem;min-height:1rem;color:rgba(255,255,255,0.4);"></div>
+              </div>
+            </div>`;
+          }
+
+          // Classic 主题卡片
+          const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
+          const statusIcon = statusMap[status] || '📋 待玩';
+          let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
+
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover; background-position: center center; background-repeat: no-repeat;">
-              <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
+              <span class="status-badge" title="${status}">${statusIcon}</span>
               ${steamCardBtn}
             </div>
             <div class="game-info">
@@ -1219,10 +811,19 @@
               const percent = rd.rating_percent;
               const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
               metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>`;
+              // 2026-03-20: 更新 nexus 进度条
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              const fillEl = cards[i].querySelector('.progress-fill');
+              if (pctEl) pctEl.textContent = percent + '%';
+              if (fillEl) fillEl.style.width = percent + '%';
             } else if (rd && rd.success && rd.total_reviews === 0) {
               metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>`;
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              if (pctEl) pctEl.textContent = 'N/A';
             } else {
               metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>`;
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              if (pctEl) pctEl.textContent = '--';
             }
 
             // 收集通过名字搜索才发现的 appid（之前未知的），用于补充拉取价格和显示 Steam 按钮
@@ -1911,6 +1512,19 @@
     loadGames();
     loadSteamRecommendations();
     // 2026-03-19: loadHot() 和 loadIran() 改为懒加载，点击 news tab 时才触发
+
+    // 2026-03-20: 主题切换后重新渲染卡片（因为 nexus/classic 卡片结构不同）
+    const _origSwitchTheme = window.switchTheme;
+    window.switchTheme = function(name) {
+      if (_origSwitchTheme) _origSwitchTheme(name);
+      loadGames();
+    };
+  </script>
+
+  <!-- 2026-03-20: 主题引擎（切换 + Three.js 背景） -->
+  <script type="module">
+    import { initTheme } from './src/theme-engine.js';
+    initTheme();
   </script>
 
   <!-- 2026-03-19: page-agent AI 助手（模块化接入，不影响其他功能） -->
