@@ -27,11 +27,40 @@
 /* 隐藏 classic / joypad 专属元素 */
 [data-theme="nexus"] .classic-header { display: none !important; }
 [data-theme="nexus"] .bg-effect { display: none !important; }
-[data-theme="nexus"] .theme-fab { display: none !important; }
 [data-theme="nexus"] .joypad-sunburst { display: none !important; }
 [data-theme="nexus"] .joypad-sunburst-overlay { display: none !important; }
 [data-theme="nexus"] .joypad-star { display: none !important; }
 [data-theme="nexus"] .joypad-confetti { display: none !important; }
+
+/* 隐藏侧边栏内的主题切换器 */
+[data-theme="nexus"] .theme-switcher { display: none !important; }
+
+/* 主题切换 FAB（右下角浮动按钮） */
+[data-theme="nexus"] .theme-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="nexus"] .theme-fab:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,210,255,0.3);
+}
 
 /* ===== WebGL 画布 ===== */
 [data-theme="nexus"] #gl-canvas {
