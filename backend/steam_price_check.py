@@ -34,10 +34,11 @@ DB_CONFIG = {
 
 BARK_KEY = os.getenv('BARK_KEY', '')
 
-# OpenClaw webhook（转发到 QQ 群）
-OPENCLAW_WEBHOOK = 'http://150.158.110.168:18789/hooks/agent'
-OPENCLAW_TOKEN   = 'Bearer bXgkzrenxp0Y2YB2wLJfUGjTjBflaxNY'
-OPENCLAW_GROUP   = 'group:859294429'
+# 2026-03-19: 原先硬编码在代码里，改为从环境变量读取
+
+OPENCLAW_WEBHOOK = os.getenv('OPENCLAW_WEBHOOK', '')
+OPENCLAW_TOKEN   = os.getenv('OPENCLAW_TOKEN', '')
+OPENCLAW_GROUP   = os.getenv('OPENCLAW_GROUP', '')
 
 
 # ── 数据库 ──────────────────────────────────────────────────────────────

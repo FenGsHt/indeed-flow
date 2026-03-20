@@ -24,6 +24,9 @@ except ImportError:
 
 games_bp = Blueprint('games', __name__)
 
+# 2026-03-19: 原先硬编码在 URL 里，改为从环境变量读取
+RAWG_API_KEY = os.getenv('RAWG_API_KEY', '')
+
 # ============ Steam 评分后端缓存 ============
 # { cache_key: {'data': {...}, 'ts': timestamp} }
 _steam_rating_cache = {}
@@ -277,9 +280,10 @@ def search_game_image():
         return jsonify({'image': None})
 
     try:
+        # 2026-03-19: 原先 key 硬编码在此，改为引用模块变量 RAWG_API_KEY
         url = (
             f"https://api.rawg.io/api/games"
-            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"?key={RAWG_API_KEY}"
             f"&search={urllib.parse.quote(query)}&page_size=1"
         )
         with urllib.request.urlopen(url, timeout=5) as response:
@@ -533,9 +537,11 @@ def get_game_news():
         return jsonify({'news': []})
 
     try:
+        # 2026-03-19: 原先 key 硬编码在此，改为引用模块变量 RAWG_API_KEY
+        # f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
         url = (
             f"https://api.rawg.io/api/games"
-            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"?key={RAWG_API_KEY}"
             f"&search={urllib.parse.quote(query)}&page_size=3"
         )
         with urllib.request.urlopen(url, timeout=5) as response:

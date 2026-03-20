@@ -353,6 +353,10 @@ jobs:
                echo 'FLASK_DEBUG=false' >> .env && \
                echo 'BARK_KEY=${{ secrets.BARK_KEY }}' >> .env && \
                echo 'LLM_API_KEY=${{ secrets.LLM_API_KEY }}' >> .env && \
+               echo 'OPENCLAW_WEBHOOK=${{ secrets.OPENCLAW_WEBHOOK }}' >> .env && \
+               echo 'OPENCLAW_TOKEN=${{ secrets.OPENCLAW_TOKEN }}' >> .env && \
+               echo 'OPENCLAW_GROUP=${{ secrets.OPENCLAW_GROUP }}' >> .env && \
+               echo 'RAWG_API_KEY=${{ secrets.RAWG_API_KEY }}' >> .env && \
                sudo systemctl restart flask-app && \
                sleep 2 && \
                sudo systemctl is-active flask-app"
