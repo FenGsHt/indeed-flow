@@ -36,12 +36,16 @@
   50% { transform: translate(-5%, -5%) rotate(5deg); }
 }
 
-/* 隐藏 nexus 专属元素 */
+/* 隐藏 nexus / joypad 专属元素 */
 [data-theme="classic"] .sidebar { display: none !important; }
 [data-theme="classic"] #gl-canvas { display: none !important; }
 [data-theme="classic"] .bg-watermark { display: none !important; }
 [data-theme="classic"] .deco-leaf { display: none !important; }
 [data-theme="classic"] .page-header { display: none !important; }
+[data-theme="classic"] .joypad-sunburst { display: none !important; }
+[data-theme="classic"] .joypad-sunburst-overlay { display: none !important; }
+[data-theme="classic"] .joypad-star { display: none !important; }
+[data-theme="classic"] .joypad-confetti { display: none !important; }
 [data-theme="classic"] .section-title-nexus { display: none !important; }
 
 /* 显示 classic 专属元素 */

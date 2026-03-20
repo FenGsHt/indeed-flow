@@ -24,10 +24,14 @@
   min-height: 100vh;
 }
 
-/* 隐藏 classic 专属元素 */
+/* 隐藏 classic / joypad 专属元素 */
 [data-theme="nexus"] .classic-header { display: none !important; }
 [data-theme="nexus"] .bg-effect { display: none !important; }
 [data-theme="nexus"] .theme-fab { display: none !important; }
+[data-theme="nexus"] .joypad-sunburst { display: none !important; }
+[data-theme="nexus"] .joypad-sunburst-overlay { display: none !important; }
+[data-theme="nexus"] .joypad-star { display: none !important; }
+[data-theme="nexus"] .joypad-confetti { display: none !important; }
 
 /* ===== WebGL 画布 ===== */
 [data-theme="nexus"] #gl-canvas {
@@ -174,20 +178,23 @@
 
 /* 主题切换器 */
 /* 主题切换器 */
+/* 2026-03-20: flex-shrink:0 + 去掉 margin-top:auto 避免撑满剩余空间 */
 [data-theme="nexus"] .theme-switcher {
-  margin: auto 24px 12px;
-  padding: 14px;
+  margin: 16px 24px 12px;
+  padding: 10px 12px;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 12px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 [data-theme="nexus"] .theme-switcher-title {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 [data-theme="nexus"] .theme-switcher-options {
@@ -197,16 +204,17 @@
 
 [data-theme="nexus"] .theme-option {
   flex: 1;
-  padding: 6px 0;
+  padding: 5px 0;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  line-height: 1.2;
 }
 
 [data-theme="nexus"] .theme-option:hover {

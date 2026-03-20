@@ -6,7 +6,8 @@
 import { initWebGL, destroyWebGL } from './webgl-bg.js';
 
 const LS_KEY = 'indeed-theme';
-const THEMES = ['nexus', 'classic'];
+// 2026-03-20: 新增 joypad 卡通漫画风主题
+const THEMES = ['nexus', 'classic', 'joypad'];
 let threeLoaded = false;
 
 function loadThreeJS() {

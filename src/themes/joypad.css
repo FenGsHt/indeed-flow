@@ -1,0 +1,664 @@
+/* 2026-03-20: JOYPAD 卡通漫画风主题 */
+
+/* ===== CSS 变量 ===== */
+[data-theme="joypad"] {
+  --teal: #00b87c;
+  --teal-dark: #008a5c;
+  --yellow: #ffd94a;
+  --blue: #0047ff;
+  --blue-dark: #002db3;
+  --magenta: #ff007f;
+  --orange: #ff6b00;
+  --white: #ffffff;
+  --black: #141414;
+  --font-display: 'Lilita One', cursive;
+  --font-body: 'Nunito', sans-serif;
+}
+
+[data-theme="joypad"] {
+  background-color: var(--teal);
+  color: var(--black);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===== 隐藏其他主题专属元素 ===== */
+[data-theme="joypad"] .sidebar { display: none !important; }
+[data-theme="joypad"] #gl-canvas { display: none !important; }
+[data-theme="joypad"] .bg-watermark { display: none !important; }
+[data-theme="joypad"] .deco-leaf { display: none !important; }
+[data-theme="joypad"] .page-header { display: none !important; }
+[data-theme="joypad"] .section-title-nexus { display: none !important; }
+/* theme-fab 在 joypad 下显示，用于切换主题 */
+[data-theme="joypad"] .bg-effect { display: none !important; }
+
+/* 显示 classic-header 作为基础布局 */
+[data-theme="joypad"] .classic-header { display: block !important; }
+
+/* ===== Sunburst 旋转背景 ===== */
+[data-theme="joypad"] .joypad-sunburst {
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--teal) 0deg 15deg,
+    #00cc8a 15deg 30deg
+  );
+  z-index: -2;
+  animation: joypad-spin 60s linear infinite;
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+[data-theme="joypad"] .joypad-sunburst-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at center 20%, transparent 20%, rgba(0, 184, 124, 0.8) 80%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes joypad-spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== 装饰星星 ===== */
+[data-theme="joypad"] .joypad-star {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  background: var(--white);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="joypad"] .joypad-star.js1 {
+  top: 40px; left: 10px;
+  transform: rotate(-15deg) scale(1.2);
+  filter: drop-shadow(-6px 6px 0px var(--blue));
+  animation: joypad-float 3s ease-in-out infinite alternate;
+}
+
+[data-theme="joypad"] .joypad-star.js2 {
+  top: 120px; right: 20px; left: auto;
+  transform: rotate(25deg) scale(0.8);
+  filter: drop-shadow(6px 6px 0px var(--magenta));
+  animation: joypad-float 3s ease-in-out infinite alternate -1s;
+}
+
+[data-theme="joypad"] .joypad-star.js3 {
+  top: 60%; left: -10px;
+  transform: rotate(10deg) scale(1.5);
+  filter: drop-shadow(-8px 8px 0px var(--yellow));
+  animation: joypad-float 3s ease-in-out infinite alternate -2s;
+}
+
+@keyframes joypad-float {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-20px); }
+}
+
+/* ===== 纸屑装饰 ===== */
+[data-theme="joypad"] .joypad-confetti {
+  position: fixed;
+  width: 15px;
+  height: 30px;
+  pointer-events: none;
+  z-index: 0;
+  animation: joypad-fall 10s linear infinite;
+}
+
+[data-theme="joypad"] .joypad-confetti.jc1 {
+  top: -30px; left: 20%;
+  background: var(--magenta);
+  transform: rotate(45deg);
+  animation-duration: 7s;
+}
+
+[data-theme="joypad"] .joypad-confetti.jc2 {
+  top: -30px; left: 80%;
+  background: var(--orange);
+  transform: rotate(-30deg);
+  animation-duration: 9s;
+  animation-delay: 2s;
+}
+
+@keyframes joypad-fall {
+  100% { transform: translateY(110vh) rotate(360deg); }
+}
+
+/* ===== 布局 ===== */
+[data-theme="joypad"] .app-container {
+  display: block;
+  max-width: 960px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+[data-theme="joypad"] .main-content {
+  padding: 0 16px 40px;
+}
+
+/* ===== Classic Header 重写 ===== */
+[data-theme="joypad"] .classic-header {
+  padding: 40px 20px 20px;
+  text-align: center;
+  position: relative;
+}
+
+[data-theme="joypad"] .classic-header .logo {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  color: var(--white);
+  background: none;
+  -webkit-text-fill-color: var(--white);
+  text-shadow:
+    0px 2px 0 var(--teal-dark),
+    0px 4px 0 var(--teal-dark),
+    0px 6px 0 var(--teal-dark),
+    0px 8px 0 var(--teal-dark),
+    0px 10px 0 var(--teal-dark),
+    0px 12px 0 var(--teal-dark),
+    0px 16px 20px rgba(0,0,0,0.4);
+  transform: rotate(-3deg);
+  display: inline-block;
+  letter-spacing: -2px;
+  margin-bottom: 0;
+}
+
+[data-theme="joypad"] .classic-header .slogan {
+  color: var(--yellow);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  text-shadow: 1px 1px 0 var(--black);
+  transform: rotate(-2deg);
+}
+
+/* ===== Tab 导航（漫画按钮风） ===== */
+[data-theme="joypad"] .nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+[data-theme="joypad"] .nav-tab {
+  background: var(--black);
+  color: var(--white);
+  border: 3px solid var(--black);
+  border-radius: 20px;
+  padding: 10px 24px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 4px 4px 0 var(--blue-dark);
+}
+
+[data-theme="joypad"] .nav-tab:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--blue-dark);
+}
+
+[data-theme="joypad"] .nav-tab.active {
+  background: var(--yellow);
+  color: var(--black);
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+/* ===== 在线游戏区域 ===== */
+[data-theme="joypad"] .online-games-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.6rem !important;
+  color: var(--yellow) !important;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 var(--black) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-theme="joypad"] .online-games-title::before {
+  content: '';
+  display: block;
+  width: 12px;
+  height: 24px;
+  background: var(--magenta);
+  transform: skewX(-15deg);
+  border: 2px solid var(--black);
+  flex-shrink: 0;
+}
+
+[data-theme="joypad"] .online-game-card {
+  background: var(--white) !important;
+  border: 4px solid var(--black) !important;
+  border-radius: 16px !important;
+  padding: 16px !important;
+  box-shadow: 6px 6px 0 var(--blue);
+  transition: transform 0.1s, box-shadow 0.1s !important;
+  color: var(--black);
+}
+
+[data-theme="joypad"] .online-game-card:hover {
+  transform: translate(3px, 3px) !important;
+  box-shadow: 3px 3px 0 var(--blue) !important;
+}
+
+[data-theme="joypad"] .online-game-card[data-accent="green"] { box-shadow: 6px 6px 0 var(--teal-dark); }
+[data-theme="joypad"] .online-game-card[data-accent="red"] { box-shadow: 6px 6px 0 var(--magenta); }
+[data-theme="joypad"] .online-game-card[data-accent="orange"] { box-shadow: 6px 6px 0 var(--orange); }
+[data-theme="joypad"] .online-game-card[data-accent="gold"] { box-shadow: 6px 6px 0 var(--yellow); }
+
+[data-theme="joypad"] .online-game-card .game-card-name {
+  color: var(--black) !important;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1rem;
+}
+
+[data-theme="joypad"] .online-game-card .game-card-desc {
+  color: #666 !important;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+/* ===== Steam 推荐区域 ===== */
+[data-theme="joypad"] .steam-recommendations {
+  background: var(--blue) !important;
+  border: 4px solid var(--black) !important;
+  border-radius: 16px !important;
+  box-shadow: 8px 8px 0 var(--white) !important;
+  padding: 20px 16px !important;
+}
+
+[data-theme="joypad"] .steam-rec-title {
+  color: var(--white) !important;
+  font-family: var(--font-display);
+  text-shadow: 2px 2px 0 var(--black);
+}
+
+[data-theme="joypad"] .steam-rec-card {
+  background: var(--white) !important;
+  border: 3px solid var(--black) !important;
+  border-radius: 12px !important;
+  box-shadow: 4px 4px 0 var(--black) !important;
+  color: var(--black) !important;
+}
+
+[data-theme="joypad"] .steam-rec-card:hover {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0 var(--black) !important;
+}
+
+[data-theme="joypad"] .steam-rec-card .game-name,
+[data-theme="joypad"] .steam-rec-card .rec-card-title {
+  color: var(--black) !important;
+  font-family: var(--font-display);
+}
+
+/* ===== 游戏库标题 ===== */
+[data-theme="joypad"] .section-title-nexus { display: none !important; }
+
+/* ===== 游戏卡片（games-grid） ===== */
+[data-theme="joypad"] .games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+[data-theme="joypad"] .game-card {
+  background: var(--white);
+  border: 4px solid var(--black);
+  border-radius: 16px;
+  box-shadow: 8px 8px 0 var(--blue);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  animation: joypad-cardIn 0.4s ease both;
+  position: relative;
+}
+
+@keyframes joypad-cardIn {
+  from { opacity: 0; transform: translateY(20px) rotate(-2deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
+[data-theme="joypad"] .game-card:active,
+[data-theme="joypad"] .game-card:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0 var(--blue);
+}
+
+[data-theme="joypad"] .game-card:nth-child(even) { box-shadow: 8px 8px 0 var(--teal-dark); }
+[data-theme="joypad"] .game-card:nth-child(even):hover { box-shadow: 4px 4px 0 var(--teal-dark); }
+[data-theme="joypad"] .game-card:nth-child(3n) { box-shadow: 8px 8px 0 var(--orange); }
+[data-theme="joypad"] .game-card:nth-child(3n):hover { box-shadow: 4px 4px 0 var(--orange); }
+[data-theme="joypad"] .game-card:nth-child(5n) { box-shadow: 8px 8px 0 var(--magenta); }
+[data-theme="joypad"] .game-card:nth-child(5n):hover { box-shadow: 4px 4px 0 var(--magenta); }
+
+[data-theme="joypad"] .game-cover {
+  height: 150px;
+  border-bottom: 4px solid var(--black);
+  position: relative;
+}
+
+[data-theme="joypad"] .game-info {
+  padding: 12px 14px;
+  background: var(--white);
+}
+
+[data-theme="joypad"] .game-name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.15;
+  color: var(--black);
+  margin-bottom: 6px;
+}
+
+[data-theme="joypad"] .game-meta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #666;
+}
+
+[data-theme="joypad"] .game-meta span {
+  color: #666;
+}
+
+/* 状态标签（贴纸风格） */
+[data-theme="joypad"] .status-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--magenta);
+  color: var(--white);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border: 3px solid var(--black);
+  border-radius: 20px;
+  transform: rotate(8deg);
+  box-shadow: 3px 3px 0 var(--black);
+  z-index: 10;
+  text-transform: uppercase;
+}
+
+[data-theme="joypad"] .status-badge[title="playing"],
+[data-theme="joypad"] .status-badge.playing {
+  background: var(--orange);
+  transform: rotate(-5deg);
+}
+
+[data-theme="joypad"] .status-badge[title="completed"],
+[data-theme="joypad"] .status-badge.completed {
+  background: var(--teal);
+  transform: rotate(5deg);
+}
+
+[data-theme="joypad"] .status-badge[title="todo"],
+[data-theme="joypad"] .status-badge.todo {
+  background: var(--yellow);
+  color: var(--black);
+  transform: rotate(-8deg);
+}
+
+/* Steam 链接按钮 */
+[data-theme="joypad"] .steam-card-link {
+  background: var(--yellow);
+  color: var(--black) !important;
+  border: 2px solid var(--black);
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+/* 价格行 */
+[data-theme="joypad"] .game-price-row {
+  color: #888 !important;
+  font-weight: 700;
+}
+
+/* Nexus 进度条在 joypad 下的条纹风格 */
+[data-theme="joypad"] .progress-container { display: none; }
+
+/* ===== 新闻区域 ===== */
+[data-theme="joypad"] .news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+[data-theme="joypad"] .news-item {
+  background: var(--white);
+  border: 3px solid var(--black);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 4px 4px 0 var(--black);
+  transition: transform 0.1s, box-shadow 0.1s;
+  border-radius: 4px;
+}
+
+[data-theme="joypad"] .news-item:nth-child(odd) {
+  transform: rotate(-0.8deg);
+}
+
+[data-theme="joypad"] .news-item:nth-child(even) {
+  transform: rotate(0.8deg);
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--blue);
+}
+
+[data-theme="joypad"] .news-item:hover {
+  transform: translate(2px, 2px) rotate(0deg);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+[data-theme="joypad"] .news-item .news-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: var(--black);
+}
+
+[data-theme="joypad"] .news-item .news-source,
+[data-theme="joypad"] .news-item .news-time {
+  color: #666;
+  font-weight: 700;
+}
+
+/* 新闻 sub-tabs */
+[data-theme="joypad"] .sub-tab {
+  background: var(--black);
+  color: var(--white);
+  border: 3px solid var(--black);
+  border-radius: 14px;
+  padding: 6px 16px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--blue-dark);
+  transition: all 0.15s;
+}
+
+[data-theme="joypad"] .sub-tab.active {
+  background: var(--yellow);
+  color: var(--black);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+[data-theme="joypad"] .btn-ai-summary {
+  background: var(--magenta);
+  color: var(--white);
+  border: 3px solid var(--black);
+  border-radius: 14px;
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+/* ===== 添加按钮（漫画风） ===== */
+[data-theme="joypad"] .add-game-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  background: var(--yellow);
+  color: var(--black);
+  border: 4px solid var(--black);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 var(--black);
+  transition: transform 0.1s, box-shadow 0.1s;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="joypad"] .add-game-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+/* AI fab */
+[data-theme="joypad"] .ai-fab {
+  background: var(--magenta) !important;
+  border: 3px solid var(--black) !important;
+  box-shadow: 4px 4px 0 var(--black) !important;
+  border-radius: 50% !important;
+}
+
+/* ===== 弹窗适配 ===== */
+[data-theme="joypad"] .modal-content {
+  background: var(--white);
+  border: 4px solid var(--black);
+  border-radius: 16px;
+  box-shadow: 8px 8px 0 var(--blue);
+  color: var(--black);
+}
+
+[data-theme="joypad"] .modal-title {
+  font-family: var(--font-display);
+  color: var(--black);
+  font-size: 1.5rem;
+}
+
+[data-theme="joypad"] .form-group label {
+  color: #666;
+  font-weight: 700;
+}
+
+[data-theme="joypad"] .form-group input,
+[data-theme="joypad"] .form-group select {
+  border: 3px solid var(--black);
+  border-radius: 10px;
+  background: #f5f5f5;
+  color: var(--black);
+  font-weight: 700;
+}
+
+[data-theme="joypad"] .form-group input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0,184,124,0.3);
+}
+
+[data-theme="joypad"] .btn-primary {
+  background: var(--teal) !important;
+  color: var(--white) !important;
+  border: 3px solid var(--black);
+  box-shadow: 4px 4px 0 var(--black);
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+[data-theme="joypad"] .btn-secondary {
+  background: #e0e0e0 !important;
+  color: var(--black) !important;
+  border: 3px solid var(--black);
+  box-shadow: 4px 4px 0 var(--black);
+  font-family: var(--font-display);
+}
+
+[data-theme="joypad"] .btn-danger {
+  background: var(--magenta) !important;
+  border: 3px solid var(--black);
+  box-shadow: 4px 4px 0 var(--black);
+  font-family: var(--font-display);
+}
+
+/* ===== 加载动画 ===== */
+[data-theme="joypad"] .loading::after {
+  border: 4px solid #e0e0e0;
+  border-top-color: var(--teal);
+}
+
+/* ===== 自定义滚动条 ===== */
+[data-theme="joypad"] ::-webkit-scrollbar { width: 10px; }
+[data-theme="joypad"] ::-webkit-scrollbar-track { background: var(--teal-dark); }
+[data-theme="joypad"] ::-webkit-scrollbar-thumb {
+  background: var(--yellow);
+  border: 2px solid var(--black);
+  border-radius: 5px;
+}
+
+/* ===== 主题切换浮动按钮 ===== */
+[data-theme="joypad"] .theme-fab {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid var(--black);
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 4px 4px 0 var(--black);
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="joypad"] .theme-fab:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  [data-theme="joypad"] .classic-header .logo {
+    font-size: 3rem;
+  }
+  [data-theme="joypad"] .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  [data-theme="joypad"] .game-card {
+    border-width: 3px;
+    box-shadow: 5px 5px 0 var(--blue);
+  }
+  [data-theme="joypad"] .game-cover {
+    height: 120px;
+    border-bottom-width: 3px;
+  }
+}
