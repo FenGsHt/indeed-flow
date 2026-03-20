@@ -444,14 +444,15 @@
     }
 
     .beer-chip {
-      display: flex; align-items: flex-end; gap: 0.4rem;
-      padding: 0.4rem 0.5rem; border-radius: 10px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.15rem; padding: 0.5rem 0.6rem; border-radius: 12px;
       background: rgba(255,255,255,0.04);
       border: 2px solid rgba(212,166,70,0.1);
       position: relative; transition: all 0.3s;
+      min-width: 62px; text-align: center;
     }
     .beer-chip .bc-name {
-      font-size: 0.75rem; max-width: 60px;
+      font-size: 0.72rem; max-width: 70px; font-weight: 600;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .beer-chip.active {
@@ -923,11 +924,9 @@ function renderGame(state) {
     return `<div class="beer-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''}">
       ${turnTag(p.id)}
       ${beerGuyHTML(beerMode ? p.beerLevel : 0, isDrinking)}
-      <div>
-        <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
-        ${ptsStr}
-        ${beerExtra}
-      </div>
+      <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
+      ${ptsStr}
+      ${beerExtra}
     </div>`;
   }).join('');
 
