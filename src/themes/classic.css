@@ -595,8 +595,8 @@
 /* Classic 模式浮动主题切换按钮 */
 [data-theme="classic"] .theme-fab {
   position: fixed;
-  top: 1.5rem;
-  right: 1.5rem;
+  bottom: 6rem;
+  right: 2rem;
   width: 40px;
   height: 40px;
   border-radius: 50%;
