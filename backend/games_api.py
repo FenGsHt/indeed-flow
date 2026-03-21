@@ -82,15 +82,16 @@ def init_db():
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE games ADD COLUMN {col} {col_def}")
         
-        # 迁移：把 image 字段从 VARCHAR(512) 改为 TEXT（支持 base64 图片）
+        # 迁移：把 image 字段从 VARCHAR(512) 或 TEXT 改为 MEDIUMTEXT（支持大图 base64，最大 16MB）
         cursor.execute(
-            "SELECT COUNT(*) FROM information_schema.COLUMNS "
-            "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME='image' AND COLUMN_TYPE='varchar(512)'",
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME='image'",
             (db_name,)
         )
-        if cursor.fetchone()[0] > 0:
-            cursor.execute("ALTER TABLE games MODIFY COLUMN image TEXT")
-            print("Migrated image column to TEXT for base64 support")
+        row = cursor.fetchone()
+        if row and row[0].lower() in ('varchar(512)', 'text'):
+            cursor.execute("ALTER TABLE games MODIFY COLUMN image MEDIUMTEXT")
+            print(f"Migrated image column from {row[0]} to MEDIUMTEXT")
         
         # 创建 Steam 联机游戏推荐表
         cursor.execute('''

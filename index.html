@@ -384,10 +384,24 @@
       const urlInput = document.getElementById(urlInputId);
       const reader = new FileReader();
       reader.onload = function(e) {
-        const b64 = e.target.result;
-        urlInput.value = b64;
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+        // 2026-03-20: 压缩图片再存入，避免 base64 超出数据库字段限制
+        const img = new Image();
+        img.onload = function() {
+          const MAX = 600;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const b64 = canvas.toDataURL('image/jpeg', 0.82);
+          urlInput.value = b64;
+          preview.style.display = 'block';
+          preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
