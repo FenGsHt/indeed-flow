@@ -1,0 +1,132 @@
+/* ── ABYSS 深海终端主题 ────────────────────── */
+
+[data-theme="abyss"] {
+  --abyss-bg:      #07080a;
+  --abyss-panel:   rgba(7, 8, 10, 0.85);
+  --abyss-border:  rgba(110, 123, 140, 0.25);
+  --abyss-text:    #dde5ed;
+  --abyss-muted:   #6e7b8c;
+  --abyss-cyan:    #00d4ff;
+  --abyss-red:     #ff0033;
+  --abyss-orange:  #ff9900;
+  --abyss-green:   #00ff44;
+  --font-display:  'Share Tech Mono', monospace;
+  --font-ui:       'Share Tech Mono', monospace;
+  background-color: var(--abyss-bg);
+  color: var(--abyss-text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── 隐藏其他主题专属元素 ───────────────────── */
+[data-theme="abyss"] .classic-header      { display: none !important; }
+[data-theme="abyss"] .bg-effect           { display: none !important; }
+[data-theme="abyss"] .joypad-sunburst     { display: none !important; }
+[data-theme="abyss"] .joypad-sunburst-overlay { display: none !important; }
+[data-theme="abyss"] .joypad-star         { display: none !important; }
+[data-theme="abyss"] .joypad-confetti     { display: none !important; }
+
+/* ── Sidebar（与 nexus 共用侧边栏结构） ──────── */
+[data-theme="abyss"] .sidebar {
+  background: rgba(7, 8, 10, 0.92);
+  border-right: 1px solid var(--abyss-border);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="abyss"] .sidebar .logo-text {
+  color: var(--abyss-text);
+  letter-spacing: 0.2em;
+  font-family: var(--font-display);
+}
+
+[data-theme="abyss"] .sidebar .nav-link {
+  color: var(--abyss-muted);
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+}
+[data-theme="abyss"] .sidebar .nav-link:hover,
+[data-theme="abyss"] .sidebar .nav-link.active {
+  color: var(--abyss-cyan);
+  background: rgba(0, 212, 255, 0.06);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+/* ── Page header ───────────────────────────── */
+[data-theme="abyss"] .page-header {
+  border-bottom: 1px solid var(--abyss-border);
+  background: rgba(7, 8, 10, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="abyss"] .page-title {
+  color: var(--abyss-text);
+  letter-spacing: 0.15em;
+  font-family: var(--font-display);
+}
+
+/* ── Cards / Panels ────────────────────────── */
+[data-theme="abyss"] .card,
+[data-theme="abyss"] .game-card-nexus {
+  background: var(--abyss-panel);
+  border: 1px solid var(--abyss-border);
+  border-radius: 0;
+  clip-path: polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px);
+}
+
+[data-theme="abyss"] .card:hover,
+[data-theme="abyss"] .game-card-nexus:hover {
+  border-color: var(--abyss-cyan);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* ── Section title ─────────────────────────── */
+[data-theme="abyss"] .section-title-nexus {
+  color: var(--abyss-muted);
+  letter-spacing: 0.28em;
+  font-size: 0.7rem;
+}
+
+/* ── WebGL canvas: 深海主题保留背景 canvas ──── */
+[data-theme="abyss"] #gl-canvas {
+  opacity: 0.4;
+}
+
+/* ── Theme FAB ─────────────────────────────── */
+[data-theme="abyss"] .theme-fab {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  border: 1px solid var(--abyss-border);
+  background: var(--abyss-panel);
+  color: var(--abyss-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+  clip-path: polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px);
+}
+[data-theme="abyss"] .theme-fab:hover {
+  border-color: var(--abyss-cyan);
+  color: var(--abyss-cyan);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+}
+
+/* ── Bg watermark ──────────────────────────── */
+[data-theme="abyss"] .bg-watermark {
+  color: rgba(110, 123, 140, 0.04);
+  font-family: var(--font-display);
+  letter-spacing: 0.3em;
+}
+
+/* ── Theme switcher panel ──────────────────── */
+[data-theme="abyss"] .theme-switcher { display: none !important; }
+
+/* ── Scrollbar ─────────────────────────────── */
+[data-theme="abyss"] ::-webkit-scrollbar { width: 4px; }
+[data-theme="abyss"] ::-webkit-scrollbar-track { background: transparent; }
+[data-theme="abyss"] ::-webkit-scrollbar-thumb { background: var(--abyss-border); }

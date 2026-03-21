@@ -6,8 +6,7 @@
 import { initWebGL, destroyWebGL } from './webgl-bg.js';
 
 const LS_KEY = 'indeed-theme';
-// 2026-03-20: 新增 joypad 卡通漫画风主题
-const THEMES = ['nexus', 'classic', 'joypad'];
+const THEMES = ['nexus', 'classic', 'joypad', 'abyss'];
 let threeLoaded = false;
 
 function loadThreeJS() {
@@ -41,7 +40,7 @@ export function switchTheme(name) {
   localStorage.setItem(LS_KEY, name);
 
   destroyWebGL();
-  if (name === 'nexus') activateWebGL();
+  if (name === 'nexus' || name === 'abyss') activateWebGL();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === name);
@@ -53,7 +52,7 @@ export function initTheme() {
   const theme = THEMES.includes(saved) ? saved : 'nexus';
   document.body.setAttribute('data-theme', theme);
 
-  if (theme === 'nexus') activateWebGL();
+  if (theme === 'nexus' || theme === 'abyss') activateWebGL();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);

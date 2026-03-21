@@ -222,6 +222,7 @@
           <button class="theme-option active" data-theme="nexus">Nexus</button>
           <button class="theme-option" data-theme="classic">Classic</button>
           <button class="theme-option" data-theme="joypad">Joypad</button>
+          <button class="theme-option" data-theme="abyss">Abyss</button>
         </div>
       </div>
       <div class="mini-games-widget">
@@ -348,7 +349,7 @@
 
   <!-- 2026-03-20: 右侧 FAB 列表容器，所有右侧浮动按钮统一在此 -->
   <div class="fab-stack-right">
-    <button class="theme-fab" onclick="(function(){var ts=['nexus','classic','joypad'],c=document.body.getAttribute('data-theme'),i=(ts.indexOf(c)+1)%ts.length;switchTheme(ts[i]);})()" title="切换主题">🎨</button>
+    <button class="theme-fab" onclick="(function(){var ts=['nexus','classic','joypad','abyss'],c=document.body.getAttribute('data-theme'),i=(ts.indexOf(c)+1)%ts.length;switchTheme(ts[i]);})()" title="切换主题">🎨</button>
     <a href="http://150.158.110.168:19000/" target="_blank" rel="noopener noreferrer" class="office-fab" title="进入 Star Office">🏢</a>
     <button class="add-game-btn" onclick="openAddModal()">+</button>
   </div>

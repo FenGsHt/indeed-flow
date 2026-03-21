@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./src/themes/classic.css">
   <link rel="stylesheet" href="./src/themes/nexus.css">
   <link rel="stylesheet" href="./src/themes/joypad.css">
+  <link rel="stylesheet" href="./src/themes/abyss.css">
   <script type="importmap">
     {
       "imports": {
@@ -261,7 +262,7 @@
     }
   </style>
 </head>
-<body data-theme="nexus">
+<body data-theme="abyss">
 
   <div class="hud-ui">
     <div class="top-bar">
@@ -442,11 +443,13 @@
       }`;
     for (let i = 0; i < 5; i++) {
       const y = -1.8 + i * 0.9;
-      n1.add(Object.assign(new THREE.Mesh(planeGeo, new THREE.ShaderMaterial({
+      const plane = new THREE.Mesh(planeGeo, new THREE.ShaderMaterial({
         vertexShader: pVert, fragmentShader: pFrag,
         uniforms: { uTime, uBaseY: { value: y } },
         transparent: true, wireframe: true, blending: THREE.AdditiveBlending
-      })), { position: { y } }));
+      }));
+      plane.position.y = y;
+      n1.add(plane);
     }
 
     // ── Node 2: Containment Core ─────────────────
@@ -639,6 +642,8 @@
   <script type="module">
     import { initTheme } from './src/theme-engine.js';
     initTheme();
+    // games 页固定使用 abyss 主题（不随全局主题切换）
+    document.body.setAttribute('data-theme', 'abyss');
   </script>
 
   <!-- page-agent AI 助手 -->
