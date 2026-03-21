@@ -40,7 +40,7 @@ export function switchTheme(name) {
   localStorage.setItem(LS_KEY, name);
 
   destroyWebGL();
-  if (name === 'nexus' || name === 'abyss') activateWebGL();
+  if (name === 'nexus') activateWebGL();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === name);
@@ -52,7 +52,7 @@ export function initTheme() {
   const theme = THEMES.includes(saved) ? saved : 'nexus';
   document.body.setAttribute('data-theme', theme);
 
-  if (theme === 'nexus' || theme === 'abyss') activateWebGL();
+  if (theme === 'nexus') activateWebGL();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
