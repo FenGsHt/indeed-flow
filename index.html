@@ -1346,7 +1346,12 @@
         }
 
         closeModal('add-modal');
+        // 2026-03-20: 先立即刷新显示游戏（无封面），后台自动获取封面后再刷新一次
         loadGames();
+        if (!image) {
+          showTip('正在自动获取 Steam 封面…', 'info');
+          setTimeout(() => loadGames(), 4000);
+        }
       } catch {
         alert('添加失败，请重试');
       }

@@ -7,6 +7,7 @@ import json
 import uuid
 import re
 import time
+import threading
 import urllib.request
 import urllib.parse
 import os
@@ -801,6 +802,46 @@ def get_games():
     return jsonify(games)
 
 
+def _auto_fetch_steam_cover(game_id, game_name):
+    """后台自动从 Steam 搜索封面并回填到数据库"""
+    try:
+        search_url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
+        )
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            items = data.get('items', [])
+            if not items:
+                return
+            app_id = items[0].get('id')
+            if not app_id:
+                return
+
+        # 优先取 header.jpg（横幅封面）
+        image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+        b64 = convert_url_to_base64(image_url)
+
+        if not b64:
+            return
+
+        conn = get_db()
+        try:
+            cursor = conn.cursor()
+            # 只在 image 仍为空时才写入，避免覆盖用户手动设置的图片
+            cursor.execute(
+                'UPDATE games SET image = %s, steam_appid = %s WHERE id = %s AND (image IS NULL OR image = "")',
+                (b64, str(app_id), game_id)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        print(f"[AutoCover] {game_name} → appid={app_id} OK")
+    except Exception as e:
+        print(f"[AutoCover] {game_name} failed: {e}")
+
+
 @games_bp.route('/api/games', methods=['POST'])
 def add_game():
     data = request.get_json(silent=True) or {}
@@ -836,6 +877,15 @@ def add_game():
         conn.commit()
     finally:
         conn.close()
+
+    # 2026-03-20: 若未提供封面，后台线程自动从 Steam 搜索并回填
+    if not game['image']:
+        threading.Thread(
+            target=_auto_fetch_steam_cover,
+            args=(game['id'], game['name']),
+            daemon=True
+        ).start()
+
     return jsonify({'success': True, 'game': game})
 
 
