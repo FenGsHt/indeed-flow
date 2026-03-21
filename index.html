@@ -735,7 +735,7 @@
         // 2026-03-20: 检测当前主题
         const isNexus = document.body.getAttribute('data-theme') === 'nexus';
 
-        list.innerHTML = gamesWithRatings.slice(0, 12).map((g, i) => {
+        list.innerHTML = gamesWithRatings.map((g, i) => {
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
           const hue1 = hash % 360;
           const hue2 = (hash * 2) % 360;
@@ -818,7 +818,7 @@
           }
         }
 
-        const visibleGames = games.slice(0, 12);
+        const visibleGames = games;
 
         // ── 评分：独立并行 ──────────────────────────────────────────
         getSteamRatingsBatch(visibleGames).then(ratingsMap => {
