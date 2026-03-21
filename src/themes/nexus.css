@@ -1157,7 +1157,7 @@
     right: 1.2rem;
   }
   [data-theme="nexus"] .office-fab {
-    bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
     right: 1.2rem;
   }
   [data-theme="nexus"] .ai-fab {

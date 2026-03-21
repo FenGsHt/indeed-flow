@@ -645,7 +645,7 @@
 /* ===== 主题切换浮动按钮 ===== */
 [data-theme="joypad"] .theme-fab {
   position: fixed;
-  bottom: 6rem;
+  bottom: 10.5rem;
   right: 2rem;
   width: 44px;
   height: 44px;

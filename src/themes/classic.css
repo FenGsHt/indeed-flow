@@ -609,7 +609,7 @@
 /* Classic 模式浮动主题切换按钮 */
 [data-theme="classic"] .theme-fab {
   position: fixed;
-  bottom: 6rem;
+  bottom: 10.5rem;
   right: 2rem;
   width: 40px;
   height: 40px;
