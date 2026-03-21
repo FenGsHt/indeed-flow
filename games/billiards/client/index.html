@@ -46,8 +46,10 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
 .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.8rem}
 .opt-item label{font-size:0.78rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.25rem}
 .opt-item select,.opt-item input[type=number]{
-  width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
-  border-radius:6px;padding:0.4rem 0.6rem;color:rgba(255,255,255,0.5);font-size:0.82rem}
+  width:100%;background:#1a2a1a;border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px;padding:0.4rem 0.6rem;color:#e8d5a3;font-size:0.82rem}
+/* 2026-03-19: option 明确深色背景防止白底看不清 */
+.opt-item select option{background:#1a2a1a;color:#e8d5a3}
 .opt-item.disabled{opacity:0.4;pointer-events:none}
 .coming-soon{font-size:0.7rem;color:#d4a017;margin-top:0.2rem}
 
