@@ -2,22 +2,21 @@
  * Billiards game state manager (server-side, no physics).
  * Physics runs on the client; server tracks rule state.
  * 2026-03-19: 新增三人分区八球制（mode: '3player'）
- *   - Player 0: 球 1-5，Player 1: 球 6,7,9,10，Player 2: 球 11-15
- *   - 8号球为终结球：清空本组后打进8号球即获胜
- *   - 提前打进8号球 = 该玩家输，对局结束
+ *   - Player 0: 1-5，Player 1: 6,7,9,10，Player 2: 11-15，8号球为终结球
+ * 2026-03-19: 新增四人分区模式（mode: '4player'）
+ *   - Player 0: 1-4，Player 1: 5-8，Player 2: 9-12，Player 3: 13-15
+ *   - 无特殊8号球规则，清空本组所有球即获胜
  */
 
-// Ball types (used in 2-player mode)
 const TYPE = { SOLID: 'solid', STRIPE: 'stripe', EIGHT: 'eight', CUE: 'cue' };
 
-// 三人模式分组常量
-const GROUPS_3P = [
-  [1, 2, 3, 4, 5],        // 玩家0
-  [6, 7, 9, 10],          // 玩家1（8号球单独作为终结球）
-  [11, 12, 13, 14, 15],   // 玩家2
-];
-// 三人模式每个玩家对应的颜色标识（传给客户端）
-const GROUP_COLORS_3P = ['#f5c518', '#64b5f6', '#81c784'];
+// 各人数模式的球组分配
+const GROUPS_BY_MODE = {
+  '3player': [[1,2,3,4,5],[6,7,9,10],[11,12,13,14,15]],   // 8号为终结球
+  '4player': [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15]], // 无特殊8号
+};
+
+const GROUP_COLORS = ['#f5c518','#64b5f6','#81c784','#ff7043'];
 
 function ballType(num) {
   if (num === 0) return TYPE.CUE;
@@ -25,17 +24,18 @@ function ballType(num) {
   return num <= 7 ? TYPE.SOLID : TYPE.STRIPE;
 }
 
-// 三人模式：判断球属于哪组（-1=8号球或母球）
-function getGroupOf3P(ballNum) {
-  if (ballNum >= 1 && ballNum <= 5) return 0;
-  if (ballNum === 6 || ballNum === 7 || ballNum === 9 || ballNum === 10) return 1;
-  if (ballNum >= 11 && ballNum <= 15) return 2;
+// 通用：查找球属于哪个分区玩家（-1=不在任何组）
+function getGroupOfByMode(ballNum, mode) {
+  const groups = GROUPS_BY_MODE[mode] || [];
+  for (let i = 0; i < groups.length; i++) {
+    if (groups[i].includes(ballNum)) return i;
+  }
   return -1;
 }
 
 const DEFAULT_OPTIONS = {
   gameType: '8ball',
-  mode: '2player',   // '2player' | '3player'
+  mode: '2player',   // '2player' | '3player' | '4player'
   timeLimit: 0,
   ballInHand: 'full',
 };
@@ -43,20 +43,25 @@ const DEFAULT_OPTIONS = {
 class BilliardsGame {
   constructor(options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options };
-    this.maxPlayers = this.options.mode === '3player' ? 3 : 2;
-    this.players = [];       // [{ id, name, socketId, type, score, ready, disconnected, group }]
-    this.status = 'waiting'; // waiting | playing | finished
-    this.currentTurn = 0;    // player index
-    this.phase = 'aiming';   // aiming | simulating | placing_cue
-    this.pocketed = [];      // ball numbers pocketed this game
-    this.ballPositions = {}; // num -> {x, y}, updated after each shot
+    this.maxPlayers = { '3player': 3, '4player': 4 }[this.options.mode] || 2;
+    this.players = [];
+    this.status = 'waiting';
+    this.currentTurn = 0;
+    this.phase = 'aiming';
+    this.pocketed = [];
+    this.ballPositions = {};
     this.winner = null;
     this.shotCount = 0;
     this.breakDone = false;
     this.readyTimestamp = null;
   }
 
+  isPartitionMode() {
+    return this.options.mode === '3player' || this.options.mode === '4player';
+  }
+
   is3Player() { return this.options.mode === '3player'; }
+  is4Player() { return this.options.mode === '4player'; }
 
   addPlayer(name, socketId) {
     if (this.players.length >= this.maxPlayers) return false;
@@ -85,26 +90,27 @@ class BilliardsGame {
     this.pocketed = [];
     this.shotCount = 0;
     this.breakDone = false;
+    const groups = GROUPS_BY_MODE[this.options.mode] || [];
     this.players.forEach((p, i) => {
       p.type = null;
-      // 三人模式预分配球组
-      p.group = this.is3Player() ? (GROUPS_3P[i] || []) : null;
+      p.group = groups[i] || null;
     });
   }
 
-  // 三人模式：获取某玩家已打进的本组球
-  getPocketedForPlayer3P(playerIdx) {
-    const group = GROUPS_3P[playerIdx] || [];
+  // 通用：获取某玩家已打进的本组球
+  getPocketedForPlayer(playerIdx) {
+    const groups = GROUPS_BY_MODE[this.options.mode] || [];
+    const group = groups[playerIdx] || [];
     return this.pocketed.filter(n => group.includes(n));
   }
 
-  // 三人模式：判断某玩家是否已清空本组
-  isGroupCleared3P(playerIdx) {
-    const group = GROUPS_3P[playerIdx] || [];
+  // 通用：判断某玩家是否已清空本组
+  isGroupClearedForPlayer(playerIdx) {
+    const groups = GROUPS_BY_MODE[this.options.mode] || [];
+    const group = groups[playerIdx] || [];
     return group.length > 0 && group.every(n => this.pocketed.includes(n));
   }
 
-  // Called with shooter's shot result after simulation ends
   applyShot({ pocketed, scratch, ballPositions, shooterSocketId }) {
     const shooterIdx = this.players.findIndex(p => p.socketId === shooterSocketId);
     if (shooterIdx !== this.currentTurn) return null;
@@ -114,7 +120,6 @@ class BilliardsGame {
     this.breakDone = true;
     if (ballPositions) this.ballPositions = ballPositions;
 
-    // 记录新入袋球
     const newlyPocketed = [];
     pocketed.forEach(num => {
       if (num !== 0 && !this.pocketed.includes(num)) {
@@ -123,8 +128,8 @@ class BilliardsGame {
       }
     });
 
-    if (this.is3Player()) {
-      return this._applyShot3P(shooterIdx, newlyPocketed, scratch);
+    if (this.isPartitionMode()) {
+      return this._applyShotPartition(shooterIdx, newlyPocketed, scratch);
     } else {
       return this._applyShot2P(shooterIdx, newlyPocketed, scratch);
     }
@@ -136,7 +141,6 @@ class BilliardsGame {
     const opponent = this.players[1 - shooterIdx];
     let foul = scratch;
 
-    // 首次合法入袋时分配球型
     if (!shooter.type) {
       const firstLegal = newlyPocketed.find(n => n !== 8);
       if (firstLegal) {
@@ -145,7 +149,6 @@ class BilliardsGame {
       }
     }
 
-    // 8号球判定
     if (newlyPocketed.includes(8)) {
       if (scratch) return this._endGame(1 - shooterIdx, 'scratch_on_eight');
       const shootersDone = shooter.type
@@ -181,32 +184,37 @@ class BilliardsGame {
     };
   }
 
-  // ── 三人分区八球制逻辑 ─────────────────────────────────────────────────────
-  _applyShot3P(shooterIdx, newlyPocketed, scratch) {
-    let foul = scratch;
-    const groupCleared = this.isGroupCleared3P(shooterIdx);
+  // ── 通用分区模式（3人/4人）────────────────────────────────────────────────
+  _applyShotPartition(shooterIdx, newlyPocketed, scratch) {
+    const mode = this.options.mode;
+    const is3P = this.is3Player();
+    const foul = scratch;
 
-    // 8号球判定
-    if (newlyPocketed.includes(8)) {
-      if (scratch) {
-        // 打进8号球同时犯规 = 该玩家输
-        return this._endGame3P(shooterIdx, 'scratch_on_eight', false);
-      }
-      if (groupCleared) {
-        // 已清空本组，打进8号球 = 获胜
-        return this._endGame3P(shooterIdx, 'win', true);
+    // 3P 专有：8号球终结规则
+    if (is3P && newlyPocketed.includes(8)) {
+      if (scratch) return this._endGamePartition(shooterIdx, 'scratch_on_eight', false);
+      if (this.isGroupClearedForPlayer(shooterIdx)) {
+        return this._endGamePartition(shooterIdx, 'win', true);
       } else {
-        // 提前打进8号球 = 该玩家输
-        return this._endGame3P(shooterIdx, 'early_eight', false);
+        return this._endGamePartition(shooterIdx, 'early_eight', false);
       }
     }
 
-    // 本轮打进了本组的球 → 继续回合
-    const myNewBalls = newlyPocketed.filter(n => getGroupOf3P(n) === shooterIdx);
+    // 4P：清空本组球立即获胜（任意一颗本组球在此回合入袋且组全清）
+    if (!is3P) {
+      const groups = GROUPS_BY_MODE[mode] || [];
+      const myGroup = groups[shooterIdx] || [];
+      const myNewBallsCheck = newlyPocketed.some(n => myGroup.includes(n));
+      if (myNewBallsCheck && this.isGroupClearedForPlayer(shooterIdx)) {
+        return this._endGamePartition(shooterIdx, 'win', true);
+      }
+    }
+
+    // 通用：本回合打进了本组的球 → 继续
+    const myNewBalls = newlyPocketed.filter(n => getGroupOfByMode(n, mode) === shooterIdx);
     const keepTurn = !foul && myNewBalls.length > 0;
 
     if (scratch) {
-      // 犯规：推进到下一玩家，由下一玩家放置母球
       this.phase = 'placing_cue';
       this.currentTurn = (this.currentTurn + 1) % this.players.length;
     } else {
@@ -224,23 +232,20 @@ class BilliardsGame {
     };
   }
 
-  // 三人模式结束游戏
-  // isWin=true: protagonistIdx 获胜；isWin=false: protagonistIdx 失败（其余人中进度最多者胜）
-  _endGame3P(protagonistIdx, reason, isWin) {
+  // 通用分区模式结束（isWin=true: protagonist 胜；false: 其余进度最多者胜）
+  _endGamePartition(protagonistIdx, reason, isWin) {
     this.status = 'finished';
     let winnerIdx;
     if (isWin) {
       winnerIdx = protagonistIdx;
     } else {
-      // 提前打进8号球/犯规 → 其余玩家中打进本组球最多的胜
       let bestProgress = -1;
       winnerIdx = -1;
       this.players.forEach((p, i) => {
         if (i === protagonistIdx) return;
-        const progress = this.getPocketedForPlayer3P(i).length;
+        const progress = this.getPocketedForPlayer(i).length;
         if (progress > bestProgress) { bestProgress = progress; winnerIdx = i; }
       });
-      // 兜底：下一位玩家
       if (winnerIdx === -1) winnerIdx = (protagonistIdx + 1) % this.players.length;
     }
     this.winner = winnerIdx;
@@ -258,14 +263,14 @@ class BilliardsGame {
     if (this.phase !== 'placing_cue') return false;
     const idx = this.players.findIndex(p => p.socketId === socketId);
 
-    if (this.is3Player()) {
-      // 三人模式：currentTurn 已推进到拥有球权的玩家，由该玩家放球
+    if (this.isPartitionMode()) {
+      // 分区模式：currentTurn 已推进到拥有球权的玩家
       if (idx !== this.currentTurn) return false;
       this.ballPositions[0] = pos;
       this.phase = 'aiming';
       return true;
     } else {
-      // 二人模式：犯规方对手放球，放完后轮到放球者
+      // 2人模式：犯规方对手放球，放完后轮到放球者
       if (idx === this.currentTurn) return false;
       this.ballPositions[0] = pos;
       this.phase = 'aiming';
@@ -295,7 +300,7 @@ class BilliardsGame {
 
   resetForRematch() {
     const first = this.players.shift();
-    if (first) this.players.push(first); // 轮换开球顺序
+    if (first) this.players.push(first);
     this.status = 'waiting';
     this.phase = 'aiming';
     this.pocketed = [];
@@ -307,6 +312,7 @@ class BilliardsGame {
   }
 
   getState() {
+    const groups = GROUPS_BY_MODE[this.options.mode] || [];
     return {
       status: this.status,
       phase: this.phase,
@@ -316,7 +322,7 @@ class BilliardsGame {
       ballPositions: this.ballPositions,
       options: this.options,
       maxPlayers: this.maxPlayers,
-      groupColors: this.is3Player() ? GROUP_COLORS_3P : null,
+      groupColors: this.isPartitionMode() ? GROUP_COLORS.slice(0, this.maxPlayers) : null,
       players: this.players.map((p, i) => ({
         name: p.name,
         socketId: p.socketId,
@@ -324,10 +330,10 @@ class BilliardsGame {
         score: p.score,
         ready: p.ready,
         disconnected: p.disconnected,
-        group: this.is3Player() ? (GROUPS_3P[i] || []) : null,
+        group: groups[i] || null,
       })),
     };
   }
 }
 
-module.exports = { BilliardsGame, GROUPS_3P };
+module.exports = { BilliardsGame, GROUPS_BY_MODE };

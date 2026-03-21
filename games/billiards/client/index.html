@@ -283,6 +283,7 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
               <select id="opt-mode">
                 <option value="2player">2人对战</option>
                 <option value="3player">3人分区八球</option>
+                <option value="4player">4人分区对战</option>
               </select>
             </div>
             <div class="opt-item">
@@ -342,6 +343,8 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
       <div class="player-slot" id="slot-0"><div class="slot-empty">等待玩家…</div></div>
       <div class="player-slot" id="slot-1"><div class="slot-empty">等待玩家…</div></div>
       <div class="player-slot" id="slot-2" style="display:none"><div class="slot-empty">等待玩家…</div></div>
+      <!-- 2026-03-19: slot-3 四人模式专用 -->
+      <div class="player-slot" id="slot-3" style="display:none"><div class="slot-empty">等待玩家…</div></div>
     </div>
     <div class="waiting-actions">
       <button class="btn btn-gold" id="ready-btn" onclick="toggleReady()">准备</button>
@@ -406,6 +409,15 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
           <div class="p-type" id="hud-type3-2" style="font-size:.7rem"></div>
         </div>
         <div class="p-balls" id="hud-balls3-2" style="flex-wrap:wrap"></div>
+      </div>
+      <!-- 2026-03-19: 四人模式第4玩家栏，默认隐藏 -->
+      <div class="hud-player hud-3p-player" id="hud-3p-p3" style="display:none;flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-3">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-3" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-3" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-3" style="flex-wrap:wrap"></div>
       </div>
     </div>
   </div>
@@ -1602,11 +1614,18 @@ function updateTurnUI(gs) {
   }
 
   if (isMyTurn) {
-    // 2026-03-19: 三人模式提示目标球组
-    if (is3P) {
-      const myGroup = GROUPS_CLIENT_3P[playerIndex] || [];
+    // 2026-03-19: 分区模式提示目标球组
+    const mode = gs.options?.mode;
+    if (mode === '3player' || mode === '4player') {
+      const groups = GROUPS_CLIENT[mode] || [];
+      const labels = GROUP_LABELS_CLIENT[mode] || [];
+      const myGroup = groups[playerIndex] || [];
       const cleared = myGroup.every(n => gs.pocketed?.includes(n));
-      setStatus(cleared ? '🎱 你的回合 — 冲刺8号球！' : `你的回合 — 打进 ${GROUP_LABELS_CLIENT[playerIndex]} 的球`, 'my');
+      if (mode === '3player') {
+        setStatus(cleared ? '🎱 你的回合 — 冲刺8号球！' : `你的回合 — 打进 ${labels[playerIndex]} 的球`, 'my');
+      } else {
+        setStatus(cleared ? '🏆 你的回合 — 冲刺！' : `你的回合 — 打进 ${labels[playerIndex]} 的球`, 'my');
+      }
     } else {
       setStatus('你的回合，拖拽任意处瞄准，松手出杆', 'my');
     }
@@ -1619,55 +1638,65 @@ function updateTurnUI(gs) {
 const TYPE_LABELS = {solid:'实心球',stripe:'条纹球',null:'—'};
 const BALL_DOTS_SOLID = [1,2,3,4,5,6,7];
 const BALL_DOTS_STRIPE = [9,10,11,12,13,14,15];
-// 三人模式分组常量（客户端）
-const GROUPS_CLIENT_3P = [[1,2,3,4,5],[6,7,9,10],[11,12,13,14,15]];
-const GROUP_COLORS_CLIENT = ['#f5c518','#64b5f6','#81c784'];
-const GROUP_LABELS_CLIENT = ['1-5号','6,7,9,10','11-15号'];
+// 2026-03-19: 分区模式分组常量（客户端），支持3人/4人
+const GROUPS_CLIENT = {
+  '3player': [[1,2,3,4,5],[6,7,9,10],[11,12,13,14,15]],
+  '4player': [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15]],
+};
+const GROUP_COLORS_CLIENT = ['#f5c518','#64b5f6','#81c784','#ff7043'];
+const GROUP_LABELS_CLIENT = {
+  '3player': ['1-5号','6,7,9,10','11-15号'],
+  '4player': ['1-4号','5-8号','9-12号','13-15号'],
+};
 
 function updateHUD() {
   if (!gameState) return;
   const ps = gameState.players;
-  const is3P = gameState.options?.mode === '3player';
+  const mode = gameState.options?.mode || '2player';
+  const is3P = mode === '3player';
+  const is4P = mode === '4player';
+  const isPartition = is3P || is4P;
 
-  // 2026-03-19: 切换 HUD 布局
-  document.getElementById('hud-2p').style.display = is3P ? 'none' : 'contents';
-  document.getElementById('hud-3p').style.display = is3P ? 'flex' : 'none';
+  document.getElementById('hud-2p').style.display = isPartition ? 'none' : 'contents';
+  document.getElementById('hud-3p').style.display = isPartition ? 'flex' : 'none';
+  // 四人模式显示第4玩家栏
+  const p3panel = document.getElementById('hud-3p-p3');
+  if (p3panel) p3panel.style.display = is4P ? 'flex' : 'none';
 
-  if (is3P) {
-    // 三人 HUD
-    for (let i = 0; i < 3; i++) {
+  if (isPartition) {
+    const groups = GROUPS_CLIENT[mode] || [];
+    const labels = GROUP_LABELS_CLIENT[mode] || [];
+    const count = is4P ? 4 : 3;
+    for (let i = 0; i < count; i++) {
       const p = ps[i];
       if (!p) continue;
       document.getElementById(`hud-name3-${i}`).textContent = p.name || '—';
       document.getElementById(`hud-score3-${i}`).textContent = p.score || 0;
       const typeEl = document.getElementById(`hud-type3-${i}`);
-      const group = GROUPS_CLIENT_3P[i] || [];
+      const group = groups[i] || [];
       const cleared = group.every(n => gameState.pocketed?.includes(n));
-      typeEl.textContent = cleared ? '冲8号球！' : GROUP_LABELS_CLIENT[i];
+      // 4P无8号终结球，清空即胜；3P还需打8号
+      typeEl.textContent = cleared ? (is3P ? '冲8号球！' : '✓ 已清台') : labels[i];
       typeEl.style.color = cleared ? '#ff9800' : GROUP_COLORS_CLIENT[i];
-      // 球点：本组球
       const dotsEl = document.getElementById(`hud-balls3-${i}`);
       const dots = group.map(n => {
         const poc = gameState.pocketed?.includes(n);
         return `<span class="ball-dot" style="background:${poc?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${poc?'opacity:.3':''}"></span>`;
       });
-      // 组清空后显示8号球指示
-      if (cleared) {
+      // 3P：组清空后显示8号球指示
+      if (is3P && cleared) {
         const poc8 = gameState.pocketed?.includes(8);
         dots.push(`<span class="ball-dot" style="background:${poc8?'rgba(255,255,255,0.1)':'#222'};border:1px solid rgba(255,255,255,0.5);${poc8?'opacity:.3':''}"></span>`);
       }
       dotsEl.innerHTML = dots.join('');
-      // 高亮当前回合玩家
       const wrapper = document.getElementById(`hud-3p-p${i}`);
       if (wrapper) {
-        wrapper.style.background = i === gameState.currentTurn
-          ? 'rgba(212,160,23,0.12)' : 'transparent';
+        wrapper.style.background = i === gameState.currentTurn ? 'rgba(212,160,23,0.12)' : 'transparent';
         wrapper.style.borderRadius = '8px';
         wrapper.style.padding = '2px 4px';
       }
     }
   } else {
-    // 二人 HUD（原逻辑）
     [0,1].forEach(i=>{
       const p=ps[i];
       if (!p) return;
@@ -1692,20 +1721,32 @@ function updateWaitingScreen() {
   const ps = gameState.players;
   const maxP = gameState.maxPlayers || 2;
   const is3P = gameState.options?.mode === '3player';
+  const is4P = gameState.options?.mode === '4player';
+  const isPartition = is3P || is4P;
 
-  // 2026-03-19: 三人模式时显示第三槽，调整网格
+  // 2026-03-19: 根据模式切换格子数和显示
   const waitingGrid = document.getElementById('waiting-players');
   const slot2 = document.getElementById('slot-2');
-  if (is3P) {
+  const slot3 = document.getElementById('slot-3');
+  if (is4P) {
+    waitingGrid.style.gridTemplateColumns = '1fr 1fr';
+    slot2.style.display = '';
+    slot3.style.display = '';
+  } else if (is3P) {
     waitingGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
     slot2.style.display = '';
+    if (slot3) slot3.style.display = 'none';
   } else {
     waitingGrid.style.gridTemplateColumns = '';
     slot2.style.display = 'none';
+    if (slot3) slot3.style.display = 'none';
   }
 
-  const GROUP_LABELS = ['组1: 1-5号', '组2: 6,7,9,10号', '组3: 11-15号'];
-  const GROUP_COLORS = ['#f5c518','#64b5f6','#81c784'];
+  const GROUP_LABELS_W = {
+    '3player': ['组1: 1-5号','组2: 6,7,9,10号','组3: 11-15号'],
+    '4player': ['组1: 1-4号','组2: 5-8号','组3: 9-12号','组4: 13-15号'],
+  };
+  const labels = GROUP_LABELS_W[gameState.options?.mode] || [];
 
   for (let i = 0; i < maxP; i++) {
     const slot = document.getElementById(`slot-${i}`);
@@ -1714,7 +1755,7 @@ function updateWaitingScreen() {
     if (p) {
       const isMe = p.socketId === socket.id;
       slot.className = 'player-slot filled';
-      const groupHint = is3P ? `<div style="font-size:.68rem;color:${GROUP_COLORS[i]};margin-top:2px">${GROUP_LABELS[i]}</div>` : '';
+      const groupHint = isPartition ? `<div style="font-size:.68rem;color:${GROUP_COLORS_CLIENT[i]};margin-top:2px">${labels[i]||''}</div>` : '';
       slot.innerHTML = `
         <div class="slot-avatar">${p.name.charAt(0).toUpperCase()}</div>
         <div class="slot-name">${p.name}${isMe?' (你)':''}</div>
