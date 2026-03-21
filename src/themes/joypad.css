@@ -522,9 +522,6 @@
 
 /* ===== 添加按钮（漫画风） ===== */
 [data-theme="joypad"] .add-game-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
   width: 60px;
   height: 60px;
   background: var(--yellow);
@@ -644,9 +641,6 @@
 
 /* ===== 主题切换浮动按钮 ===== */
 [data-theme="joypad"] .theme-fab {
-  position: fixed;
-  bottom: 10.5rem;
-  right: 2rem;
   width: 44px;
   height: 44px;
   border-radius: 50%;

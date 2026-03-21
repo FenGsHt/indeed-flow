@@ -36,10 +36,8 @@
 [data-theme="nexus"] .theme-switcher { display: none !important; }
 
 /* 主题切换 FAB（右下角浮动按钮） */
+/* theme-fab 样式（位置由 .fab-stack-right 容器控制） */
 [data-theme="nexus"] .theme-fab {
-  position: fixed;
-  bottom: 6rem;
-  right: 2rem;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -892,10 +890,8 @@
 }
 
 /* ===== 浮动按钮 ===== */
+/* add-game-btn 样式（位置由 .fab-stack-right 容器控制） */
 [data-theme="nexus"] .add-game-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -1144,21 +1140,16 @@
     font-size: 0.75rem;
   }
 
-  /* ── FAB 按钮安全区 ── */
-  [data-theme="nexus"] .add-game-btn {
+  /* ── FAB 按钮安全区（容器位置） ── */
+  .fab-stack-right {
     bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
     right: 1.2rem;
+    gap: 8px;
+  }
+  [data-theme="nexus"] .add-game-btn {
     width: 48px;
     height: 48px;
     font-size: 1.4rem;
-  }
-  [data-theme="nexus"] .theme-fab {
-    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
-    right: 1.2rem;
-  }
-  [data-theme="nexus"] .office-fab {
-    bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
-    right: 1.2rem;
   }
   [data-theme="nexus"] .ai-fab {
     bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));

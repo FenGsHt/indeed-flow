@@ -152,11 +152,30 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* ===== Star Office 浮动按钮（所有主题通用基础位置） ===== */
-.office-fab {
+/* ===== 右侧 FAB 按钮列表容器 ===== */
+.fab-stack-right {
   position: fixed;
-  bottom: 6.5rem;
+  bottom: 2rem;
   right: 2rem;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 10px;
+  z-index: 50;
+}
+
+/* 容器内的按钮不再需要自己 position:fixed */
+.fab-stack-right .add-game-btn,
+.fab-stack-right .office-fab,
+.fab-stack-right .theme-fab {
+  position: static !important;
+  bottom: auto !important;
+  right: auto !important;
+  top: auto !important;
+}
+
+/* ===== Star Office 浮动按钮样式（位置由容器控制） ===== */
+.office-fab {
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -165,7 +184,6 @@ body {
   justify-content: center;
   font-size: 1.4rem;
   text-decoration: none;
-  z-index: 50;
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }

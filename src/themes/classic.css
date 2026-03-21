@@ -501,9 +501,6 @@
 
 /* 添加游戏按钮 */
 [data-theme="classic"] .add-game-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -608,9 +605,6 @@
 
 /* Classic 模式浮动主题切换按钮 */
 [data-theme="classic"] .theme-fab {
-  position: fixed;
-  bottom: 10.5rem;
-  right: 2rem;
   width: 40px;
   height: 40px;
   border-radius: 50%;
