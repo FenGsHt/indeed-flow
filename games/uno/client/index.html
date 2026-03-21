@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src="/auth-gate.js"></script>
   <title>UNO 多人对战</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -72,6 +73,28 @@
               </div>
               <label class="toggle">
                 <input type="checkbox" id="opt-force" checked>
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+            <!-- 2026-03-19: 质疑 +4 选项 -->
+            <div class="setting-item">
+              <div>
+                <div>质疑 +4</div>
+                <span>可质疑对手违规出 +4</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="opt-challenge" checked>
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+            <!-- 2026-03-19: Jump-In 抢牌选项 -->
+            <div class="setting-item">
+              <div>
+                <div>Jump-In 抢牌</div>
+                <span>持有相同牌可抢断出牌</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="opt-jumpin">
                 <div class="toggle-track"></div>
               </label>
             </div>
@@ -209,6 +232,21 @@
       <button class="color-btn green"  data-color="green">♣</button>
       <button class="color-btn yellow" data-color="yellow">★</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ 质疑 +4 弹窗 ══════════════════════════════════════ -->
+<!-- 2026-03-19: 质疑机制 UI -->
+<div class="modal hidden" id="challenge-modal">
+  <div class="challenge-box">
+    <div class="challenge-icon">⚠️</div>
+    <h3 id="challenge-title">+4 质疑</h3>
+    <p id="challenge-desc"></p>
+    <div class="challenge-actions">
+      <button class="btn btn-danger" id="btn-challenge">🔍 质疑</button>
+      <button class="btn btn-ghost"  id="btn-accept-draw4">😔 接受摸牌</button>
+    </div>
+    <p class="challenge-hint">质疑成功：对方摸4张 · 质疑失败：你摸6张</p>
   </div>
 </div>
 

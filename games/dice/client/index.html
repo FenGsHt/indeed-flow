@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src="/auth-gate.js"></script>
+  <title>吹牛骰 · INDEED 酒馆</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@400;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --wood-dark: #1a0e08;
+      --wood-mid: #2d1810;
+      --wood-light: #3c2415;
+      --gold: #d4a646;
+      --gold-bright: #e8c36a;
+      --gold-dim: #8b6914;
+      --parchment: #e8d5b8;
+      --red: #c0392b;
+      --green: #27ae60;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Serif SC', serif;
+      min-height: 100vh;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 18px),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 18px),
+        linear-gradient(180deg, #1a0e08 0%, #2d1810 30%, #3c2415 60%, #2d1810 100%);
+      color: var(--parchment);
+      overflow-x: hidden;
+    }
+
+    .tavern-glow {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 600px 400px at 20% 10%, rgba(212,166,70,0.12), transparent),
+        radial-gradient(ellipse 500px 350px at 80% 15%, rgba(212,166,70,0.08), transparent),
+        radial-gradient(ellipse 300px 300px at 50% 90%, rgba(212,166,70,0.06), transparent);
+      animation: flicker 4s ease-in-out infinite alternate;
+    }
+    @keyframes flicker {
+      0% { opacity: 0.8; } 30% { opacity: 1; } 50% { opacity: 0.9; } 100% { opacity: 0.85; }
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      max-width: 900px; margin: 0 auto; padding: 1rem;
+      min-height: 100vh;
+    }
+
+    /* ── 通用 ──────────────────────────────────── */
+    .panel {
+      background: rgba(30, 18, 10, 0.92);
+      border: 1px solid rgba(212,166,70,0.25);
+      border-radius: 16px; padding: 1.2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,166,70,0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn {
+      padding: 0.6rem 1.3rem; border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; font-family: inherit;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-gold {
+      background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+      color: var(--wood-dark);
+      text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+      box-shadow: 0 4px 15px rgba(212,166,70,0.4);
+    }
+    .btn-gold:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(212,166,70,0.6); transform: translateY(-2px); }
+
+    .btn-red {
+      background: linear-gradient(180deg, #e74c3c, #c0392b);
+      color: #fff; box-shadow: 0 4px 15px rgba(192,57,43,0.4);
+    }
+    .btn-red:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(192,57,43,0.6); transform: translateY(-2px); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.08);
+      color: var(--parchment);
+      border: 1px solid rgba(212,166,70,0.2);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.15); }
+
+    .hidden { display: none !important; }
+
+    input, select {
+      padding: 0.6rem 0.9rem; border-radius: 10px;
+      border: 1px solid rgba(212,166,70,0.3);
+      background: rgba(0,0,0,0.3); color: var(--parchment);
+      font-size: 0.95rem; font-family: inherit; outline: none;
+    }
+    input:focus { border-color: var(--gold); }
+
+    .title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 2rem; font-weight: 900; text-align: center;
+      background: linear-gradient(180deg, var(--gold-bright) 20%, var(--gold) 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 0.2rem;
+    }
+    .subtitle { text-align: center; font-size: 0.8rem; color: rgba(232,213,184,0.5); margin-bottom: 1rem; letter-spacing: 0.15em; }
+
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 10px 20px; border-radius: 10px;
+      background: rgba(212,166,70,0.95); color: var(--wood-dark);
+      font-weight: 700; font-size: 0.85rem; z-index: 9999;
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .toast.error { background: rgba(231,76,60,0.95); color: #fff; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
+    @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
+
+    /* ── 登录 ──────────────────────────────────── */
+    #login-screen { max-width: 400px; margin: 3rem auto; text-align: center; }
+    .lantern { text-align: center; font-size: 3rem; margin-bottom: 0.5rem; animation: lanternSwing 3s ease-in-out infinite; }
+    @keyframes lanternSwing { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+    /* ── 大厅布局 ──────────────────────────────── */
+    #lobby-screen { display: none; }
+    .lobby-grid {
+      display: grid; grid-template-columns: 1fr 280px; gap: 1rem;
+    }
+    @media (max-width: 700px) {
+      .lobby-grid { grid-template-columns: 1fr; }
+    }
+
+    .lobby-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem;
+    }
+    .lobby-header .my-stats {
+      font-size: 0.8rem; color: rgba(232,213,184,0.6);
+    }
+    .lobby-header .my-stats strong {
+      color: var(--gold-bright); font-size: 1rem;
+    }
+
+    /* 玩家列表 */
+    .player-list { margin: 0.8rem 0; }
+    .player-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.6rem; border-radius: 8px;
+      border-bottom: 1px solid rgba(212,166,70,0.08);
+      font-size: 0.9rem;
+    }
+    .player-row .name { flex: 1; font-weight: 600; }
+    .badge {
+      font-size: 0.7rem; padding: 0.15rem 0.5rem;
+      border-radius: 20px; font-weight: 700;
+    }
+    .badge-ready { background: rgba(39,174,96,0.3); color: #2ecc71; }
+    .badge-wait  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+    .badge-game  { background: rgba(212,166,70,0.3); color: var(--gold-bright); }
+
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.4rem 0; font-size: 0.85rem;
+    }
+    .setting-row input[type=number] { width: 60px; text-align: center; }
+
+    .lobby-actions {
+      display: flex; gap: 0.6rem; margin-top: 0.8rem; flex-wrap: wrap;
+    }
+
+    /* ── 榜单 ──────────────────────────────────── */
+    .lb-panel { max-height: calc(100vh - 6rem); overflow-y: auto; }
+    .lb-tabs {
+      display: flex; gap: 0; margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(212,166,70,0.2);
+    }
+    .lb-tab {
+      flex: 1; padding: 0.5rem; text-align: center;
+      cursor: pointer; font-size: 0.8rem; font-weight: 700;
+      color: rgba(232,213,184,0.4); border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .lb-tab.active {
+      color: var(--gold-bright);
+      border-bottom-color: var(--gold);
+    }
+
+    .lb-row {
+      display: grid; grid-template-columns: 28px 1fr 60px 50px;
+      gap: 0.4rem; align-items: center;
+      padding: 0.35rem 0.3rem; font-size: 0.78rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .lb-row .rank {
+      text-align: center; font-weight: 900; color: var(--gold-dim);
+    }
+    .lb-row .rank.top1 { color: #ffd700; font-size: 1rem; }
+    .lb-row .rank.top2 { color: #c0c0c0; }
+    .lb-row .rank.top3 { color: #cd7f32; }
+    .lb-row .pts { text-align: right; color: var(--gold-bright); font-weight: 700; }
+    .lb-row .wr  { text-align: right; color: rgba(232,213,184,0.5); }
+    .lb-row .nm  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-row.me { background: rgba(212,166,70,0.1); border-radius: 6px; }
+
+    /* ── 游戏界面 ──────────────────────────────── */
+    #game-screen { display: none; }
+
+    .players-bar {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 0.8rem;
+    }
+    .player-chip {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.7rem; border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(212,166,70,0.15);
+      font-size: 0.8rem; transition: all 0.3s;
+      position: relative;
+    }
+    .player-chip.active {
+      border-color: var(--gold-bright);
+      background: rgba(212,166,70,0.18);
+      box-shadow: 0 0 20px rgba(212,166,70,0.35);
+      animation: chipPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes chipPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(212,166,70,0.35); }
+      50% { box-shadow: 0 0 30px rgba(212,166,70,0.55); }
+    }
+    .player-chip .turn-tag, .beer-chip .turn-tag {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      font-size: 0.55rem; font-weight: 700; padding: 1px 6px;
+      border-radius: 6px; white-space: nowrap;
+    }
+    .turn-tag.current { background: var(--gold-bright); color: var(--wood-dark); }
+    .turn-tag.next { background: rgba(212,166,70,0.3); color: var(--gold-bright); }
+    .player-chip.eliminated { opacity: 0.35; text-decoration: line-through; }
+    .player-chip .dice-dots { font-size: 0.65rem; color: var(--gold-dim); }
+    .player-chip.is-next { border-color: rgba(212,166,70,0.4); background: rgba(212,166,70,0.06); }
+
+    .table-center {
+      text-align: center; padding: 1.2rem;
+      background: radial-gradient(ellipse at center, rgba(212,166,70,0.08), transparent 70%);
+      border-radius: 20px; margin-bottom: 0.8rem;
+      min-height: 140px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .current-bid {
+      font-size: 2.2rem; font-weight: 900;
+      font-family: 'Noto Serif SC', serif;
+      color: var(--gold-bright);
+      text-shadow: 0 0 30px rgba(212,166,70,0.5);
+    }
+    .bid-speaker { font-size: 0.85rem; color: rgba(232,213,184,0.6); }
+    .wild-note {
+      font-size: 0.7rem; padding: 0.25rem 0.7rem;
+      background: rgba(212,166,70,0.15); border-radius: 20px;
+      color: var(--gold); margin-top: 0.4rem; display: inline-block;
+    }
+
+    .turn-banner {
+      font-size: 1rem; font-weight: 700;
+      padding: 0.5rem 1rem; border-radius: 10px;
+      margin-bottom: 0.8rem; text-align: center;
+    }
+    .turn-banner.my-turn {
+      background: linear-gradient(135deg, rgba(212,166,70,0.25), rgba(212,166,70,0.1));
+      border: 1px solid rgba(212,166,70,0.4); color: var(--gold-bright);
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+    .turn-banner.other-turn { background: rgba(255,255,255,0.05); color: rgba(232,213,184,0.5); }
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 10px rgba(212,166,70,0.2); } 50% { box-shadow: 0 0 25px rgba(212,166,70,0.4); } }
+
+    .my-dice-area { margin-bottom: 0.8rem; text-align: center; }
+    .my-dice-area .label { font-size: 0.75rem; color: rgba(232,213,184,0.5); margin-bottom: 0.4rem; }
+    .dice-row { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+
+    .die {
+      width: 48px; height: 48px;
+      background: linear-gradient(145deg, #f5f0e8, #d4c9b8);
+      border-radius: 10px;
+      box-shadow: 3px 3px 6px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(0,0,0,0.1), inset 1px 1px 2px rgba(255,255,255,0.5);
+      display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 6px; transition: transform 0.3s;
+    }
+    .die:hover { transform: scale(1.1); }
+    .die .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--wood-dark);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+      align-self: center; justify-self: center;
+    }
+    .die.shake-anim { animation: dieShake 0.6s ease; }
+    @keyframes dieShake {
+      0% { transform: rotate(0) scale(0.5); opacity: 0; }
+      30% { transform: rotate(15deg) scale(1.1); opacity: 1; }
+      50% { transform: rotate(-10deg) scale(1.05); }
+      100% { transform: rotate(0) scale(1); }
+    }
+
+    .bid-panel {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(212,166,70,0.2);
+      border-radius: 14px; padding: 1rem; margin-bottom: 0.8rem;
+    }
+    .bid-controls { display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .bid-input-group { display: flex; align-items: center; gap: 0.15rem; user-select: none; }
+    .qty-btn {
+      width: 34px; height: 34px; border-radius: 50%; border: none;
+      background: rgba(212,166,70,0.2); color: var(--gold-bright);
+      font-size: 1.3rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .qty-btn:active { transform: scale(0.9); background: rgba(212,166,70,0.4); }
+    .qty-display {
+      width: 50px; text-align: center; font-size: 1.5rem; font-weight: 900;
+      color: var(--gold-bright); cursor: ns-resize;
+      -webkit-user-select: none; user-select: none;
+    }
+    .bid-input-group .unit { font-size: 0.9rem; color: rgba(232,213,184,0.6); }
+    .bid-face-select { display: flex; gap: 0.25rem; }
+    .face-btn {
+      width: 38px; height: 38px; border-radius: 8px;
+      border: 2px solid rgba(212,166,70,0.2);
+      background: rgba(255,255,255,0.06);
+      cursor: pointer; transition: all 0.2s;
+      display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 4px;
+    }
+    .face-btn:hover { border-color: var(--gold); background: rgba(212,166,70,0.1); }
+    .face-btn.selected { border-color: var(--gold-bright); background: rgba(212,166,70,0.25); box-shadow: 0 0 12px rgba(212,166,70,0.3); }
+    .face-btn .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--parchment); align-self: center; justify-self: center; }
+    .bid-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; }
+
+    .bid-log {
+      max-height: 120px; overflow-y: auto; padding: 0.6rem; border-radius: 10px;
+      background: rgba(0,0,0,0.2); margin-bottom: 0.8rem; font-size: 0.75rem;
+    }
+    .bid-log-entry { padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(232,213,184,0.7); }
+    .bid-log-entry .bid-value { color: var(--gold-bright); font-weight: 700; }
+
+    /* ── 结果 ──────────────────────────────────── */
+    .result-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(10,5,2,0.92);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); animation: overlayIn 0.4s ease;
+    }
+    @keyframes overlayIn { from { opacity: 0; } }
+    .result-box {
+      width: 90%; max-width: 480px;
+      background: rgba(30,18,10,0.95);
+      border: 2px solid var(--gold); border-radius: 20px; padding: 1.5rem;
+      box-shadow: 0 0 60px rgba(212,166,70,0.3);
+      animation: resultBounce 0.5s ease;
+      max-height: 85vh; overflow-y: auto;
+    }
+    .result-box.i-win  { border-color: var(--gold-bright); box-shadow: 0 0 80px rgba(212,166,70,0.5); }
+    .result-box.i-lose { border-color: var(--red); box-shadow: 0 0 80px rgba(192,57,43,0.4); }
+    .my-result-banner { text-align: center; font-size: 2.2rem; font-weight: 900; margin-bottom: 0.3rem; animation: resultBounce 0.6s ease; }
+    .my-result-banner.win-banner { color: var(--gold-bright); text-shadow: 0 0 20px rgba(212,166,70,0.6); }
+    .my-result-banner.lose-banner { color: var(--red); text-shadow: 0 0 20px rgba(192,57,43,0.5); }
+    @keyframes resultBounce { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    .result-verdict { text-align: center; font-size: 1.6rem; font-weight: 900; font-family: 'Noto Serif SC', serif; margin-bottom: 0.4rem; }
+    .result-verdict.win { color: var(--gold-bright); }
+    .result-verdict.lose { color: var(--red); }
+    .result-detail { text-align: center; font-size: 0.85rem; color: rgba(232,213,184,0.7); margin-bottom: 1rem; }
+    .result-player-dice {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0; border-bottom: 1px solid rgba(212,166,70,0.1); flex-wrap: wrap;
+    }
+    .result-player-dice .rpd-name { width: 70px; font-size: 0.8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-player-dice .die { width: 34px; height: 34px; padding: 4px; }
+    .result-player-dice .die .dot { width: 5px; height: 5px; }
+    .result-player-dice .die.highlight { box-shadow: 0 0 12px rgba(212,166,70,0.8); border: 2px solid var(--gold); }
+    .result-player-dice .die.straight-die { opacity: 0.35; }
+    .result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1rem; }
+
+    .game-over-title { font-size: 2.5rem; text-align: center; margin-bottom: 0.3rem; }
+    .winner-name {
+      font-family: 'Noto Serif SC', serif; font-size: 1.5rem; font-weight: 900;
+      color: var(--gold-bright); text-shadow: 0 0 30px rgba(212,166,70,0.6);
+      text-align: center; margin-bottom: 1rem;
+    }
+
+    .particle {
+      position: fixed; pointer-events: none; z-index: 9000; border-radius: 50%;
+      animation: particleFly 1s ease-out forwards;
+    }
+    @keyframes particleFly { 0% { opacity: 1; transform: translate(0,0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(0); } }
+    .screen-shake { animation: screenShake 0.5s ease; }
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0); }
+      10% { transform: translate(-4px, 2px); } 20% { transform: translate(4px, -2px); }
+      30% { transform: translate(-3px, 3px); } 40% { transform: translate(3px, -1px); }
+    }
+
+    /* ── 啤酒小人（emoji 方案）──────────────────── */
+    .beer-guy {
+      display: flex; flex-direction: column; align-items: center;
+      font-size: 2.2rem; line-height: 1.1; min-width: 48px;
+      transition: transform 0.3s;
+      position: relative;
+    }
+    .beer-guy .bg-face { transition: transform 0.3s; }
+    .beer-guy .bg-belly {
+      font-size: 0.55rem; line-height: 1; text-align: center; margin-top: -2px;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    .beer-guy .bg-mug {
+      position: absolute; right: -6px; bottom: 8px;
+      font-size: 1rem; opacity: 0; transition: opacity 0.3s;
+    }
+    .beer-guy.has-beer .bg-mug { opacity: 1; }
+
+    /* 喝酒动画 */
+    .beer-guy.drinking { animation: drunkBounce 1.2s ease; }
+    .beer-guy.drinking .bg-face { animation: beerDrink 1.2s ease; }
+    .beer-guy.drinking .bg-mug { animation: mugLift 1.2s ease; opacity: 1; }
+    @keyframes drunkBounce {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      15% { transform: translateY(-10px) rotate(-8deg); }
+      30% { transform: translateY(0) rotate(6deg); }
+      45% { transform: translateY(-6px) rotate(-4deg) scale(1.1); }
+      60% { transform: translateY(0) rotate(3deg); }
+      75% { transform: translateY(-3px) rotate(-2deg); }
+    }
+    @keyframes beerDrink {
+      0%, 100% { transform: rotate(0); }
+      20% { transform: rotate(-25deg) translateY(-6px); }
+      40% { transform: rotate(20deg); }
+      60% { transform: rotate(-12deg); }
+      80% { transform: rotate(6deg); }
+    }
+    @keyframes mugLift {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      25% { transform: translateY(-20px) rotate(-35deg) scale(1.3); }
+      50% { transform: translateY(-10px) rotate(-50deg) scale(1.2); }
+      75% { transform: translateY(-15px) rotate(-25deg); }
+    }
+
+    .beer-chip {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.15rem; padding: 0.5rem 0.6rem; border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(212,166,70,0.1);
+      position: relative; transition: all 0.3s;
+      min-width: 62px; text-align: center;
+    }
+    .beer-chip .bc-name {
+      font-size: 0.72rem; max-width: 70px; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .beer-chip.active {
+      border-color: var(--gold-bright);
+      background: rgba(212,166,70,0.12);
+      animation: chipPulse 1.5s ease-in-out infinite;
+    }
+    .beer-chip.is-next { border-color: rgba(212,166,70,0.4); background: rgba(212,166,70,0.06); }
+
+    .toggle-beer {
+      display: flex; align-items: center; gap: 0.5rem;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .toggle-beer input { display: none; }
+    .toggle-beer .switch {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      position: relative; transition: background 0.3s;
+    }
+    .toggle-beer .switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: transform 0.3s;
+    }
+    .toggle-beer input:checked + .switch {
+      background: var(--gold);
+    }
+    .toggle-beer input:checked + .switch::after {
+      transform: translateX(16px);
+    }
+
+    @media (max-width: 500px) {
+      .title { font-size: 1.5rem; }
+      .current-bid { font-size: 1.8rem; }
+      .die { width: 42px; height: 42px; padding: 5px; }
+      .die .dot { width: 7px; height: 7px; }
+      .face-btn { width: 34px; height: 34px; padding: 3px; }
+    }
+  </style>
+</head>
+<body>
+<div class="tavern-glow"></div>
+<div class="container" id="app-root">
+
+  <!-- ════ 登录 ════════════════════════════════════ -->
+  <div id="login-screen">
+    <div class="panel">
+      <div class="lantern">🏮</div>
+      <div class="title">吹牛骰</div>
+      <div class="subtitle">酒馆 · 骰盅 · 真话与谎言</div>
+      <div style="margin-bottom:1rem;">
+        <input id="player-name" type="text" placeholder="你的名字" style="width:100%;text-align:center;" maxlength="20">
+      </div>
+      <button class="btn btn-gold" id="btn-enter" style="width:100%;">🍺 入座酒馆</button>
+      <div style="text-align:center;margin-top:1rem;">
+        <a href="/games.html" style="color:rgba(232,213,184,0.4);font-size:0.8rem;text-decoration:none;">← 返回游戏中心</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 大厅 ════════════════════════════════════ -->
+  <div id="lobby-screen">
+    <div class="lobby-header">
+      <a href="/games.html" style="color:var(--gold-dim);text-decoration:none;font-size:0.85rem;">🏮 酒馆</a>
+      <div class="my-stats">
+        <span id="my-name-display"></span> ·
+        积分 <strong id="my-points">1000</strong> ·
+        <span id="my-record" style="font-size:0.75rem;"></span>
+      </div>
+    </div>
+
+    <div class="lobby-grid">
+      <!-- 左：玩家大厅 -->
+      <div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+            <div style="font-weight:700;font-size:1rem;">🍻 酒桌</div>
+            <div id="online-count" style="font-size:0.75rem;color:rgba(232,213,184,0.4);"></div>
+          </div>
+          <div class="setting-row">
+            <label>🎲 骰子数</label>
+            <input type="number" id="dice-count" value="5" min="1" max="10">
+          </div>
+          <div class="setting-row">
+            <label class="toggle-beer">
+              🍺 啤酒模式
+              <input type="checkbox" id="beer-mode">
+              <span class="switch"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label class="toggle-beer">
+              🎯 精准开骰
+              <input type="checkbox" id="exact-penalty">
+              <span class="switch"></span>
+            </label>
+            <div style="font-size:0.65rem;color:rgba(232,213,184,0.45);margin-top:2px;">开骰恰好等于叫价→除叫价者外全体算输</div>
+          </div>
+          <div class="player-list" id="player-list"></div>
+          <div class="lobby-actions">
+            <button class="btn btn-gold" id="btn-ready">准备</button>
+            <button class="btn btn-gold" id="btn-start" disabled>开局</button>
+          </div>
+          <div id="game-in-progress-msg" class="hidden" style="text-align:center;margin-top:0.8rem;font-size:0.8rem;color:rgba(232,213,184,0.5);">
+            🎲 有一局正在进行中，等他们打完…
+          </div>
+        </div>
+      </div>
+
+      <!-- 右：榜单 -->
+      <div>
+        <div class="panel lb-panel">
+          <div class="lb-tabs">
+            <div class="lb-tab active" data-tab="all">🏆 总榜</div>
+            <div class="lb-tab" data-tab="daily">📅 今日</div>
+          </div>
+          <div id="lb-content">
+            <div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.3);padding:1rem;">加载中…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 游戏界面 ════════════════════════════════ -->
+  <div id="game-screen">
+    <div class="players-bar" id="players-bar"></div>
+    <div class="turn-banner hidden" id="turn-banner"></div>
+    <div class="table-center" id="table-center">
+      <div style="font-size:3rem;opacity:0.3;">🎲</div>
+      <div style="color:rgba(232,213,184,0.3);">等待叫价…</div>
+    </div>
+    <div class="my-dice-area">
+      <div class="label">🍺 你的骰盅</div>
+      <div class="dice-row" id="my-dice"></div>
+    </div>
+    <div class="bid-panel" id="bid-panel">
+      <div class="bid-controls">
+        <div class="bid-input-group">
+          <button class="qty-btn" id="qty-minus">−</button>
+          <div class="qty-display" id="bid-qty">1</div>
+          <button class="qty-btn" id="qty-plus">+</button>
+          <span class="unit">个</span>
+        </div>
+        <div class="bid-face-select" id="bid-face-select"></div>
+      </div>
+      <div class="bid-actions">
+        <button class="btn btn-gold" id="btn-bid">📢 叫价</button>
+        <button class="btn btn-red" id="btn-challenge" disabled>🔥 开！</button>
+      </div>
+    </div>
+    <div class="bid-log" id="bid-log">
+      <div style="text-align:center;color:rgba(232,213,184,0.3);">本轮叫价记录</div>
+    </div>
+  </div>
+
+  <div id="result-container"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+function showToast(msg, error) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (error ? ' error' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+const DOT_MAP = { 1:[5], 2:[3,7], 3:[3,5,7], 4:[1,3,7,9], 5:[1,3,5,7,9], 6:[1,4,3,6,7,9] };
+
+function dieHTML(value, cls = '') {
+  const pos = DOT_MAP[value] || [];
+  let c = '';
+  for (let i = 1; i <= 9; i++) c += pos.includes(i) ? '<div class="dot"></div>' : '<div></div>';
+  return `<div class="die ${cls}">${c}</div>`;
+}
+
+function faceBtnHTML(value, selected) {
+  const pos = DOT_MAP[value] || [];
+  let c = '';
+  for (let i = 1; i <= 9; i++) c += pos.includes(i) ? '<div class="dot"></div>' : '<div></div>';
+  return `<div class="face-btn ${selected ? 'selected' : ''}" data-face="${value}">${c}</div>`;
+}
+
+// ── 音效 ─────────────────────────────────────────────
+const SFX = (() => {
+  let ctx;
+  function getCtx() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+  function play(freq, dur, type = 'square', vol = 0.15) {
+    const c = getCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+    o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + dur);
+  }
+  return {
+    shake()     { for (let i = 0; i < 8; i++) setTimeout(() => play(200 + Math.random() * 600, 0.05, 'triangle', 0.08), i * 50); },
+    bid()       { play(440, 0.1, 'square', 0.1); setTimeout(() => play(550, 0.15, 'square', 0.1), 80); },
+    challenge() { play(200, 0.3, 'sawtooth', 0.15); setTimeout(() => play(150, 0.4, 'sawtooth', 0.2), 150); },
+    win()       { [523,659,784,1047].forEach((f,i) => setTimeout(() => play(f, 0.2, 'square', 0.1), i * 120)); },
+    lose()      { [400,350,300,200].forEach((f,i) => setTimeout(() => play(f, 0.25, 'sawtooth', 0.08), i * 150)); },
+    slam()      { play(80, 0.3, 'triangle', 0.25); },
+  };
+})();
+
+function spawnParticles(x, y, count = 20, color = '#d4a646') {
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div'); p.className = 'particle';
+    const size = 4 + Math.random() * 8;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 120;
+    p.style.cssText = `left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${color};--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function screenShake() {
+  $('app-root').classList.add('screen-shake');
+  setTimeout(() => $('app-root').classList.remove('screen-shake'), 500);
+}
+
+// ── Socket ───────────────────────────────────────────
+const PROXY  = { url: window.location.origin, path: '/dice-ws/socket.io' };
+const DIRECT = { url: 'http://150.158.110.168:3005', path: '/socket.io' };
+let cfg = PROXY;
+let socket = io(cfg.url, { path: cfg.path, transports: ['websocket', 'polling'] });
+socket.on('connect_error', () => {
+  if (cfg === PROXY) { cfg = DIRECT; socket.io.uri = cfg.url; socket.io.opts.path = cfg.path; socket.connect(); }
+});
+
+let myId = null;
+let myName = '';
+let selectedFace = 1;
+let currentLbTab = 'all';
+let gameState = null;
+
+const SAVED_NAME = localStorage.getItem('dice_player_name') || '';
+if (SAVED_NAME) $('player-name').value = SAVED_NAME;
+
+socket.on('connect', () => { myId = socket.id; });
+
+// ── 登录 ─────────────────────────────────────────────
+$('btn-enter').onclick = () => {
+  myName = $('player-name').value.trim() || '酒客';
+  localStorage.setItem('dice_player_name', myName);
+  socket.emit('join-lobby', { name: myName });
+};
+
+$('player-name').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-enter').click(); });
+
+socket.on('joined', ({ name }) => {
+  myName = name;
+  $('my-name-display').textContent = name;
+  $('login-screen').style.display = 'none';
+  $('lobby-screen').style.display = 'block';
+  fetchMyStats();
+  fetchLeaderboard(currentLbTab);
+});
+
+// ── 个人数据 ─────────────────────────────────────────
+async function fetchMyStats() {
+  try {
+    const res = await fetch('/api/dice/player', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: myName }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const p = data.player;
+      $('my-points').textContent = p.points;
+      $('my-record').textContent = `${p.wins}胜 ${p.losses}负`;
+    }
+  } catch(e) { console.warn('获取个人数据失败:', e); }
+}
+
+// ── 榜单 ─────────────────────────────────────────────
+document.querySelectorAll('.lb-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentLbTab = tab.dataset.tab;
+    fetchLeaderboard(currentLbTab);
+  };
+});
+
+async function fetchLeaderboard(type) {
+  try {
+    const res = await fetch(`/api/dice/leaderboard?type=${type}`);
+    const data = await res.json();
+    if (!data.success || !data.list.length) {
+      $('lb-content').innerHTML = '<div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.3);padding:1rem;">暂无数据</div>';
+      return;
+    }
+    const isDaily = type === 'daily';
+    $('lb-content').innerHTML = data.list.map(r => {
+      const rankCls = r.rank === 1 ? 'top1' : r.rank === 2 ? 'top2' : r.rank === 3 ? 'top3' : '';
+      const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank;
+      const isMe = r.name === myName;
+      const wr = isDaily ? (r.daily_wr ?? 0) + '%' : (r.win_rate ?? 0) + '%';
+      const pts = isDaily ? (r.daily_points > 0 ? '+' : '') + r.daily_points : r.points;
+      return `<div class="lb-row ${isMe ? 'me' : ''}">
+        <span class="rank ${rankCls}">${medal}</span>
+        <span class="nm">${r.name}</span>
+        <span class="pts">${pts}</span>
+        <span class="wr">${wr}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.warn('榜单加载失败:', e);
+    $('lb-content').innerHTML = '<div style="text-align:center;font-size:0.8rem;color:rgba(232,213,184,0.3);padding:1rem;">加载失败</div>';
+  }
+}
+
+setInterval(() => { if ($('lobby-screen').style.display !== 'none') fetchLeaderboard(currentLbTab); }, 15000);
+
+// ── 大厅事件 ─────────────────────────────────────────
+$('btn-ready').onclick = () => socket.emit('toggle-ready');
+$('btn-start').onclick = () => socket.emit('start-game');
+$('dice-count').onchange = () => socket.emit('update-settings', { diceCount: parseInt($('dice-count').value) || 5 });
+$('beer-mode').onchange = () => socket.emit('update-settings', { beerMode: $('beer-mode').checked });
+$('exact-penalty').onchange = () => socket.emit('update-settings', { exactPenalty: $('exact-penalty').checked });
+
+socket.on('settings-update', ({ diceCount, beerMode, exactPenalty }) => {
+  $('dice-count').value = diceCount;
+  $('beer-mode').checked = !!beerMode;
+  $('exact-penalty').checked = !!exactPenalty;
+});
+
+socket.on('lobby-update', (state) => {
+  $('online-count').textContent = `${state.players.length} 人在线`;
+  $('game-in-progress-msg').classList.toggle('hidden', !state.gameInProgress);
+
+  $('player-list').innerHTML = state.players.map(p => `
+    <div class="player-row">
+      <span style="font-size:1rem;">${p.inGame ? '🎲' : '🍺'}</span>
+      <span class="name">${p.name}${p.id === myId ? ' (你)' : ''}</span>
+      <span class="badge ${p.inGame ? 'badge-game' : p.ready ? 'badge-ready' : 'badge-wait'}">
+        ${p.inGame ? '游戏中' : p.ready ? '已准备' : '等待中'}
+      </span>
+    </div>
+  `).join('');
+
+  $('btn-start').disabled = !state.canStart;
+});
+
+socket.on('error-msg', msg => showToast(msg, true));
+socket.on('player-left', ({ name }) => showToast(`${name} 离开了`));
+socket.on('player-left-game', ({ name }) => showToast(`${name} 退出了对局`));
+
+// ── 游戏事件 ─────────────────────────────────────────
+let scoresInitialized = false;
+socket.on('game-started', () => {
+  $('lobby-screen').style.display = 'none';
+  $('game-screen').style.display = 'block';
+  SFX.shake();
+  showToast('🎲 摇骰子！');
+  scoresInitialized = false;
+});
+
+socket.on('new-round', () => {
+  $('result-container').innerHTML = '';
+  SFX.shake();
+  showToast('🎲 新一轮！');
+});
+
+socket.on('game-ended', () => {
+  $('game-screen').style.display = 'none';
+  $('lobby-screen').style.display = 'block';
+  $('result-container').innerHTML = '';
+  fetchMyStats();
+  fetchLeaderboard(currentLbTab);
+});
+
+socket.on('bid-made', () => SFX.bid());
+
+socket.on('challenge-result', (result) => {
+  SFX.challenge();
+  screenShake();
+  setTimeout(() => {
+    const iLost = result.loserId === myId || (result.isExact && result.loserNames?.includes(myName));
+    if (iLost) SFX.lose(); else SFX.win();
+    spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 30, iLost ? '#e74c3c' : '#d4a646');
+    // 即时更新本地积分缓存
+    if (result.winnerName) playerScores[result.winnerName] = (playerScores[result.winnerName] || 1000) + 100;
+    if (result.loserNames) result.loserNames.forEach(n => { playerScores[n] = (playerScores[n] || 1000) - 100; });
+    showResultOverlay(result);
+  }, 400);
+});
+
+socket.on('game-state', (state) => {
+  gameState = state;
+  if (!scoresInitialized && state.players?.length) {
+    scoresInitialized = true;
+    fetchPlayerScores(state.players.map(p => p.name));
+  }
+  renderGame(state);
+});
+
+// ── 啤酒小人 HTML ────────────────────────────────────
+function beerGuyHTML(level, isDrinking) {
+  const lv = Math.max(0, Math.min(10, level || 0));
+  const faces = ['😊','😄','😆','🤪','😝','🥴','😵','🤢','😵‍💫','🥴','💀'];
+  const face = faces[lv] || '😊';
+  const bellyBar = lv > 0 ? '🟤'.repeat(Math.min(lv, 5)) : '';
+  const cls = ['beer-guy', lv > 0 ? 'has-beer' : '', isDrinking ? 'drinking' : ''].filter(Boolean).join(' ');
+  return `<div class="${cls}">
+    <div class="bg-face">${face}</div>
+    ${bellyBar ? `<div class="bg-belly">${bellyBar}</div>` : ''}
+    <div class="bg-mug">🍺</div>
+  </div>`;
+}
+
+let prevBeerLevels = {};
+let pendingBeerLevels = null; // 暂存本轮新 beerLevel，等结算关闭后触发动画
+let drinkingIds = [];         // 正在喝酒动画的玩家 id 列表
+let playerScores = {};        // name → points，游戏中显示积分
+
+async function fetchPlayerScores(names) {
+  for (const name of names) {
+    try {
+      const res = await fetch('/api/dice/player', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (data.success) playerScores[name] = data.player.points;
+    } catch(e) { console.warn('获取玩家积分失败:', name, e); }
+  }
+}
+
+// ── 渲染游戏 ─────────────────────────────────────────
+function renderGame(state) {
+  const isMyTurn = state.currentPlayerId === myId;
+  const beerMode = state.settings?.beerMode;
+  const isPlaying = state.status === 'playing';
+
+  // 计算下家 ID
+  let nextPlayerId = null;
+  if (isPlaying && state.currentPlayerId) {
+    const activePlayers = state.players.filter(p => !p.eliminated);
+    const curIdx = activePlayers.findIndex(p => p.id === state.currentPlayerId);
+    if (curIdx !== -1 && activePlayers.length > 1) {
+      nextPlayerId = activePlayers[(curIdx + 1) % activePlayers.length].id;
+    }
+  }
+
+  function turnTag(pid) {
+    if (!isPlaying) return '';
+    if (pid === state.currentPlayerId) return '<span class="turn-tag current">👈 叫价中</span>';
+    if (pid === nextPlayerId) return '<span class="turn-tag next">下家</span>';
+    return '';
+  }
+
+  if (beerMode && state.status === 'roundEnd' && !pendingBeerLevels) {
+    pendingBeerLevels = {};
+    state.players.forEach(p => { pendingBeerLevels[p.id] = p.beerLevel; });
+  }
+  $('players-bar').innerHTML = state.players.map(p => {
+    const active = p.id === state.currentPlayerId && isPlaying;
+    const isNext = p.id === nextPlayerId;
+    const isDrinking = drinkingIds.includes(p.id);
+    const pts = playerScores[p.name];
+    const ptsStr = pts != null ? `<div style="font-size:0.6rem;color:var(--gold-bright);">💰${pts}</div>` : '';
+    const beerExtra = beerMode
+      ? `<div style="font-size:0.6rem;color:var(--gold-dim);">${'🍺'.repeat(p.beerLevel || 0)}</div>` : '';
+    return `<div class="beer-chip ${active ? 'active' : ''} ${isNext ? 'is-next' : ''}">
+      ${turnTag(p.id)}
+      ${beerGuyHTML(beerMode ? p.beerLevel : 0, isDrinking)}
+      <div class="bc-name">${p.name}${p.id === myId ? '(你)' : ''}</div>
+      ${ptsStr}
+      ${beerExtra}
+    </div>`;
+  }).join('');
+
+  const banner = $('turn-banner');
+  if (state.status === 'playing') {
+    banner.classList.remove('hidden');
+    if (isMyTurn) {
+      banner.className = 'turn-banner my-turn';
+      banner.textContent = state.currentBid ? '🍺 轮到你——加码或开骰！' : '🍺 轮到你先叫！';
+    } else {
+      const cp = state.players.find(p => p.id === state.currentPlayerId);
+      banner.className = 'turn-banner other-turn';
+      banner.textContent = `等待 ${cp?.name || '?'} …`;
+    }
+  } else banner.classList.add('hidden');
+
+  if (state.currentBid) {
+    const wild = state.wildOnes ? '（1 当万能）' : '（叫斋 · 1 不万能）';
+    $('table-center').innerHTML = `
+      <div class="current-bid">${state.currentBid.quantity} 个 ${state.currentBid.face}</div>
+      <div class="bid-speaker">${state.currentBid.playerName} 叫的</div>
+      <div class="wild-note">${wild}</div>`;
+  } else if (state.status === 'playing') {
+    $('table-center').innerHTML = '<div style="font-size:3rem;">🎲</div><div style="color:rgba(232,213,184,0.5);">等待第一个叫价…</div>';
+  }
+
+  const me = state.players.find(p => p.id === myId);
+  if (me?.dice) {
+    $('my-dice').innerHTML = me.dice.map(d => dieHTML(d, 'shake-anim')).join('');
+  } else {
+    $('my-dice').innerHTML = '<div style="color:rgba(232,213,184,0.3);">等待摇骰…</div>';
+  }
+
+  const bidPanel = $('bid-panel');
+  if (state.status === 'playing' && isMyTurn && !me?.eliminated) {
+    bidPanel.classList.remove('hidden');
+    $('btn-challenge').disabled = !state.currentBid;
+    renderFaceSelect();
+  } else bidPanel.classList.add('hidden');
+
+  if (state.roundLog?.length > 0) {
+    $('bid-log').innerHTML = state.roundLog.map(b =>
+      `<div class="bid-log-entry">${b.playerName}：<span class="bid-value">${b.quantity} 个 ${b.face}</span></div>`
+    ).join('');
+    $('bid-log').scrollTop = $('bid-log').scrollHeight;
+  }
+}
+
+// ── 叫价面板 ─────────────────────────────────────────
+let bidQty = 1;
+function updateQtyDisplay() { $('bid-qty').textContent = bidQty; }
+function setQty(v) { bidQty = Math.max(1, Math.round(v)); updateQtyDisplay(); }
+
+$('qty-minus').onclick = () => setQty(bidQty - 1);
+$('qty-plus').onclick  = () => setQty(bidQty + 1);
+
+// PC 鼠标滚轮
+$('bid-qty').addEventListener('wheel', (e) => {
+  e.preventDefault();
+  setQty(bidQty + (e.deltaY < 0 ? 1 : -1));
+}, { passive: false });
+
+// 移动端触摸滑动
+(function() {
+  const el = $('bid-qty');
+  let startY = 0, startQty = 0;
+  el.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    startQty = bidQty;
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const dy = startY - e.touches[0].clientY;
+    setQty(startQty + Math.round(dy / 25));
+  }, { passive: false });
+})();
+
+function renderFaceSelect() {
+  const c = $('bid-face-select'); c.innerHTML = '';
+  for (let f = 1; f <= 6; f++) c.innerHTML += faceBtnHTML(f, f === selectedFace);
+  c.querySelectorAll('.face-btn').forEach(btn => {
+    btn.onclick = () => { selectedFace = parseInt(btn.dataset.face); renderFaceSelect(); };
+  });
+}
+renderFaceSelect();
+
+$('btn-bid').onclick = () => {
+  if (!bidQty || bidQty < 1) return showToast('数量不合法', true);
+  socket.emit('make-bid', { quantity: bidQty, face: selectedFace });
+};
+$('btn-challenge').onclick = () => { SFX.slam(); socket.emit('challenge'); };
+
+// ── 结果覆盖层 ──────────────────────────────────────
+function showResultOverlay(r) {
+  const bidFace = r.bid?.face;
+
+  if (!r.bid) {
+    $('result-container').innerHTML = '';
+    return;
+  }
+
+  let verdictText;
+  if (r.isExact) {
+    verdictText = `🎯 精准开骰！恰好 ${r.actualCount} 个 — 全体受罚！`;
+  } else {
+    verdictText = r.bidderWins
+      ? `✅ 叫价成立！实际有 ${r.actualCount} 个`
+      : `❌ 吹牛失败！只有 ${r.actualCount} 个`;
+  }
+
+  const winnerText = `${r.winnerName} <span style="color:var(--gold-bright);">+100</span>`;
+  const loserText = r.isExact
+    ? r.loserNames.map(n => `${n} <span style="color:var(--red);">-100</span>`).join('、')
+    : `${r.loserName} <span style="color:var(--red);">-100</span>`;
+
+  let diceHTML = '';
+  if (r.allDice) {
+    for (const pd of r.allDice) {
+      const straightTag = pd.isStraight ? '<span style="font-size:0.65rem;color:#e8c36a;background:rgba(212,166,70,0.2);padding:0.1rem 0.4rem;border-radius:10px;margin-left:0.2rem;">顺子</span>' : '';
+      const diceStr = pd.dice.map(d => {
+        if (pd.isStraight) return dieHTML(d, 'straight-die');
+        const isMatch = d === bidFace || (r.wildOnes && bidFace !== 1 && d === 1);
+        return dieHTML(d, isMatch ? 'highlight' : '');
+      }).join('');
+      diceHTML += `<div class="result-player-dice"><span class="rpd-name">${pd.name}${straightTag}</span>${diceStr}</div>`;
+    }
+  }
+
+  const iAmWinner = r.winnerId === myId;
+  const iAmLoser = r.loserId === myId || (r.isExact && r.loserNames?.includes(myName));
+  let bannerHTML = '';
+  let boxClass = '';
+  if (iAmWinner) {
+    bannerHTML = '<div class="my-result-banner win-banner">🎉 你赢了！</div>';
+    boxClass = 'i-win';
+  } else if (iAmLoser) {
+    bannerHTML = '<div class="my-result-banner lose-banner">💀 你输了！</div>';
+    boxClass = 'i-lose';
+  }
+
+  $('result-container').innerHTML = `
+    <div class="result-overlay">
+      <div class="result-box ${boxClass}">
+        ${bannerHTML}
+        <div class="result-verdict ${r.bidderWins ? 'win' : 'lose'}">${verdictText}</div>
+        <div class="result-detail">
+          ${r.bidderName} 叫了 <strong>${r.bid.quantity} 个 ${r.bid.face}</strong>，${r.challengerName} 喊了 "开！"
+          <br>🏆 ${winnerText} &nbsp; ${r.isExact ? '💀' : '💔'} ${loserText}
+          ${gameState?.settings?.beerMode ? '<br><span style="font-size:0.8rem;">🍺 ' + (r.isExact ? r.loserNames.join('、') + ' 全体干了一杯！' : r.loserName + ' 干了一杯！') + '</span>' : ''}
+        </div>
+        <div class="result-all-dice">${diceHTML}</div>
+        <div class="result-actions">
+          <button class="btn btn-gold" onclick="closeResultAndDrink('next-round')">🎲 下一轮</button>
+          <button class="btn btn-ghost" onclick="closeResultAndDrink('back-to-lobby')">🚪 离桌</button>
+        </div>
+      </div>
+    </div>`;
+
+  fetchMyStats();
+}
+
+function closeResultAndDrink(action) {
+  $('result-container').innerHTML = '';
+
+  // 触发啤酒喝酒动画
+  if (pendingBeerLevels && gameState?.settings?.beerMode) {
+    drinkingIds = [];
+    for (const [id, newLv] of Object.entries(pendingBeerLevels)) {
+      if (newLv > (prevBeerLevels[id] || 0)) drinkingIds.push(id);
+    }
+    // 更新 prevBeerLevels
+    Object.assign(prevBeerLevels, pendingBeerLevels);
+    pendingBeerLevels = null;
+
+    if (drinkingIds.length > 0 && gameState) {
+      renderGame(gameState);
+      // 动画持续 1.2s 后清除 drinking 状态再发送 socket 事件
+      setTimeout(() => {
+        drinkingIds = [];
+        renderGame(gameState);
+        socket.emit(action);
+      }, 1500);
+      return;
+    }
+  }
+  pendingBeerLevels = null;
+  socket.emit(action);
+}
+</script>
+</body>
+</html>

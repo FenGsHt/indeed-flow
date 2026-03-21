@@ -141,6 +141,13 @@ io.on('connection', socket => {
     const result = game.playCard(socket.id, cardId, chosenColor || null);
     if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
 
+    // 2026-03-19: 广播出牌事件，供客户端播放对手出牌动画
+    const pName = game.players.find(p => p.id === socket.id)?.name || '';
+    io.to(roomId).emit('card-played', {
+      playerId: socket.id, playerName: pName,
+      card: game.topCard, chosenColor: chosenColor || null,
+    });
+
     broadcastGame(roomId);
     if (result.finished) {
       stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
@@ -192,6 +199,59 @@ io.on('connection', socket => {
       const target = game.players.find(p => p.id === targetId);
       io.to(roomId).emit('uno-caught', { targetId, targetName: target?.name });
       broadcastGame(roomId);
+    }
+  });
+
+  // ── 质疑 +4 ────────────────────────────────
+  // 2026-03-19: 质疑机制——下家认为出 +4 者违规
+  socket.on('challenge-draw4', () => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.challengeDraw4(socket.id);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+    io.to(roomId).emit('challenge-result', {
+      success:       result.success,
+      challengerId:  socket.id,
+      penalizedId:   result.penalized,
+      penalizedName: result.penalizedName,
+      drawnCount:    result.drawnCount,
+    });
+    broadcastGame(roomId);
+  });
+
+  // 2026-03-19: 接受 +4（不质疑）
+  socket.on('accept-draw4', () => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.acceptDraw4(socket.id);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+    io.to(roomId).emit('challenge-accepted', { playerId: socket.id });
+    broadcastGame(roomId);
+  });
+
+  // ── Jump-In 抢牌 ────────────────────────────
+  // 2026-03-19: 任意玩家可在非自己回合打出完全相同的牌
+  socket.on('jump-in', ({ cardId }) => {
+    if (!roomId) return;
+    const game = rooms.get(roomId);
+    if (!game) return;
+    const result = game.jumpIn(socket.id, cardId);
+    if (!result.ok) { socket.emit('error', { message: result.reason }); return; }
+
+    const pName = game.players.find(p => p.id === socket.id)?.name || '';
+    io.to(roomId).emit('jumped-in', {
+      playerId: socket.id, playerName: pName,
+      card: game.topCard,
+    });
+
+    broadcastGame(roomId);
+    if (result.finished) {
+      stats.recordGame(game.players, result.winner.id, result.winner.roundPoints);
+      io.to(roomId).emit('game-over', { ...result.winner, seriesOver: !!result.seriesOver });
+      io.emit('leaderboard', stats.getLeaderboard());
+      broadcastRoomList();
     }
   });
 

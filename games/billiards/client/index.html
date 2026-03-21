@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>多人台球</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
+
+/* ── Screens ── */
+.screen{display:none;width:100%;height:100%}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── LOBBY ── */
+#screen-lobby{background:radial-gradient(ellipse at 30% 40%,#1a3520 0%,#0a0805 60%);overflow-y:auto}
+.lobby-wrap{max-width:960px;margin:0 auto;padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;min-height:100%}
+@media(max-width:700px){.lobby-wrap{grid-template-columns:1fr}}
+.lobby-title{grid-column:1/-1;text-align:center;padding:1rem 0 0.5rem}
+.lobby-title h1{font-size:2.5rem;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(90deg,#d4a017,#7dbb5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lobby-title p{color:rgba(255,255,255,0.45);font-size:0.9rem;margin-top:0.3rem}
+
+.panel{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:1.4rem}
+.panel h3{font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;color:#d4a017;margin-bottom:1rem}
+
+.input-row{display:flex;gap:0.6rem;margin-bottom:0.8rem}
+.input-row input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;
+  padding:0.65rem 0.9rem;color:#fff;font-size:0.95rem;outline:none}
+.input-row input:focus{border-color:rgba(212,160,23,0.5)}
+.btn{padding:0.65rem 1.2rem;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-gold{background:linear-gradient(135deg,#d4a017,#b8870f);color:#1a0e02}
+.btn-gold:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7)}
+.btn-outline:hover{border-color:rgba(255,255,255,0.4);color:#fff}
+.btn-danger{background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);color:#ff7070}
+.btn-danger:hover{background:rgba(220,50,50,0.25)}
+
+/* Room options (expandable) */
+.room-opts{margin-bottom:1rem}
+.room-opts summary{cursor:pointer;font-size:0.82rem;color:rgba(255,255,255,0.45);user-select:none;padding:0.4rem 0}
+.room-opts summary:hover{color:rgba(255,255,255,0.7)}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.8rem}
+.opt-item label{font-size:0.78rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.25rem}
+.opt-item select,.opt-item input[type=number]{
+  width:100%;background:#1a2a1a;border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px;padding:0.4rem 0.6rem;color:#e8d5a3;font-size:0.82rem}
+/* 2026-03-19: option 明确深色背景防止白底看不清 */
+.opt-item select option{background:#1a2a1a;color:#e8d5a3}
+.opt-item.disabled{opacity:0.4;pointer-events:none}
+.coming-soon{font-size:0.7rem;color:#d4a017;margin-top:0.2rem}
+
+/* Room list */
+.rooms-list{display:flex;flex-direction:column;gap:0.5rem;max-height:260px;overflow-y:auto}
+.room-item{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.7rem 1rem}
+.room-item:hover{border-color:rgba(212,160,23,0.3)}
+.room-info .room-id{font-size:0.9rem;font-weight:700;color:#e8d5a3}
+.room-info .room-meta{font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:0.15rem}
+.room-status{font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:50px}
+.room-status.waiting{background:rgba(100,200,100,0.12);color:#80d080;border:1px solid rgba(100,200,100,0.2)}
+.room-status.playing{background:rgba(255,180,50,0.12);color:#ffc850;border:1px solid rgba(255,180,50,0.2)}
+.rooms-empty{text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1.5rem 0}
+
+/* Leaderboard */
+.lb-tabs{display:flex;gap:0.5rem;margin-bottom:1rem}
+.lb-tab{padding:0.35rem 0.8rem;border-radius:50px;font-size:0.78rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s}
+.lb-tab.active{background:rgba(212,160,23,0.15);border-color:rgba(212,160,23,0.4);color:#d4a017}
+.lb-tab:not(.active){color:rgba(255,255,255,0.4)}
+.lb-tab:not(.active):hover{color:rgba(255,255,255,0.7)}
+.lb-list{display:flex;flex-direction:column;gap:0.35rem;max-height:340px;overflow-y:auto}
+.lb-row{display:flex;align-items:center;gap:0.7rem;padding:0.45rem 0.6rem;border-radius:6px}
+.lb-row:nth-child(odd){background:rgba(255,255,255,0.02)}
+.lb-rank{width:22px;text-align:center;font-size:0.8rem;color:rgba(255,255,255,0.35);flex-shrink:0}
+.lb-rank.gold{color:#ffd700;font-weight:900}
+.lb-rank.silver{color:#c0c0c0;font-weight:700}
+.lb-rank.bronze{color:#cd7f32;font-weight:700}
+.lb-name{flex:1;font-size:0.85rem;color:#e8d5a3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-wins{font-size:0.8rem;color:#7dbb5e;font-weight:700;white-space:nowrap}
+.lb-rate{font-size:0.72rem;color:rgba(255,255,255,0.35);white-space:nowrap;margin-left:0.3rem}
+.lb-empty{color:rgba(255,255,255,0.25);font-size:0.82rem;text-align:center;padding:1.5rem 0}
+
+/* ── WAITING ── */
+#screen-waiting{background:radial-gradient(ellipse at center,#152b1a 0%,#0a0805 70%);
+  align-items:center;justify-content:center}
+.waiting-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;
+  padding:2.5rem;max-width:440px;width:90%;text-align:center}
+.waiting-title{font-size:1.5rem;font-weight:900;color:#d4a017;margin-bottom:0.3rem}
+.waiting-room-id{font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:2rem}
+.waiting-room-id span{color:#e8d5a3;font-weight:700;letter-spacing:3px;margin-left:0.5rem}
+.waiting-players{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+.player-slot{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:1rem;min-height:80px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.4rem}
+.player-slot.filled{border-color:rgba(125,187,94,0.3)}
+.player-slot .slot-avatar{width:36px;height:36px;border-radius:50%;background:rgba(212,160,23,0.2);
+  border:2px solid rgba(212,160,23,0.4);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.player-slot .slot-name{font-size:0.85rem;font-weight:700;color:#e8d5a3}
+.player-slot .slot-empty{font-size:0.8rem;color:rgba(255,255,255,0.25)}
+.ready-badge{font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(100,200,100,0.15);color:#80d080;border:1px solid rgba(100,200,100,0.25)}
+.not-ready-badge{font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35)}
+.waiting-actions{display:flex;gap:0.8rem;justify-content:center}
+.waiting-hint{font-size:0.78rem;color:rgba(255,255,255,0.3);margin-top:1.2rem}
+
+/* ── GAME ── */
+#screen-game{flex-direction:column;overflow:hidden}
+.game-hud{display:flex;align-items:center;justify-content:space-between;
+  padding:0.5rem 1rem;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+.hud-player{display:flex;align-items:center;gap:0.7rem}
+.hud-player .p-name{font-size:0.9rem;font-weight:700}
+.hud-player .p-type{font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:50px;background:rgba(255,255,255,0.08)}
+.hud-player .p-type.solid{color:#f5c518;background:rgba(245,197,24,0.12)}
+.hud-player .p-type.stripe{color:#64b5f6;background:rgba(100,181,246,0.12)}
+.hud-player .p-score{font-size:1.1rem;font-weight:900;color:#d4a017}
+.hud-player .p-balls{display:flex;gap:2px;align-items:center}
+.ball-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hud-turn{text-align:center;font-size:0.78rem;color:rgba(255,255,255,0.5);min-width:120px}
+.hud-turn .turn-name{font-weight:700;color:#e8d5a3;display:block}
+.hud-turn .turn-indicator{color:#d4a017;font-size:0.7rem;margin-top:0.1rem}
+.hud-turn.my-turn .turn-name{color:#7dbb5e}
+
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#0e1a0a 0%,#050302 70%)}
+#game-canvas{display:block;cursor:crosshair}
+
+.game-footer{padding:0.4rem 1rem;background:rgba(0,0,0,0.6);border-top:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;gap:1rem;flex-shrink:0;min-height:44px}
+#status-msg{flex:1;font-size:0.85rem;color:rgba(255,255,255,0.6);text-align:center}
+#status-msg.my{color:#7dbb5e;font-weight:600}
+#status-msg.warn{color:#ffc850}
+.power-wrap{display:flex;align-items:center;gap:0.6rem;flex-shrink:0}
+.power-wrap label{font-size:0.72rem;color:rgba(255,255,255,0.4)}
+.power-bar-outer{width:120px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.power-bar-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#4caf50,#ffeb3b,#f44336);transition:width .05s linear}
+
+/* Chat */
+.chat-wrap{position:absolute;right:1rem;bottom:50px;width:240px;pointer-events:none}
+.chat-msg{background:rgba(0,0,0,0.7);border-left:2px solid rgba(212,160,23,0.5);
+  padding:0.35rem 0.6rem;border-radius:0 6px 6px 0;font-size:0.78rem;margin-bottom:0.3rem;
+  animation:fadeChat 4s forwards}
+@keyframes fadeChat{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.chat-input-row{display:flex;gap:0.4rem;position:absolute;bottom:4px;right:1rem;width:240px;pointer-events:all}
+.chat-input-row input{flex:1;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:6px;
+  padding:0.35rem 0.6rem;color:#fff;font-size:0.78rem;outline:none}
+
+/* Game over overlay */
+#overlay-gameover{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  align-items:center;justify-content:center;z-index:100}
+#overlay-gameover.show{display:flex}
+.gameover-box{background:linear-gradient(135deg,#1a2010,#0a1208);border:1px solid rgba(125,187,94,0.3);
+  border-radius:20px;padding:2.5rem;text-align:center;max-width:380px;width:90%}
+.gameover-result{font-size:2.5rem;font-weight:900;margin-bottom:0.5rem}
+.gameover-result.win{color:#7dbb5e}
+.gameover-result.lose{color:#e07070}
+.gameover-reason{font-size:0.85rem;color:rgba(255,255,255,0.45);margin-bottom:2rem}
+.gameover-actions{display:flex;gap:0.8rem;justify-content:center}
+.rematch-hint{font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.8rem}
+
+/* Practice mode */
+.practice-divider{display:flex;align-items:center;gap:0.7rem;margin:0.8rem 0;color:rgba(255,255,255,0.2);font-size:0.75rem}
+.practice-divider::before,.practice-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1)}
+.btn-practice{background:rgba(125,187,94,0.12);border:1px solid rgba(125,187,94,0.35);color:#7dbb5e}
+.btn-practice:hover{background:rgba(125,187,94,0.22);transform:translateY(-1px)}
+#practice-controls{display:none;align-items:center;gap:0.6rem;flex-shrink:0}
+#practice-shot-count{font-size:0.78rem;color:rgba(255,255,255,0.35);white-space:nowrap}
+.practice-badge{font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:#7dbb5e;background:rgba(125,187,94,0.12);border:1px solid rgba(125,187,94,0.3);
+  border-radius:20px;padding:0.15rem 0.5rem}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+
+/* ── Portrait lock overlay ─────────────────────────────────────────────── */
+#portrait-overlay{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:#0a0805;
+  flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;
+  padding:2rem;text-align:center;
+}
+#portrait-overlay.show{display:flex}
+.rotate-icon{font-size:3.8rem;animation:rotHint 1.6s ease-in-out infinite}
+@keyframes rotHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+.rotate-title{font-size:1.15rem;font-weight:800;color:#d4a017}
+.rotate-sub{font-size:0.82rem;color:rgba(255,255,255,0.45);line-height:1.5;max-width:240px}
+
+/* ── Mobile landscape game UI ──────────────────────────────────────────── */
+/* max-height:520px covers iPhone SE landscape (568px) and most phones     */
+@media (max-height:520px) and (orientation:landscape){
+
+  /* HUD: one tight row */
+  .game-hud{
+    padding:0.2rem 0.6rem;
+    min-height:34px;
+  }
+  .hud-player .p-type,.hud-player .p-balls{display:none}
+  .hud-player .p-name{font-size:0.75rem}
+  .hud-player .p-score{font-size:0.88rem}
+  .hud-turn{min-width:72px;font-size:0.68rem}
+  .hud-turn .turn-name{font-size:0.8rem}
+  .hud-turn .turn-indicator{display:none}
+
+  /* Footer: super compact */
+  .game-footer{
+    padding:0.18rem 0.7rem;
+    min-height:30px;
+    gap:0.6rem;
+  }
+  #status-msg{font-size:0.7rem}
+  .power-wrap label{display:none}
+  .power-bar-outer{width:72px;height:6px}
+  #practice-controls{gap:0.3rem}
+  .practice-badge{display:none}
+  #practice-shot-count{font-size:0.66rem}
+  #practice-controls .btn{padding:0.15rem 0.45rem;font-size:0.68rem}
+
+  /* Chat: hide on mobile – too cramped */
+  .chat-wrap,.chat-input-row{display:none!important}
+
+  /* Lobby: tighten padding */
+  .lobby-wrap{padding:0.7rem;gap:1rem}
+  .lobby-title{padding:0.3rem 0 0.2rem}
+  .lobby-title h1{font-size:1.5rem}
+  .lobby-title p{display:none}
+  .panel{padding:0.75rem}
+  .panel h3{margin-bottom:0.55rem;font-size:0.72rem}
+  .rooms-list{max-height:140px}
+  .lb-list{max-height:160px}
+  .input-row input{padding:0.45rem 0.7rem;font-size:0.85rem}
+  .btn{padding:0.45rem 0.85rem;font-size:0.8rem}
+  .waiting-box{padding:1.2rem}
+  .waiting-title{font-size:1.1rem;margin-bottom:0.2rem}
+  .waiting-players{gap:0.6rem;margin-bottom:1rem}
+  .player-slot{min-height:56px;padding:0.6rem}
+  .player-slot .slot-avatar{width:28px;height:28px;font-size:0.85rem}
+
+  /* Gameover overlay compact */
+  .gameover-box{padding:1.4rem}
+  .gameover-result{font-size:1.8rem}
+  .gameover-reason{margin-bottom:1.2rem;font-size:0.78rem}
+}
+
+/* Safe-area padding for notched phones (landscape) */
+@supports (padding-left: env(safe-area-inset-left)){
+  .game-hud,.game-footer{
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
+  .canvas-area{
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOBBY ══════════════════════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="lobby-title">
+      <h1>🎱 BILLIARDS</h1>
+      <p>多人在线台球 · 八球制 / 三人分区 · 实时对战</p>
+    </div>
+
+    <!-- Left: Create/Join -->
+    <div>
+      <div class="panel" style="margin-bottom:1rem">
+        <h3>加入游戏</h3>
+        <div class="input-row">
+          <input id="player-name" type="text" placeholder="输入昵称…" maxlength="16" autocomplete="off">
+            <button class="btn btn-gold" onclick="createRoom()">创建房间</button>
+        </div>
+        <div class="practice-divider">或</div>
+        <button class="btn btn-practice" style="width:100%;padding:.6rem" onclick="startPractice()">🎱 单人练习</button>
+
+        <details class="room-opts">
+          <summary>▶ 房间选项</summary>
+          <div class="opts-grid">
+            <!-- 2026-03-19: 新增玩家人数选项，支持三人分区八球制 -->
+            <div class="opt-item">
+              <label>玩家人数</label>
+              <select id="opt-mode">
+                <option value="2player">2人对战</option>
+                <option value="3player">3人分区八球</option>
+                <option value="4player">4人分区对战</option>
+              </select>
+            </div>
+            <div class="opt-item">
+              <label>玩法</label>
+              <select id="opt-gametype">
+                <option value="8ball">八球 (8-Ball)</option>
+                <option value="9ball" disabled>九球 (即将)</option>
+              </select>
+            </div>
+            <div class="opt-item disabled">
+              <label>回合限时 <span class="coming-soon">即将开放</span></label>
+              <select disabled>
+                <option>无限制</option>
+                <option>30 秒</option>
+                <option>60 秒</option>
+              </select>
+            </div>
+            <div class="opt-item disabled">
+              <label>球在手规则 <span class="coming-soon">即将开放</span></label>
+              <select disabled><option>任意位置</option><option>头区</option></select>
+            </div>
+            <div class="opt-item disabled">
+              <label>ELO 匹配 <span class="coming-soon">即将开放</span></label>
+              <select disabled><option>关闭</option><option>开启</option></select>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h3>在线房间</h3>
+        <div id="rooms-list" class="rooms-list">
+          <div class="rooms-empty">暂无房间，创建一个吧</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Leaderboard -->
+    <div class="panel">
+      <h3>排行榜</h3>
+      <div class="lb-tabs">
+        <div class="lb-tab active" onclick="switchLbTab('daily',this)">今日</div>
+        <div class="lb-tab" onclick="switchLbTab('allTime',this)">历史</div>
+      </div>
+      <div id="lb-content" class="lb-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WAITING ════════════════════════════════════════════════════════════ -->
+<div id="screen-waiting" class="screen">
+    <div class="waiting-box">
+    <div class="waiting-title">台球室</div>
+    <div class="waiting-room-id">房间号 <span id="w-room-id">—</span></div>
+    <!-- 2026-03-19: slot-2 默认隐藏，三人模式时显示 -->
+    <div class="waiting-players" id="waiting-players">
+      <div class="player-slot" id="slot-0"><div class="slot-empty">等待玩家…</div></div>
+      <div class="player-slot" id="slot-1"><div class="slot-empty">等待玩家…</div></div>
+      <div class="player-slot" id="slot-2" style="display:none"><div class="slot-empty">等待玩家…</div></div>
+      <!-- 2026-03-19: slot-3 四人模式专用 -->
+      <div class="player-slot" id="slot-3" style="display:none"><div class="slot-empty">等待玩家…</div></div>
+    </div>
+    <div class="waiting-actions">
+      <button class="btn btn-gold" id="ready-btn" onclick="toggleReady()">准备</button>
+      <button class="btn btn-outline" onclick="leaveRoom()">离开</button>
+    </div>
+    <div class="waiting-hint" id="waiting-hint">等待对手加入…</div>
+  </div>
+</div>
+
+<!-- ══ GAME ════════════════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <div class="game-hud" id="game-hud">
+    <!-- 2人模式 HUD（默认显示） -->
+    <div id="hud-2p" style="display:contents">
+      <div class="hud-player" id="hud-p0">
+        <div class="p-score" id="hud-score-0">0</div>
+        <div>
+          <div class="p-name" id="hud-name-0">—</div>
+          <div class="p-type" id="hud-type-0">—</div>
+        </div>
+        <div class="p-balls" id="hud-balls-0"></div>
+      </div>
+      <div class="hud-turn" id="hud-turn">
+        <span class="turn-name" id="turn-name">—</span>
+        <div class="turn-indicator">⬤ 回合中</div>
+      </div>
+      <div class="hud-player" style="flex-direction:row-reverse" id="hud-p1">
+        <div class="p-score" id="hud-score-1">0</div>
+        <div style="text-align:right">
+          <div class="p-name" id="hud-name-1">—</div>
+          <div class="p-type" id="hud-type-1">—</div>
+        </div>
+        <div class="p-balls" id="hud-balls-1"></div>
+      </div>
+    </div>
+    <!-- 2026-03-19: 三人模式 HUD（默认隐藏），横排显示3名玩家+回合提示 -->
+    <div id="hud-3p" style="display:none;width:100%;align-items:center;gap:0.5rem">
+      <div class="hud-player hud-3p-player" id="hud-3p-p0" style="flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-0">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-0" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-0" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-0" style="flex-wrap:wrap"></div>
+      </div>
+      <div class="hud-turn" id="hud-turn-3p" style="min-width:100px;text-align:center">
+        <span class="turn-name" id="turn-name-3p">—</span>
+        <div class="turn-indicator" id="turn-indicator-3p">⬤ 回合中</div>
+      </div>
+      <div class="hud-player hud-3p-player" id="hud-3p-p1" style="flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-1">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-1" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-1" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-1" style="flex-wrap:wrap"></div>
+      </div>
+      <div class="hud-player hud-3p-player" id="hud-3p-p2" style="flex:1;min-width:0;flex-direction:row-reverse">
+        <div class="p-score" id="hud-score3-2">0</div>
+        <div style="min-width:0;overflow:hidden;text-align:right">
+          <div class="p-name" id="hud-name3-2" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-2" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-2" style="flex-wrap:wrap"></div>
+      </div>
+      <!-- 2026-03-19: 四人模式第4玩家栏，默认隐藏 -->
+      <div class="hud-player hud-3p-player" id="hud-3p-p3" style="display:none;flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-3">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-3" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-3" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-3" style="flex-wrap:wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-footer">
+    <div id="status-msg">—</div>
+    <div class="power-wrap" id="power-wrap" style="display:none">
+      <label>力度</label>
+      <div class="power-bar-outer"><div class="power-bar-fill" id="power-fill"></div></div>
+    </div>
+    <button id="mute-btn" class="btn btn-outline" style="padding:.25rem .5rem;font-size:.8rem;flex-shrink:0" onclick="toggleMute()" title="切换音效">🔊</button>
+    <div id="practice-controls">
+      <span class="practice-badge">练习</span>
+      <span id="practice-shot-count">0 杆</span>
+      <button class="btn btn-outline" style="padding:.3rem .65rem;font-size:.78rem" onclick="practiceRerack()">🔄 重新开球</button>
+      <button class="btn btn-danger" style="padding:.3rem .65rem;font-size:.78rem" onclick="backToLobby()">← 退出</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-wrap" id="chat-msgs"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="发送消息…" maxlength="80" onkeydown="if(e.key==='Enter')sendChat()">
+    <button class="btn btn-outline" style="padding:.3rem .6rem;font-size:.75rem" onclick="sendChat()">发送</button>
+  </div>
+</div>
+
+<!-- ══ GAME OVER OVERLAY ══════════════════════════════════════════════════ -->
+<div id="overlay-gameover">
+  <div class="gameover-box">
+    <div class="gameover-result" id="go-result">—</div>
+    <div class="gameover-reason" id="go-reason">—</div>
+    <div class="gameover-actions">
+      <button class="btn btn-gold" id="rematch-btn" onclick="requestRematch()">再来一局</button>
+      <button class="btn btn-outline" onclick="backToLobby()">返回大厅</button>
+    </div>
+    <div class="rematch-hint" id="rematch-hint"></div>
+  </div>
+</div>
+
+<!-- ══ PORTRAIT OVERLAY ══════════════════════════════════════════════════ -->
+<div id="portrait-overlay">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-title">请旋转设备</div>
+  <div class="rotate-sub">台球游戏需要横屏模式<br>请将手机横过来以获得最佳体验</div>
+</div>
+
+<!-- ══ Socket.io ══════════════════════════════════════════════════════════ -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ── Sound Engine (Web Audio API — zero external files) ───────────────────────
+const _ac = (() => {
+  try { return new (window.AudioContext || window.webkitAudioContext)(); }
+  catch(e) { return null; }
+})();
+let _sfxOn = true;
+let _lastBallSnd = 0, _lastWallSnd = 0;
+
+// Resume context on first user gesture (required by browsers)
+function sfxResume() { if (_ac?.state === 'suspended') _ac.resume(); }
+
+function _sfx(fn) { if (_ac && _sfxOn) { sfxResume(); fn(_ac); } }
+
+// 1 ── Cue strike: woody thwack + noise burst, scales with power
+function sfxCueHit(power) {
+  _sfx(ac => {
+    const t = ac.currentTime;
+    const g = ac.createGain();
+    g.connect(ac.destination);
+    g.gain.setValueAtTime(0.55 + power * 0.45, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+
+    // Low woody tone
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110 + power * 90, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t + 0.10);
+    osc.connect(g); osc.start(t); osc.stop(t + 0.13);
+
+    // High-frequency click (noise band)
+    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.025), ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const bpf = ac.createBiquadFilter();
+    bpf.type = 'bandpass'; bpf.frequency.value = 2800 + power*1800; bpf.Q.value = 1.8;
+    src.connect(bpf); bpf.connect(g); src.start(t);
+  });
+}
+
+// 2 ── Ball-ball ivory click, throttled + velocity-gated
+function sfxBallHit(vel) {
+  const now = performance.now();
+  if (now - _lastBallSnd < 35 || vel < 1.8) return;
+  _lastBallSnd = now;
+  _sfx(ac => {
+    const t = ac.currentTime;
+    const vol = Math.min(0.85, 0.25 + vel * 0.045);
+    const pitch = 820 + vel * 28;
+
+    const g = ac.createGain();
+    g.connect(ac.destination);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(pitch * 0.55, t + 0.07);
+    osc.connect(g); osc.start(t); osc.stop(t + 0.09);
+
+    // Transient noise
+    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.012), ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*(1-i/d.length);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const hpf = ac.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 1800;
+    src.connect(hpf); hpf.connect(g); src.start(t);
+  });
+}
+
+// 3 ── Cushion thud, throttled + velocity-gated
+function sfxWallHit(vel) {
+  const now = performance.now();
+  if (now - _lastWallSnd < 55 || vel < 1.5) return;
+  _lastWallSnd = now;
+  _sfx(ac => {
+    const t = ac.currentTime;
+    const vol = Math.min(0.55, 0.12 + vel * 0.022);
+
+    const g = ac.createGain();
+    g.connect(ac.destination);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200 + vel * 8, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.14);
+    osc.connect(g); osc.start(t); osc.stop(t + 0.18);
+  });
+}
+
+// 4 ── Pocket: low thump + brief rattle
+function sfxPocket() {
+  _sfx(ac => {
+    const t = ac.currentTime;
+    const g = ac.createGain();
+    g.connect(ac.destination);
+    g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(115, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.32);
+    osc.connect(g); osc.start(t); osc.stop(t + 0.38);
+
+    // Rattle noise
+    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.09), ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*(1-i/d.length)*0.55;
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const lpf = ac.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 900;
+    src.connect(lpf); lpf.connect(g); src.start(t + 0.018);
+  });
+}
+
+function toggleMute() {
+  _sfxOn = !_sfxOn;
+  document.getElementById('mute-btn').textContent = _sfxOn ? '🔊' : '🔇';
+}
+
+// ── Orientation management ───────────────────────────────────────────────────
+const portraitOverlay = document.getElementById('portrait-overlay');
+
+function isMobile() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+         (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+}
+
+function checkOrientation() {
+  if (!isMobile()) { portraitOverlay.classList.remove('show'); return; }
+  const portrait = window.innerHeight > window.innerWidth;
+  portraitOverlay.classList.toggle('show', portrait);
+}
+
+// Try native lock (works on Android Chrome / PWA)
+async function tryLockLandscape() {
+  try {
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+  } catch(_) { /* fallback: overlay */ }
+}
+
+window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 80));
+window.addEventListener('resize', checkOrientation);
+checkOrientation();
+tryLockLandscape();
+
+// ── Connection ──────────────────────────────────────────────────────────────
+const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const socket = io(IS_LOCAL ? 'http://localhost:3006' : '/', {
+  path: IS_LOCAL ? '/socket.io' : '/billiards/socket.io',
+  transports: ['websocket'],
+  reconnectionAttempts: 5,
+});
+
+// ── Physics constants ───────────────────────────────────────────────────────
+const LW = 920, LH = 500;          // Logical canvas size
+const TX = 50, TY = 55;            // Table origin
+const TW = 820, TH = 390;          // Table playable area
+const BALL_R = 13;
+const POCKET_R = 22;
+// 2026-03-19: 原值 0.983 阻力偏大，改为 0.989 更接近真实台球手感
+const FRICTION = 0.989;
+const WALL_REST = 0.72;
+const BALL_REST = 0.96;
+const MIN_V = 0.08;
+const MAX_POWER = 28;
+
+const POCKETS = [
+  {x:TX,       y:TY},
+  {x:TX+TW/2,  y:TY-6},
+  {x:TX+TW,    y:TY},
+  {x:TX,       y:TY+TH},
+  {x:TX+TW/2,  y:TY+TH+6},
+  {x:TX+TW,    y:TY+TH},
+];
+
+const BALL_COLORS = {
+  1:'#f5c518', 2:'#1565c0', 3:'#c62828', 4:'#6a1fa2',
+  5:'#e65100', 6:'#2e7d32', 7:'#4e342e', 8:'#111111',
+  9:'#f5c518',10:'#1565c0',11:'#c62828',12:'#6a1fa2',
+  13:'#e65100',14:'#2e7d32',15:'#4e342e',
+};
+
+// Standard 8-ball rack order (rows, 1-indexed from head)
+const RACK_ORDER = [
+  [1],
+  [2,9],
+  [3,8,10],
+  [4,11,12,5],
+  [13,6,14,7,15],
+];
+
+// ── App state ───────────────────────────────────────────────────────────────
+let playerName = '';
+let roomId = null;
+let playerIndex = -1;  // 0,1 = player, -1 = spectator
+let gameState = null;
+let isReady = false;
+let practiceMode = false;
+let practiceShots = 0;
+
+// Client-side physics state
+let balls = [];
+let phase = 'idle';  // idle | aiming | simulating | placing_cue
+let aimAngle = 0;
+let power = 0;
+let dragging = false;       // drag-to-aim active
+let dragStartX = 0, dragStartY = 0;
+let dragPower  = 0;         // 0–1, determined by drag distance
+const MAX_DRAG = 160;       // pixels → 100 % power
+let justPocketed = [];
+let scratch = false;
+let shootingPlayerIdx = -1;
+let cueBallPlaceable = false;
+
+// Canvas & rendering
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let rafId = null;
+let canvasScale = 1;
+let mouseX = LW/2, mouseY = LH/2;
+
+// Leaderboard state
+let lbData = { daily:[], allTime:[] };
+let lbTab = 'daily';
+
+// ── Utility ─────────────────────────────────────────────────────────────────
+function ballTypeOf(n) {
+  if (n===0) return 'cue';
+  if (n===8) return 'eight';
+  return n<=7 ? 'solid' : 'stripe';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-game') tryLockLandscape();
+}
+
+function setStatus(msg, cls='') {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = cls;
+}
+
+// ── Canvas resize ────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const area = canvas.parentElement;
+  const aw = area.clientWidth, ah = area.clientHeight;
+  const scale = Math.min(aw/LW, ah/LH) * 0.98;
+  canvas.width = LW;
+  canvas.height = LH;
+  canvas.style.width  = (LW*scale)+'px';
+  canvas.style.height = (LH*scale)+'px';
+  canvasScale = scale;
+}
+window.addEventListener('resize', resizeCanvas);
+
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x:(cx-r.left)/canvasScale, y:(cy-r.top)/canvasScale };
+}
+
+// ── Ball init ────────────────────────────────────────────────────────────────
+function initBalls(serverPositions) {
+  balls = [];
+  const sp = BALL_R*2.02;
+  const rh = sp * Math.sin(Math.PI/3);
+  const footX = TX + TW*0.75;
+  const centerY = TY + TH/2;
+
+  if (serverPositions && Object.keys(serverPositions).length > 0) {
+    // Restore from server state (after re-sync)
+    for (let n=0; n<=15; n++) {
+      const pos = serverPositions[n];
+      if (pos) balls.push({num:n, x:pos.x, y:pos.y, vx:0, vy:0, pocketed:false, pocketAnim:0, trail:[]});
+    }
+    // Mark pocketed balls from gameState
+    if (gameState?.pocketed) {
+      gameState.pocketed.forEach(num=>{
+        const b = balls.find(b=>b.num===num);
+        if (b) b.pocketed=true;
+      });
+    }
+  } else {
+    // Standard rack setup
+    // Cue ball
+    balls.push({num:0, x:TX+TW*0.25, y:centerY, vx:0, vy:0, pocketed:false, pocketAnim:0, trail:[]});
+    // Rack
+    RACK_ORDER.forEach((row,r)=>{
+      row.forEach((num,c)=>{
+        balls.push({
+          num, pocketed:false, vx:0, vy:0,
+          x: footX + r*rh,
+          y: centerY + (c-(row.length-1)/2)*sp,
+          pocketAnim:0, trail:[],
+        });
+      });
+    });
+  }
+}
+
+function syncBalls(serverPositions) {
+  if (!serverPositions) return;
+  Object.entries(serverPositions).forEach(([numStr,pos])=>{
+    const num = parseInt(numStr);
+    const b = balls.find(b=>b.num===num);
+    if (b) { b.x=pos.x; b.y=pos.y; b.vx=0; b.vy=0; b.pocketed=false; b.trail=[]; }
+  });
+  // Mark pocketed
+  if (gameState?.pocketed) {
+    gameState.pocketed.forEach(num=>{
+      const b = balls.find(b=>b.num===num);
+      if (b) b.pocketed=true;
+    });
+  }
+}
+
+// ── Physics ──────────────────────────────────────────────────────────────────
+const SUBSTEPS = 3;
+const DIAMETER  = BALL_R * 2;
+const DIAMETER2 = DIAMETER * DIAMETER;
+const POCKET_R2 = POCKET_R * POCKET_R;
+
+function physicsStep() {
+  // Trail update (once per frame, for moving balls)
+  for (const b of balls) {
+    if (b.pocketed || !b.trail) continue;
+    const spd = Math.abs(b.vx)+Math.abs(b.vy);
+    if (spd > 2.5) {
+      b.trail.push({x:b.x, y:b.y});
+      if (b.trail.length > 5) b.trail.shift();
+    } else {
+      if (b.trail.length) b.trail = [];
+    }
+  }
+
+  // Friction once per frame (velocity update)
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    b.vx *= FRICTION; b.vy *= FRICTION;
+    if (Math.abs(b.vx) < MIN_V) b.vx = 0;
+    if (Math.abs(b.vy) < MIN_V) b.vy = 0;
+  }
+
+  // Sub-stepped integration: smaller position steps = accurate pocket/wall/ball detection
+  for (let s = 0; s < SUBSTEPS; s++) {
+
+    // ── Move ──
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      b.x += b.vx / SUBSTEPS;
+      b.y += b.vy / SUBSTEPS;
+    }
+
+    // ── Pocket detection (squared distance, no sqrt) ──
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      for (const p of POCKETS) {
+        const pdx=b.x-p.x, pdy=b.y-p.y;
+        if (pdx*pdx+pdy*pdy < POCKET_R2) {
+          b.pocketed=true; b.vx=0; b.vy=0; b.pocketAnim=1.0; sfxPocket();
+          justPocketed.push(b.num);
+          if (b.num===0) scratch=true;
+          break;
+        }
+      }
+    }
+
+    // ── Wall collisions (per-wall pocket exclusion) ──
+    // Each wall check is independently skipped only when a pocket
+    // sits on THAT wall face AND the ball is within capture range.
+    // This prevents mid-wall (top/bottom) pockets from disabling
+    // the left/right wall checks, which caused balls to tunnel out.
+    const PR_skip = (POCKET_R * 1.9) ** 2;
+    const wallTol = BALL_R * 3; // pocket must be "on" this wall to suppress it
+    for (const b of balls) {
+      if (b.pocketed) continue;
+      const bx = b.x, by = b.y;
+
+      // Left wall
+      if (bx - BALL_R < TX) {
+        const skip = POCKETS.some(p => Math.abs(p.x - TX) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { sfxWallHit(Math.abs(b.vx)); b.x = TX+BALL_R; b.vx = Math.abs(b.vx)*WALL_REST; }
+      }
+      // Right wall
+      if (bx + BALL_R > TX+TW) {
+        const skip = POCKETS.some(p => Math.abs(p.x - (TX+TW)) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { sfxWallHit(Math.abs(b.vx)); b.x = TX+TW-BALL_R; b.vx = -Math.abs(b.vx)*WALL_REST; }
+      }
+      // Top wall
+      if (by - BALL_R < TY) {
+        const skip = POCKETS.some(p => Math.abs(p.y - TY) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { sfxWallHit(Math.abs(b.vy)); b.y = TY+BALL_R; b.vy = Math.abs(b.vy)*WALL_REST; }
+      }
+      // Bottom wall
+      if (by + BALL_R > TY+TH) {
+        const skip = POCKETS.some(p => Math.abs(p.y - (TY+TH)) <= wallTol && (bx-p.x)**2+(by-p.y)**2 < PR_skip);
+        if (!skip) { sfxWallHit(Math.abs(b.vy)); b.y = TY+TH-BALL_R; b.vy = -Math.abs(b.vy)*WALL_REST; }
+      }
+    }
+
+    // ── Ball-ball collisions (4 passes, squared-dist fast reject) ──
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i+1; j < balls.length; j++) {
+          const a = balls[i], b = balls[j];
+          if (a.pocketed || b.pocketed) continue;
+          const dx = b.x-a.x, dy = b.y-a.y;
+          const dist2 = dx*dx + dy*dy;
+          if (dist2 === 0 || dist2 >= DIAMETER2) continue;
+          const dist = Math.sqrt(dist2);
+          const nx = dx/dist, ny = dy/dist;
+          // Separate overlapping balls
+          const push = (DIAMETER - dist) * 0.5;
+          a.x -= push*nx; a.y -= push*ny;
+          b.x += push*nx; b.y += push*ny;
+          // Velocity impulse along collision normal
+          const dvx = a.vx-b.vx, dvy = a.vy-b.vy;
+          const dot = dvx*nx + dvy*ny;
+          if (dot <= 0) continue;
+          const imp = dot * BALL_REST;
+          a.vx -= imp*nx; a.vy -= imp*ny;
+          b.vx += imp*nx; b.vy += imp*ny;
+          // Sound on first pass only (avoid multi-trigger per substep)
+          if (pass === 0) sfxBallHit(dot);
+        }
+      }
+    }
+  }
+
+  // Hard-clamp safety: ensure no ball escaped the table boundary
+  for (const b of balls) {
+    if (b.pocketed) continue;
+    if (b.x - BALL_R < TX)    { b.x = TX+BALL_R;    if (b.vx < 0) b.vx = -b.vx*WALL_REST; }
+    if (b.x + BALL_R > TX+TW) { b.x = TX+TW-BALL_R; if (b.vx > 0) b.vx = -b.vx*WALL_REST; }
+    if (b.y - BALL_R < TY)    { b.y = TY+BALL_R;    if (b.vy < 0) b.vy = -b.vy*WALL_REST; }
+    if (b.y + BALL_R > TY+TH) { b.y = TY+TH-BALL_R; if (b.vy > 0) b.vy = -b.vy*WALL_REST; }
+  }
+
+  // All stopped?
+  const allStopped = balls.every(b => b.pocketed || (b.vx === 0 && b.vy === 0));
+  if (allStopped && phase === 'simulating') {
+    onSimulationEnd();
+  }
+}
+
+function onSimulationEnd() {
+  phase = 'idle';
+
+  if (practiceMode) {
+    if (scratch) {
+      // Cue ball pocketed — place it back
+      phase = 'placing_cue';
+      cueBallPlaceable = true;
+      setStatus('🎱 母球进袋 — 点击桌面放置母球', 'my');
+    } else {
+      const remaining = balls.filter(b=>!b.pocketed && b.num!==0);
+      if (remaining.length === 0) {
+        // All balls cleared
+        document.getElementById('go-result').textContent = '🎱 清台！';
+        document.getElementById('go-result').className = 'gameover-result win';
+        document.getElementById('go-reason').textContent = `共用了 ${practiceShots} 杆`;
+        document.getElementById('rematch-hint').textContent = '';
+        document.getElementById('rematch-btn').textContent = '再练一局';
+        document.getElementById('overlay-gameover').classList.add('show');
+        if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+      } else {
+        phase = 'aiming';
+        updatePracticeHUD();
+        setStatus(`练习模式 — 拖拽瞄准，松手出杆`, 'my');
+      }
+    }
+    return;
+  }
+
+  // Online mode — only shooter reports result
+  if (playerIndex === shootingPlayerIdx) {
+    const positions = {};
+    balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
+    socket.emit('shot-complete',{
+      roomId, pocketed:justPocketed, scratch, ballPositions:positions
+    });
+  }
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderTable() {
+  // ── Outer wood frame ──
+  const frameGrad=ctx.createLinearGradient(0,0,LW,LH);
+  frameGrad.addColorStop(0,'#3d1e08');
+  frameGrad.addColorStop(0.5,'#2a1505');
+  frameGrad.addColorStop(1,'#1a0d03');
+  ctx.fillStyle=frameGrad;
+  ctx.beginPath(); ctx.roundRect(0,0,LW,LH,14); ctx.fill();
+
+  // Wood grain
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect(0,0,LW,LH,14); ctx.clip();
+  ctx.strokeStyle='rgba(255,160,60,0.04)'; ctx.lineWidth=1.2;
+  for(let i=-LH;i<LW+LH;i+=16){
+    ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+LH,LH); ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Rails (3D cushion look) ──
+  const railPad=10;
+  ctx.shadowColor='rgba(0,0,0,0.7)'; ctx.shadowBlur=12;
+  ctx.shadowOffsetX=2; ctx.shadowOffsetY=4;
+  ctx.fillStyle='#0e3a1c';
+  ctx.fillRect(TX-railPad,TY-railPad,TW+railPad*2,TH+railPad*2);
+  ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
+
+  // Cushion highlight — top edge lighter
+  const cushH=ctx.createLinearGradient(0,TY-railPad,0,TY);
+  cushH.addColorStop(0,'rgba(90,200,100,0.18)'); cushH.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=cushH; ctx.fillRect(TX-railPad,TY-railPad,TW+railPad*2,railPad);
+  // Cushion shadow — bottom edge darker
+  const cushS=ctx.createLinearGradient(0,TY+TH,0,TY+TH+railPad);
+  cushS.addColorStop(0,'rgba(0,0,0,0)'); cushS.addColorStop(1,'rgba(0,0,0,0.5)');
+  ctx.fillStyle=cushS; ctx.fillRect(TX-railPad,TY+TH,TW+railPad*2,railPad);
+  // Left cushion highlight
+  const cushL=ctx.createLinearGradient(TX-railPad,0,TX,0);
+  cushL.addColorStop(0,'rgba(90,200,100,0.12)'); cushL.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=cushL; ctx.fillRect(TX-railPad,TY-railPad,railPad,TH+railPad*2);
+  // Right cushion shadow
+  const cushR=ctx.createLinearGradient(TX+TW,0,TX+TW+railPad,0);
+  cushR.addColorStop(0,'rgba(0,0,0,0)'); cushR.addColorStop(1,'rgba(0,0,0,0.4)');
+  ctx.fillStyle=cushR; ctx.fillRect(TX+TW,TY-railPad,railPad,TH+railPad*2);
+
+  // Inner border shadow
+  ctx.fillStyle='rgba(0,0,0,0.65)';
+  ctx.fillRect(TX-2,TY-2,TW+4,TH+4);
+
+  // ── Felt ──
+  ctx.fillStyle='#1e5c33';
+  ctx.fillRect(TX,TY,TW,TH);
+
+  // Felt grain (fine diagonal lines)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(TX,TY,TW,TH); ctx.clip();
+  ctx.strokeStyle='rgba(0,40,15,0.25)'; ctx.lineWidth=1;
+  for(let i=0;i<TW+TH;i+=5){
+    ctx.beginPath(); ctx.moveTo(TX+i,TY); ctx.lineTo(TX,TY+i); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Felt ambient occlusion vignette
+  ctx.save();
+  ctx.beginPath(); ctx.rect(TX,TY,TW,TH); ctx.clip();
+  const vig=50;
+  const aoL=ctx.createLinearGradient(TX,0,TX+vig,0);
+  aoL.addColorStop(0,'rgba(0,0,0,0.4)'); aoL.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=aoL; ctx.fillRect(TX,TY,vig,TH);
+  const aoR=ctx.createLinearGradient(TX+TW-vig,0,TX+TW,0);
+  aoR.addColorStop(0,'rgba(0,0,0,0)'); aoR.addColorStop(1,'rgba(0,0,0,0.4)');
+  ctx.fillStyle=aoR; ctx.fillRect(TX+TW-vig,TY,vig,TH);
+  const aoT=ctx.createLinearGradient(0,TY,0,TY+vig);
+  aoT.addColorStop(0,'rgba(0,0,0,0.4)'); aoT.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=aoT; ctx.fillRect(TX,TY,TW,vig);
+  const aoB=ctx.createLinearGradient(0,TY+TH-vig,0,TY+TH);
+  aoB.addColorStop(0,'rgba(0,0,0,0)'); aoB.addColorStop(1,'rgba(0,0,0,0.4)');
+  ctx.fillStyle=aoB; ctx.fillRect(TX,TY+TH-vig,TW,vig);
+  ctx.restore();
+
+  // Center & head-string lines
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+  ctx.setLineDash([5,9]);
+  ctx.beginPath(); ctx.moveTo(TX+TW/2,TY+10); ctx.lineTo(TX+TW/2,TY+TH-10); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.06)';
+  ctx.beginPath(); ctx.moveTo(TX+TW/4,TY+10); ctx.lineTo(TX+TW/4,TY+TH-10); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Spot dots
+  [[TX+TW*3/4,TY+TH/2],[TX+TW/4,TY+TH/2]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // ── Pockets ──
+  POCKETS.forEach(p=>{
+    // Outer glow/shadow
+    const og=ctx.createRadialGradient(p.x,p.y,POCKET_R*0.4,p.x,p.y,POCKET_R+12);
+    og.addColorStop(0,'rgba(0,0,0,0.95)');
+    og.addColorStop(0.65,'rgba(0,0,0,0.5)');
+    og.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R+12,0,Math.PI*2);
+    ctx.fillStyle=og; ctx.fill();
+
+    // Leather rim
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R+4,0,Math.PI*2);
+    ctx.fillStyle='#28100405'; ctx.fill();
+    ctx.strokeStyle='#6b3518'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R+4,0,Math.PI*2);
+    ctx.fillStyle='#280e03'; ctx.fill();
+
+    // Deep hole (radial gradient for depth)
+    const hg=ctx.createRadialGradient(p.x-2,p.y-2,1,p.x,p.y,POCKET_R+2);
+    hg.addColorStop(0,'#0d0603'); hg.addColorStop(0.6,'#050302'); hg.addColorStop(1,'#000');
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R+2,0,Math.PI*2);
+    ctx.fillStyle=hg; ctx.fill();
+  });
+}
+
+function renderAimLine() {
+  const cue=balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+  const dx=-Math.cos(aimAngle), dy=-Math.sin(aimAngle);
+  const sx=cue.x+dx*(BALL_R+3), sy=cue.y+dy*(BALL_R+3);
+
+  let minDist=Infinity, hitBall=false;
+  for (const b of balls) {
+    if (b.pocketed||b.num===0) continue;
+    const tbx=b.x-sx, tby=b.y-sy;
+    const proj=tbx*dx+tby*dy;
+    if (proj<0) continue;
+    const perpX=tbx-proj*dx, perpY=tby-proj*dy;
+    const pd2=perpX*perpX+perpY*perpY;
+    if (pd2>(BALL_R*2)**2) continue;
+    const cd=proj-Math.sqrt((BALL_R*2)**2-pd2);
+    if (cd>0&&cd<minDist) { minDist=cd; hitBall=true; }
+  }
+
+  let wDist=Infinity;
+  if (dx>0) wDist=Math.min(wDist,(TX+TW-BALL_R-sx)/dx);
+  if (dx<0) wDist=Math.min(wDist,(TX+BALL_R-sx)/dx);
+  if (dy>0) wDist=Math.min(wDist,(TY+TH-BALL_R-sy)/dy);
+  if (dy<0) wDist=Math.min(wDist,(TY+BALL_R-sy)/dy);
+
+  const endDist=Math.min(hitBall?minDist:Infinity, wDist);
+  const ex=sx+dx*endDist, ey=sy+dy*endDist;
+
+  // Power-tinted color (green→yellow→red)
+  const p=dragging?dragPower:0.25;
+  const cr=Math.round(60+p*195), cg=Math.round(215-p*145), cb=70;
+  const lc=`rgba(${cr},${cg},${cb},`;
+
+  ctx.save();
+  // Main aim dash line
+  ctx.strokeStyle=lc+'0.6)';
+  ctx.lineWidth=1.5;
+  ctx.setLineDash([8,11]);
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (hitBall) {
+    // Ghost ball at collision point
+    const gx=ex, gy=ey;
+    const gg=ctx.createRadialGradient(gx-3,gy-3,1,gx,gy,BALL_R);
+    gg.addColorStop(0,lc+'0.3)'); gg.addColorStop(1,lc+'0.06)');
+    ctx.beginPath(); ctx.arc(gx,gy,BALL_R,0,Math.PI*2);
+    ctx.fillStyle=gg; ctx.fill();
+    ctx.strokeStyle=lc+'0.55)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderCueStick() {
+  const cue=balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+  const pullback=dragging?dragPower*32:0;
+  const tipGap=BALL_R+5+pullback;
+  const len=225;
+  const angle=aimAngle;
+
+  const tipX=cue.x+Math.cos(angle)*tipGap;
+  const tipY=cue.y+Math.sin(angle)*tipGap;
+  const buttX=tipX+Math.cos(angle)*len;
+  const buttY=tipY+Math.sin(angle)*len;
+  const px=-Math.sin(angle), py=Math.cos(angle);
+  const tipW=1.5, buttW=8.5;
+
+  ctx.save();
+  // Drop shadow
+  ctx.shadowColor='rgba(0,0,0,0.55)';
+  ctx.shadowBlur=8; ctx.shadowOffsetX=3; ctx.shadowOffsetY=4;
+
+  // Cue body (tapered trapezoid)
+  const grad=ctx.createLinearGradient(tipX,tipY,buttX,buttY);
+  grad.addColorStop(0,'#f0c84e');
+  grad.addColorStop(0.12,'#c8962e');
+  grad.addColorStop(0.45,'#8a5a28');
+  grad.addColorStop(0.8,'#4e2e14');
+  grad.addColorStop(1,'#2c1608');
+  ctx.beginPath();
+  ctx.moveTo(tipX+px*tipW,  tipY+py*tipW);
+  ctx.lineTo(tipX-px*tipW,  tipY-py*tipW);
+  ctx.lineTo(buttX-px*buttW,buttY-py*buttW);
+  ctx.lineTo(buttX+px*buttW,buttY+py*buttW);
+  ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
+
+  // Specular highlight stripe along top edge
+  ctx.beginPath();
+  ctx.moveTo(tipX+px*tipW,    tipY+py*tipW);
+  ctx.lineTo(tipX+px*(tipW*0.2),tipY+py*(tipW*0.2));
+  ctx.lineTo(buttX+px*(buttW*0.15),buttY+py*(buttW*0.15));
+  ctx.lineTo(buttX+px*buttW,  buttY+py*buttW);
+  ctx.closePath();
+  const hg=ctx.createLinearGradient(tipX,tipY,buttX,buttY);
+  hg.addColorStop(0,'rgba(255,240,160,0.5)');
+  hg.addColorStop(0.4,'rgba(255,230,120,0.25)');
+  hg.addColorStop(1,'rgba(255,200,80,0.0)');
+  ctx.fillStyle=hg; ctx.fill();
+
+  // Wrap ring near butt (decorative)
+  const ringT=0.82;
+  const rx=tipX+Math.cos(angle)*len*ringT, ry=tipY+Math.sin(angle)*len*ringT;
+  const rw=buttW*0.85;
+  ctx.beginPath();
+  ctx.moveTo(rx+px*rw,ry+py*rw);
+  ctx.lineTo(rx-px*rw,ry-py*rw);
+  ctx.lineTo(rx+Math.cos(angle)*7-px*rw,ry+Math.sin(angle)*7-py*rw);
+  ctx.lineTo(rx+Math.cos(angle)*7+px*rw,ry+Math.sin(angle)*7+py*rw);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fill();
+
+  // Chalk tip
+  ctx.lineWidth=tipW*2.8; ctx.lineCap='round';
+  ctx.strokeStyle='#4a9cd4';
+  ctx.beginPath();
+  ctx.moveTo(tipX,tipY);
+  ctx.lineTo(tipX+Math.cos(angle)*9,tipY+Math.sin(angle)*9);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function renderBall(b) {
+  const alive = !b.pocketed || (b.pocketAnim > 0);
+  if (!alive) return;
+
+  const pa = b.pocketed ? b.pocketAnim : 1;
+
+  ctx.save();
+  if (pa < 1) {
+    ctx.globalAlpha = pa;
+    ctx.translate(b.x, b.y);
+    ctx.scale(pa * 0.6 + 0.4, pa * 0.6 + 0.4);
+    ctx.translate(-b.x, -b.y);
+  }
+
+  // Motion trail
+  if (!b.pocketed && b.trail && b.trail.length > 1) {
+    const spd=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+    if (spd > 3) {
+      for (let t=0; t<b.trail.length; t++) {
+        const pt=b.trail[t];
+        const ta=(t+1)/b.trail.length*0.15;
+        const tr=(t+1)/b.trail.length*BALL_R*0.65;
+        ctx.beginPath(); ctx.arc(pt.x,pt.y,tr,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${ta.toFixed(2)})`; ctx.fill();
+      }
+    }
+  }
+
+  // Drop shadow
+  if (!b.pocketed) {
+    ctx.beginPath();
+    ctx.ellipse(b.x+4,b.y+6,BALL_R*0.85,BALL_R*0.5,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.32)'; ctx.fill();
+  }
+
+  ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+
+  if (b.num===0) {
+    const g=ctx.createRadialGradient(b.x-5,b.y-5,1,b.x+2,b.y+2,BALL_R*1.1);
+    g.addColorStop(0,'#ffffff'); g.addColorStop(0.35,'#f5f2ea'); g.addColorStop(1,'#c5c1b0');
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.6; ctx.stroke();
+  } else if (b.num===8) {
+    const g=ctx.createRadialGradient(b.x-4,b.y-4,1,b.x+3,b.y+3,BALL_R);
+    g.addColorStop(0,'#3a3a3a'); g.addColorStop(1,'#000');
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='rgba(80,80,80,0.25)'; ctx.lineWidth=0.6; ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.5,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.fillStyle='#111';
+    ctx.font=`bold ${Math.round(BALL_R*0.76)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('8',b.x,b.y+0.5);
+  } else if (b.num<=7) {
+    const base=BALL_COLORS[b.num];
+    const g=ctx.createRadialGradient(b.x-5,b.y-5,1,b.x+3,b.y+3,BALL_R*1.15);
+    g.addColorStop(0,lighten(base,60)); g.addColorStop(0.35,lighten(base,20));
+    g.addColorStop(0.7,base); g.addColorStop(1,darken(base,35));
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.46,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fill();
+    ctx.fillStyle='#1a1a1a';
+    ctx.font=`bold ${Math.round(BALL_R*0.68)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(b.num,b.x,b.y+0.5);
+  } else {
+    ctx.fillStyle='#f5f0e8'; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2); ctx.clip();
+    const base=BALL_COLORS[b.num];
+    ctx.fillStyle=base;
+    ctx.fillRect(b.x-BALL_R,b.y-BALL_R*0.52,BALL_R*2,BALL_R*1.04);
+    const sg=ctx.createLinearGradient(0,b.y-BALL_R*0.52,0,b.y-BALL_R*0.52+7);
+    sg.addColorStop(0,'rgba(0,0,0,0.18)'); sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg; ctx.fillRect(b.x-BALL_R,b.y-BALL_R*0.52,BALL_R*2,7);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R*0.44,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.94)'; ctx.fill();
+    ctx.fillStyle='#1a1a1a';
+    ctx.font=`bold ${Math.round(BALL_R*0.62)}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(b.num,b.x,b.y+0.5);
+  }
+
+  // Specular highlight (all balls)
+  ctx.beginPath(); ctx.arc(b.x-4,b.y-5,BALL_R*0.26,0,Math.PI*2);
+  const sg2=ctx.createRadialGradient(b.x-5,b.y-6,0,b.x-4,b.y-5,BALL_R*0.26);
+  sg2.addColorStop(0,'rgba(255,255,255,0.75)'); sg2.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sg2; ctx.fill();
+  // Secondary soft highlight
+  ctx.beginPath(); ctx.arc(b.x-2,b.y-3,BALL_R*0.12,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.fill();
+
+  ctx.restore();
+
+  // Advance pocket animation
+  if (b.pocketed && b.pocketAnim > 0) {
+    b.pocketAnim=Math.max(0,b.pocketAnim-0.055);
+  }
+}
+
+function lighten(hex, amount) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,(n>>16)+amount);
+  const g=Math.min(255,((n>>8)&0xff)+amount);
+  const b=Math.min(255,(n&0xff)+amount);
+  return `#${((r<<16)|(g<<8)|b).toString(16).padStart(6,'0')}`;
+}
+
+function darken(hex, amount) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,(n>>16)-amount);
+  const g=Math.max(0,((n>>8)&0xff)-amount);
+  const b=Math.max(0,(n&0xff)-amount);
+  return `#${((r<<16)|(g<<8)|b).toString(16).padStart(6,'0')}`;
+}
+
+function renderPlaceCue() {
+  // Show ghost cue ball at mouse position
+  if (!cueBallPlaceable) return;
+  const inTable = mouseX>TX+BALL_R&&mouseX<TX+TW-BALL_R&&mouseY>TY+BALL_R&&mouseY<TY+TH-BALL_R;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(mouseX,mouseY,BALL_R,0,Math.PI*2);
+  ctx.fillStyle=inTable?'rgba(255,255,255,0.4)':'rgba(255,80,80,0.35)';
+  ctx.fill();
+  ctx.strokeStyle=inTable?'rgba(255,255,255,0.7)':'rgba(255,80,80,0.7)';
+  ctx.lineWidth=1.5; ctx.stroke();
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0,0,LW,LH);
+  renderTable();
+  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
+    renderAimLine();
+    renderCueStick();
+    // Drag-origin power ring
+    if (dragging) {
+      ctx.save();
+      const cr2=Math.round(60+dragPower*195), cg2=Math.round(215-dragPower*145);
+      const ringR=16+dragPower*28;
+      ctx.beginPath(); ctx.arc(dragStartX,dragStartY,ringR,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(${cr2},${cg2},70,0.55)`; ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(dragStartX,dragStartY,4,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.65)'; ctx.fill();
+      ctx.restore();
+    }
+  }
+  balls.forEach(renderBall);
+  if (phase==='placing_cue') renderPlaceCue();
+  if (phase==='simulating') physicsStep();
+  rafId = requestAnimationFrame(render);
+}
+
+// ── Input ────────────────────────────────────────────────────────────────────
+// Drag-to-aim: click/touch anywhere → drag vector sets direction & power.
+// Drag direction (start→current) = pull-back side; ball fires opposite.
+// Drag distance (0 → MAX_DRAG px) = power 0 → 100 %.
+
+function onDragStart(pos) {
+  sfxResume(); // unblock AudioContext on first gesture
+  if (phase==='aiming' && playerIndex===gameState?.currentTurn) {
+    dragStartX=pos.x; dragStartY=pos.y;
+    dragPower=0; dragging=true;
+    document.getElementById('power-wrap').style.display='flex';
+    document.getElementById('power-fill').style.width='0%';
+  } else if (phase==='placing_cue' && cueBallPlaceable) {
+    if (pos.x>TX+BALL_R&&pos.x<TX+TW-BALL_R&&pos.y>TY+BALL_R&&pos.y<TY+TH-BALL_R) {
+      if (practiceMode) {
+        let cueBall=balls.find(b=>b.num===0);
+        if (!cueBall) { cueBall={num:0,x:0,y:0,vx:0,vy:0,pocketed:false}; balls.push(cueBall); }
+        cueBall.x=pos.x; cueBall.y=pos.y; cueBall.vx=0; cueBall.vy=0; cueBall.pocketed=false;
+        phase='aiming'; cueBallPlaceable=false; scratch=false;
+        setStatus('练习模式 — 拖拽瞄准，松手出杆','my');
+      } else {
+        socket.emit('place-cue-ball',{roomId,x:pos.x,y:pos.y});
+      }
+    }
+  }
+}
+
+function onDragMove(pos) {
+  mouseX=pos.x; mouseY=pos.y;
+  if (!dragging || phase!=='aiming' || playerIndex!==gameState?.currentTurn) return;
+  const dx=pos.x-dragStartX, dy=pos.y-dragStartY;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if (dist > 4) {
+    aimAngle=Math.atan2(dy,dx);
+    dragPower=Math.min(dist/MAX_DRAG,1);
+  }
+  document.getElementById('power-fill').style.width=(dragPower*100)+'%';
+}
+
+function onDragEnd() {
+  if (!dragging) return;
+  dragging=false;
+  document.getElementById('power-wrap').style.display='none';
+  document.getElementById('power-fill').style.width='0%';
+  const pf=dragPower; dragPower=0;
+  if (pf < 0.03) return; // ignore accidental taps
+  shoot(pf);
+}
+
+canvas.addEventListener('mousedown',  e=>{ if(e.button!==0)return; onDragStart(canvasPos(e)); });
+canvas.addEventListener('mousemove',  e=>{ onDragMove(canvasPos(e)); });
+canvas.addEventListener('mouseup',    e=>{ onDragEnd(); });
+canvas.addEventListener('mouseleave', ()=>{ dragging=false; dragPower=0; document.getElementById('power-wrap').style.display='none'; });
+
+// Touch support
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); onDragStart(canvasPos(e.touches[0])); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); onDragMove(canvasPos(e.touches[0]));  },{passive:false});
+canvas.addEventListener('touchend',   e=>{ e.preventDefault(); onDragEnd(); },{passive:false});
+
+function shoot(powerFrac) {
+  if (phase!=='aiming'||playerIndex!==gameState?.currentTurn) return;
+  const cue=balls.find(b=>b.num===0&&!b.pocketed);
+  if (!cue) return;
+
+  if (practiceMode) {
+    practiceShots++;
+    justPocketed=[];
+    scratch=false;
+    cue.vx=-Math.cos(aimAngle)*powerFrac*MAX_POWER;
+    cue.vy=-Math.sin(aimAngle)*powerFrac*MAX_POWER;
+    sfxCueHit(powerFrac);
+    phase='simulating';
+    setStatus('飞球中…','warn');
+    return;
+  }
+
+  const positions={};
+  balls.forEach(b=>{ if(!b.pocketed) positions[b.num]={x:b.x,y:b.y}; });
+  socket.emit('shoot',{roomId,angle:aimAngle,power:powerFrac,ballPositions:positions});
+}
+
+// ── Socket events ────────────────────────────────────────────────────────────
+socket.on('connect', ()=>{ socket.emit('get-init'); });
+
+socket.on('rooms-update', list=>{
+  const el=document.getElementById('rooms-list');
+  if (!list.length){ el.innerHTML='<div class="rooms-empty">暂无房间，创建一个吧</div>'; return; }
+  el.innerHTML=list.map(r=>{
+    // 2026-03-19: 显示模式标签（三人分区）
+    const modeTag = r.mode === '3player' ? ' <span style="color:#64b5f6;font-size:.7rem">[三人]</span>' : '';
+    return `
+    <div class="room-item">
+      <div class="room-info">
+        <div class="room-id">${r.id}${modeTag}</div>
+        <div class="room-meta">${r.playerNames.join(' · ') || '等待玩家'} · ${r.players}/${r.maxPlayers}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.6rem">
+        <span class="room-status ${r.status}">${r.status==='waiting'?'等待中':'游戏中'}</span>
+        ${r.status==='waiting'&&r.players<r.maxPlayers?`<button class="btn btn-outline" style="padding:.3rem .7rem;font-size:.78rem" onclick="joinRoom('${r.id}')">加入</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+});
+
+socket.on('stats-update', data=>{ lbData=data; renderLeaderboard(); });
+
+socket.on('room-joined', ({roomId:rid, playerIndex:pi, gameState:gs})=>{
+  roomId=rid; playerIndex=pi; gameState=gs;
+  document.getElementById('w-room-id').textContent=rid;
+  isReady=false;
+  updateWaitingScreen();
+  showScreen('screen-waiting');
+});
+
+socket.on('join-error', msg=>alert(msg));
+
+socket.on('game-state', gs=>{
+  gameState=gs;
+  if (gs.status==='playing' && phase==='idle') {
+    startGame();
+  } else if (gs.status==='playing') {
+    updateGamePhaseFromServer(gs);
+  }
+  updateWaitingScreen();
+  updateHUD();
+});
+
+socket.on('shot-fired', ({angle, power:pw, shooterIdx, ballPositions})=>{
+  if (phase!=='simulating') {
+    shootingPlayerIdx=shooterIdx;
+    justPocketed=[];
+    scratch=false;
+    syncBalls(ballPositions);
+    const cue=balls.find(b=>b.num===0&&!b.pocketed);
+    if (cue) {
+      cue.vx=-Math.cos(angle)*pw*MAX_POWER;
+      cue.vy=-Math.sin(angle)*pw*MAX_POWER;
+      sfxCueHit(pw);
+    }
+    phase='simulating';
+    setStatus('飞球中…','warn');
+  }
+});
+
+socket.on('shot-result', ({result, gameState:gs})=>{
+  gameState=gs;
+  phase='idle';
+  cueBallPlaceable=false;
+
+  if (result.type==='game_over') {
+    const isWin = gs.players[result.winner]?.socketId===socket.id;
+    showGameOver(isWin, result.reason, gs);
+    updateHUD();
+    return;
+  }
+
+  // Update ball state from server
+  syncBalls(gs.ballPositions);
+
+  if (gs.phase==='placing_cue') {
+    phase='placing_cue';
+    // 2026-03-19: 三人模式 currentTurn 已推进到有球权的玩家；二人模式是对手放球
+    if (gs.options?.mode === '3player') {
+      cueBallPlaceable = playerIndex === gs.currentTurn;
+    } else {
+      const scratchedIdx = result.nextTurn === undefined ? gs.currentTurn : (gs.currentTurn===0?1:0);
+      cueBallPlaceable = (playerIndex !== scratchedIdx) && playerIndex>=0;
+    }
+    const placer = gs.players[gs.currentTurn]?.name || '对手';
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':`等待 ${placer} 放置母球…`, cueBallPlaceable?'my':'');
+  } else {
+    phase='aiming';
+    updateTurnUI(gs);
+  }
+  updateHUD();
+});
+
+socket.on('player-left', ({name, gameState:gs})=>{
+  gameState=gs;
+  updateHUD();
+  if (gs.status==='finished') showGameOver(true,'opponent_left',gs);
+});
+
+socket.on('rematch-start', ({gameState:gs})=>{
+  gameState=gs;
+  document.getElementById('overlay-gameover').classList.remove('show');
+  document.getElementById('rematch-hint').textContent='';
+  startGame();
+});
+
+socket.on('rematch-requested', ({name})=>{
+  document.getElementById('rematch-hint').textContent=`${name} 想再来一局`;
+});
+
+socket.on('chat', ({name,msg})=>{
+  addChatMsg(name,msg);
+});
+
+// ── Game start ───────────────────────────────────────────────────────────────
+function startGame() {
+  initBalls(gameState.ballPositions&&Object.keys(gameState.ballPositions).length>0?gameState.ballPositions:null);
+  phase='aiming';
+  cueBallPlaceable=false;
+  justPocketed=[];
+  scratch=false;
+  showScreen('screen-game');
+  resizeCanvas();
+  if (rafId) cancelAnimationFrame(rafId);
+  render();
+  updateHUD();
+  updateTurnUI(gameState);
+}
+
+function updateGamePhaseFromServer(gs) {
+  if (gs.phase==='placing_cue' && phase!=='placing_cue') {
+    phase='placing_cue';
+    // 2026-03-19: 三人模式 currentTurn 已是有球权玩家
+    if (gs.options?.mode === '3player') {
+      cueBallPlaceable = playerIndex === gs.currentTurn;
+    } else {
+      const idx = gs.currentTurn===0?1:0;
+      cueBallPlaceable = playerIndex>=0 && playerIndex!==idx;
+    }
+    const placer = gs.players[gs.currentTurn]?.name || '对手';
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':`等待 ${placer} 放置母球…`, cueBallPlaceable?'my':'');
+  } else if (gs.phase==='aiming' && phase!=='aiming') {
+    phase='aiming';
+    updateTurnUI(gs);
+  }
+}
+
+function updateTurnUI(gs) {
+  const isMyTurn = playerIndex === gs.currentTurn;
+  const turnerName = gs.players[gs.currentTurn]?.name || '—';
+  const is3P = gs.options?.mode === '3player';
+
+  if (is3P) {
+    // 三人模式使用单独的 turn-name-3p
+    document.getElementById('turn-name-3p').textContent = isMyTurn ? '你的回合' : turnerName;
+    const indicator = document.getElementById('turn-indicator-3p');
+    if (indicator) indicator.style.color = isMyTurn ? '#7dbb5e' : '#d4a017';
+  } else {
+    document.getElementById('turn-name').textContent = isMyTurn ? '你的回合' : turnerName;
+    const hudTurn = document.getElementById('hud-turn');
+    hudTurn.className = 'hud-turn' + (isMyTurn ? ' my-turn' : '');
+  }
+
+  if (isMyTurn) {
+    // 2026-03-19: 分区模式提示目标球组
+    const mode = gs.options?.mode;
+    if (mode === '3player' || mode === '4player') {
+      const groups = GROUPS_CLIENT[mode] || [];
+      const labels = GROUP_LABELS_CLIENT[mode] || [];
+      const myGroup = groups[playerIndex] || [];
+      const cleared = myGroup.every(n => gs.pocketed?.includes(n));
+      if (mode === '3player') {
+        setStatus(cleared ? '🎱 你的回合 — 冲刺8号球！' : `你的回合 — 打进 ${labels[playerIndex]} 的球`, 'my');
+      } else {
+        setStatus(cleared ? '🏆 你的回合 — 冲刺！' : `你的回合 — 打进 ${labels[playerIndex]} 的球`, 'my');
+      }
+    } else {
+      setStatus('你的回合，拖拽任意处瞄准，松手出杆', 'my');
+    }
+  } else {
+    setStatus(`${turnerName} 的回合…`);
+  }
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+const TYPE_LABELS = {solid:'实心球',stripe:'条纹球',null:'—'};
+const BALL_DOTS_SOLID = [1,2,3,4,5,6,7];
+const BALL_DOTS_STRIPE = [9,10,11,12,13,14,15];
+// 2026-03-19: 分区模式分组常量（客户端），支持3人/4人
+const GROUPS_CLIENT = {
+  '3player': [[1,2,3,4,5],[6,7,9,10],[11,12,13,14,15]],
+  '4player': [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15]],
+};
+const GROUP_COLORS_CLIENT = ['#f5c518','#64b5f6','#81c784','#ff7043'];
+const GROUP_LABELS_CLIENT = {
+  '3player': ['1-5号','6,7,9,10','11-15号'],
+  '4player': ['1-4号','5-8号','9-12号','13-15号'],
+};
+
+function updateHUD() {
+  if (!gameState) return;
+  const ps = gameState.players;
+  const mode = gameState.options?.mode || '2player';
+  const is3P = mode === '3player';
+  const is4P = mode === '4player';
+  const isPartition = is3P || is4P;
+
+  document.getElementById('hud-2p').style.display = isPartition ? 'none' : 'contents';
+  document.getElementById('hud-3p').style.display = isPartition ? 'flex' : 'none';
+  // 四人模式显示第4玩家栏
+  const p3panel = document.getElementById('hud-3p-p3');
+  if (p3panel) p3panel.style.display = is4P ? 'flex' : 'none';
+
+  if (isPartition) {
+    const groups = GROUPS_CLIENT[mode] || [];
+    const labels = GROUP_LABELS_CLIENT[mode] || [];
+    const count = is4P ? 4 : 3;
+    for (let i = 0; i < count; i++) {
+      const p = ps[i];
+      if (!p) continue;
+      document.getElementById(`hud-name3-${i}`).textContent = p.name || '—';
+      document.getElementById(`hud-score3-${i}`).textContent = p.score || 0;
+      const typeEl = document.getElementById(`hud-type3-${i}`);
+      const group = groups[i] || [];
+      const cleared = group.every(n => gameState.pocketed?.includes(n));
+      // 4P无8号终结球，清空即胜；3P还需打8号
+      typeEl.textContent = cleared ? (is3P ? '冲8号球！' : '✓ 已清台') : labels[i];
+      typeEl.style.color = cleared ? '#ff9800' : GROUP_COLORS_CLIENT[i];
+      const dotsEl = document.getElementById(`hud-balls3-${i}`);
+      const dots = group.map(n => {
+        const poc = gameState.pocketed?.includes(n);
+        return `<span class="ball-dot" style="background:${poc?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${poc?'opacity:.3':''}"></span>`;
+      });
+      // 3P：组清空后显示8号球指示
+      if (is3P && cleared) {
+        const poc8 = gameState.pocketed?.includes(8);
+        dots.push(`<span class="ball-dot" style="background:${poc8?'rgba(255,255,255,0.1)':'#222'};border:1px solid rgba(255,255,255,0.5);${poc8?'opacity:.3':''}"></span>`);
+      }
+      dotsEl.innerHTML = dots.join('');
+      const wrapper = document.getElementById(`hud-3p-p${i}`);
+      if (wrapper) {
+        wrapper.style.background = i === gameState.currentTurn ? 'rgba(212,160,23,0.12)' : 'transparent';
+        wrapper.style.borderRadius = '8px';
+        wrapper.style.padding = '2px 4px';
+      }
+    }
+  } else {
+    [0,1].forEach(i=>{
+      const p=ps[i];
+      if (!p) return;
+      document.getElementById(`hud-name-${i}`).textContent=p.name||'—';
+      document.getElementById(`hud-score-${i}`).textContent=p.score||0;
+      const typeEl=document.getElementById(`hud-type-${i}`);
+      typeEl.textContent=p.type?TYPE_LABELS[p.type]:'未定';
+      typeEl.className='p-type '+(p.type||'');
+      const dotsEl=document.getElementById(`hud-balls-${i}`);
+      const myBalls=p.type==='solid'?BALL_DOTS_SOLID:p.type==='stripe'?BALL_DOTS_STRIPE:[];
+      dotsEl.innerHTML=myBalls.map(n=>{
+        const pocketed=gameState.pocketed?.includes(n);
+        return `<span class="ball-dot" style="background:${pocketed?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${pocketed?'opacity:.3':''}"></span>`;
+      }).join('');
+    });
+  }
+}
+
+// ── Waiting screen ────────────────────────────────────────────────────────────
+function updateWaitingScreen() {
+  if (!gameState) return;
+  const ps = gameState.players;
+  const maxP = gameState.maxPlayers || 2;
+  const is3P = gameState.options?.mode === '3player';
+  const is4P = gameState.options?.mode === '4player';
+  const isPartition = is3P || is4P;
+
+  // 2026-03-19: 根据模式切换格子数和显示
+  const waitingGrid = document.getElementById('waiting-players');
+  const slot2 = document.getElementById('slot-2');
+  const slot3 = document.getElementById('slot-3');
+  if (is4P) {
+    waitingGrid.style.gridTemplateColumns = '1fr 1fr';
+    slot2.style.display = '';
+    slot3.style.display = '';
+  } else if (is3P) {
+    waitingGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    slot2.style.display = '';
+    if (slot3) slot3.style.display = 'none';
+  } else {
+    waitingGrid.style.gridTemplateColumns = '';
+    slot2.style.display = 'none';
+    if (slot3) slot3.style.display = 'none';
+  }
+
+  const GROUP_LABELS_W = {
+    '3player': ['组1: 1-5号','组2: 6,7,9,10号','组3: 11-15号'],
+    '4player': ['组1: 1-4号','组2: 5-8号','组3: 9-12号','组4: 13-15号'],
+  };
+  const labels = GROUP_LABELS_W[gameState.options?.mode] || [];
+
+  for (let i = 0; i < maxP; i++) {
+    const slot = document.getElementById(`slot-${i}`);
+    if (!slot) continue;
+    const p = ps[i];
+    if (p) {
+      const isMe = p.socketId === socket.id;
+      slot.className = 'player-slot filled';
+      const groupHint = isPartition ? `<div style="font-size:.68rem;color:${GROUP_COLORS_CLIENT[i]};margin-top:2px">${labels[i]||''}</div>` : '';
+      slot.innerHTML = `
+        <div class="slot-avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="slot-name">${p.name}${isMe?' (你)':''}</div>
+        <span class="${p.ready?'ready-badge':'not-ready-badge'}">${p.ready?'✓ 已准备':'未准备'}</span>
+        ${groupHint}`;
+    } else {
+      slot.className = 'player-slot';
+      slot.innerHTML = '<div class="slot-empty">等待玩家…</div>';
+    }
+  }
+
+  const hint = document.getElementById('waiting-hint');
+  const readyBtn = document.getElementById('ready-btn');
+  if (ps.length < maxP) {
+    hint.textContent = `等待玩家加入… (${ps.length}/${maxP})`;
+    readyBtn.disabled = true; readyBtn.style.opacity = '0.4';
+  } else {
+    hint.textContent = `${maxP}人全部准备后自动开始`;
+    readyBtn.disabled = false; readyBtn.style.opacity = '1';
+    readyBtn.textContent = isReady ? '取消准备' : '准备';
+  }
+}
+
+// ── Game over ─────────────────────────────────────────────────────────────────
+const REASON_TEXT = {
+  win: '球技精湛，完美获胜！',
+  early_eight: '对手提前打进8号球',
+  scratch_on_eight: '打进8号球时犯规',
+  opponent_left: '对手已离开',
+  loss_early_eight: '失误提前打进8号球',
+};
+
+function showGameOver(win, reason, gs) {
+  const overlay=document.getElementById('overlay-gameover');
+  document.getElementById('go-result').textContent=win?'🏆 胜利！':'😔 失败';
+  document.getElementById('go-result').className='gameover-result '+(win?'win':'lose');
+  document.getElementById('go-reason').textContent=REASON_TEXT[reason]||reason;
+  document.getElementById('rematch-hint').textContent='';
+  document.getElementById('rematch-btn').textContent='再来一局';
+  overlay.classList.add('show');
+  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function addChatMsg(name, msg) {
+  const wrap=document.getElementById('chat-msgs');
+  const el=document.createElement('div');
+  el.className='chat-msg';
+  el.textContent=`${name}: ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(),4200);
+}
+
+function sendChat() {
+  const input=document.getElementById('chat-input');
+  const msg=input.value.trim();
+  if (!msg||!roomId) return;
+  socket.emit('chat',{roomId,msg});
+  input.value='';
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+function switchLbTab(tab, el) {
+  lbTab=tab;
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const list=lbData[lbTab]||[];
+  const el=document.getElementById('lb-content');
+  if (!list.length){ el.innerHTML='<div class="lb-empty">暂无数据</div>'; return; }
+  const rankClass=['gold','silver','bronze'];
+  el.innerHTML=list.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${rankClass[i]||''}">${i<3?['🥇','🥈','🥉'][i]:i+1}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-wins">${p.wins}胜</div>
+      <div class="lb-rate">${p.winRate}%</div>
+    </div>`).join('');
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function createRoom() {
+  playerName=document.getElementById('player-name').value.trim();
+  if (!playerName) { alert('请输入昵称'); return; }
+  // 2026-03-19: 加入 mode 选项传给服务端
+  const options = {
+    gameType: document.getElementById('opt-gametype').value,
+    mode: document.getElementById('opt-mode').value,
+  };
+  socket.emit('create-room',{name:playerName,options});
+}
+
+function joinRoom(rid) {
+  playerName=document.getElementById('player-name').value.trim();
+  if (!playerName) { alert('请输入昵称'); return; }
+  socket.emit('join-room',{name:playerName,roomId:rid});
+}
+
+function toggleReady() {
+  isReady=!isReady;
+  socket.emit('set-ready',{roomId,ready:isReady});
+  document.getElementById('ready-btn').textContent=isReady?'取消准备':'准备';
+}
+
+function leaveRoom() {
+  if (roomId) socket.emit('leave-room',{roomId});
+  roomId=null; playerIndex=-1; gameState=null; isReady=false;
+  practiceMode=false; practiceShots=0;
+  phase='idle';
+  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
+  document.getElementById('practice-controls').style.display='none';
+  document.getElementById('chat-msgs').style.display='';
+  document.querySelector('.chat-input-row').style.display='';
+  showScreen('screen-lobby');
+}
+
+function requestRematch() {
+  if (practiceMode) {
+    document.getElementById('overlay-gameover').classList.remove('show');
+    practiceRerack();
+    if (!rafId) render();
+    return;
+  }
+  socket.emit('request-rematch',{roomId});
+  document.getElementById('rematch-hint').textContent='等待对手确认…';
+}
+
+function backToLobby() {
+  document.getElementById('overlay-gameover').classList.remove('show');
+  leaveRoom();
+}
+
+// ── Practice mode ─────────────────────────────────────────────────────────────
+function startPractice() {
+  playerName = document.getElementById('player-name').value.trim() || '练习者';
+  practiceMode = true;
+  practiceShots = 0;
+  playerIndex = 0;
+  // Minimal mock game state so turn/aiming checks pass
+  gameState = {
+    players: [{name:playerName, socketId:null, score:0, type:null}, null],
+    currentTurn: 0, status:'playing', phase:'aiming', pocketed:[], ballPositions:{}
+  };
+  initBalls(null);
+  phase = 'aiming';
+  cueBallPlaceable = false;
+  justPocketed = [];
+  scratch = false;
+  showScreen('screen-game');
+  resizeCanvas();
+  if (rafId) cancelAnimationFrame(rafId);
+  render();
+  updatePracticeHUD();
+  document.getElementById('practice-controls').style.display = 'flex';
+  // Hide chat in practice
+  document.getElementById('chat-msgs').style.display = 'none';
+  document.querySelector('.chat-input-row').style.display = 'none';
+  setStatus('练习模式 — 拖拽瞄准，松手出杆', 'my');
+}
+
+function practiceRerack() {
+  practiceShots = 0;
+  initBalls(null);
+  phase = 'aiming';
+  scratch = false;
+  justPocketed = [];
+  cueBallPlaceable = false;
+  updatePracticeHUD();
+  setStatus('练习模式 — 拖拽瞄准，松手出杆', 'my');
+}
+
+function updatePracticeHUD() {
+  document.getElementById('hud-name-0').textContent = playerName;
+  document.getElementById('hud-score-0').textContent = practiceShots;
+  const t0 = document.getElementById('hud-type-0');
+  t0.textContent = '练习模式'; t0.className = 'p-type';
+  document.getElementById('hud-balls-0').innerHTML = '';
+  document.getElementById('hud-name-1').textContent = '';
+  document.getElementById('hud-score-1').textContent = '';
+  document.getElementById('hud-type-1').textContent = '';
+  document.getElementById('hud-balls-1').innerHTML = '';
+  document.getElementById('turn-name').textContent = '练习模式';
+  document.getElementById('hud-turn').className = 'hud-turn my-turn';
+  document.getElementById('practice-shot-count').textContent = practiceShots + ' 杆';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+resizeCanvas();
+showScreen('screen-lobby');
+</script>
+</body>
+</html>

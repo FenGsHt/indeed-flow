@@ -17,12 +17,24 @@ from flask_cors import CORS
 from pathlib import Path
 
 from games_api import games_bp, init_db
+# 2026-03-19: 接入 page-agent，新增 LLM 代理 Blueprint
+from llm_proxy import llm_bp
+# 2026-03-19: Web 反向代理（ai-test.html 用，绕过 iframe 跨域）
+from web_proxy import proxy_bp
+# 2026-03-19: 吹牛骰积分 & 榜单 API
+from dice_api import dice_bp, init_dice_db
 
 app = Flask(__name__, template_folder='.')
 CORS(app)
 
 # 挂载游戏模块 Blueprint（所有 /api/games、/api/bookmarks 等路由）
 app.register_blueprint(games_bp)
+# 2026-03-19: 挂载 LLM 代理 Blueprint（page-agent 用）
+app.register_blueprint(llm_bp)
+# 2026-03-19: 挂载 Web 代理 Blueprint（ai-test.html 用）
+app.register_blueprint(proxy_bp)
+# 2026-03-19: 挂载吹牛骰 Blueprint
+app.register_blueprint(dice_bp)
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -87,7 +99,7 @@ def get_skills():
 @app.route("/api/skills/<skill_id>", methods=["PUT"])
 def update_skill(skill_id):
     skills = load_json(SKILLS_FILE)
-    data = request.json
+    data = request.get_json(silent=True) or {}
     for skill in skills:
         if skill["id"] == skill_id:
             skill.update(data)
@@ -99,7 +111,7 @@ def update_skill(skill_id):
 @app.route("/api/skills", methods=["POST"])
 def add_skill():
     skills = load_json(SKILLS_FILE, [])
-    data = request.json
+    data = request.get_json(silent=True) or {}
     data["id"] = data.get("id") or f"skill-{len(skills) + 1}"
     data["enabled"] = data.get("enabled", True)
     skills.append(data)
@@ -782,7 +794,7 @@ def regenerate_summary():
 @app.route("/api/news/summary/item", methods=["POST"])
 def get_news_item_summary():
     """单个热点新闻的AI总结 - 尝试抓取原文内容进行总结"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     title = data.get('title', '')
     url = data.get('url', '')
     source = data.get('source', '')
@@ -1115,6 +1127,7 @@ if __name__ == "__main__":
     print("OpenClaw 控制台启动中...")
     print("访问: http://0.0.0.0:5001")
     init_db()
+    init_dice_db()
     # 生产模式：通过环境变量控制 debug 模式，默认关闭
     debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(host="0.0.0.0", port=5001, debug=debug_mode)

@@ -155,8 +155,27 @@ const SoundEngine = (() => {
   function setSfx(v)    { _init(); sfxGain.gain.value    = v; _save('vol-sfx',    v); }
   function setBgm(v)    { _init(); bgmGain.gain.value    = v; _save('vol-bgm',    v); }
 
+  // 2026-03-19: 质疑音效
+  function challenge(success) {
+    _init(); _resume();
+    if (success) {
+      _osc('triangle', 523, 0.15, 0.3); setTimeout(() => _osc('triangle', 659, 0.15, 0.3), 100);
+      setTimeout(() => _osc('triangle', 784, 0.25, 0.35), 200);
+    } else {
+      _osc('sawtooth', 300, 0.3, 0.2); setTimeout(() => _osc('sawtooth', 200, 0.4, 0.2), 200);
+    }
+  }
+
+  // 2026-03-19: Jump-In 抢牌音效
+  function jumpIn() {
+    _init(); _resume();
+    _osc('square', 880, 0.08, 0.25);
+    setTimeout(() => _osc('square', 1100, 0.08, 0.25), 60);
+    setTimeout(() => _osc('square', 1320, 0.12, 0.3), 120);
+  }
+
   return { playCard, drawCard, playSkip, playDraw2, sayUno, yourTurn, playWin, playLose,
-           startBgm, stopBgm, setMaster, setSfx, setBgm };
+           startBgm, stopBgm, setMaster, setSfx, setBgm, challenge, jumpIn };
 })();
 
 // ══════════════════════════════════════════════════════════════
@@ -366,10 +385,12 @@ $('btn-create').addEventListener('click', () => {
     roomId: rid,
     playerName: name,
     settings: {
-      stackDraw:   $('opt-stack').checked,
-      sevensZero:  $('opt-sevens').checked,
-      forcePlay:   $('opt-force').checked,
-      targetScore: parseInt($('opt-target').value) || 0,
+      stackDraw:      $('opt-stack').checked,
+      sevensZero:     $('opt-sevens').checked,
+      forcePlay:      $('opt-force').checked,
+      allowChallenge: $('opt-challenge').checked, // 2026-03-19: 质疑 +4
+      allowJumpIn:    $('opt-jumpin').checked,     // 2026-03-19: Jump-In 抢牌
+      targetScore:    parseInt($('opt-target').value) || 0,
     },
   });
 });
@@ -475,7 +496,15 @@ function renderGame(state) {
   // 回合横幅
   const banner = $('turn-banner');
   banner.classList.remove('hidden', 'my-turn', 'other-turn');
-  if (isMyTurn) {
+  // 2026-03-19: 质疑等待时显示专用提示
+  if (state.challenge && state.challenge.targetId === myId) {
+    banner.textContent = `⚠️ ${state.challenge.playedByName} 对你出了 +4！选择质疑或接受`;
+    banner.classList.add('my-turn');
+  } else if (state.challenge) {
+    const targetName = state.players.find(p => p.id === state.challenge.targetId)?.name || '';
+    banner.textContent = `等待 ${targetName} 决定是否质疑 +4…`;
+    banner.classList.add('other-turn');
+  } else if (isMyTurn) {
     const drawHint = state.pendingDraw > 0 ? `（需摸 +${state.pendingDraw} 或叠牌）` : '';
     banner.textContent = `⚡ 你的回合！出一张牌或摸牌${drawHint}`;
     banner.classList.add('my-turn');
@@ -544,6 +573,17 @@ function renderGame(state) {
   $('btn-draw').style.opacity = canDraw ? '1' : '0.35';
   $('btn-draw').style.cursor  = canDraw ? 'pointer' : 'default';
 
+  // 2026-03-19: 质疑 +4 弹窗
+  const chModal = $('challenge-modal');
+  if (state.challenge && state.challenge.targetId === myId) {
+    $('challenge-desc').textContent = `${state.challenge.playedByName} 对你打出了 +4，你怀疑对方手上有 ${COLOR_NAMES[state.challenge.chosenColor] || ''}色牌吗？`;
+    chModal.classList.remove('hidden');
+    drawBtn.disabled = true;
+    passBtn.disabled = true;
+  } else {
+    chModal.classList.add('hidden');
+  }
+
   // 回合切换音效 + 视效
   if (isMyTurn && !wasMyTurn) {
     SoundEngine.yourTurn();
@@ -552,37 +592,78 @@ function renderGame(state) {
   wasMyTurn = isMyTurn;
 }
 
+// 2026-03-19: 重写，按出牌顺序排列对手，显示方向箭头和回合序号
 function renderOtherPlayers(state) {
-  const others = state.players.filter(p => !p.isYou);
   const el = $('other-players');
   el.innerHTML = '';
+  const n   = state.players.length;
+  const dir = state.direction;
 
-  others.forEach(p => {
+  const myIdx  = state.players.findIndex(p => p.isYou);
+  const curIdx = state.players.findIndex(p => p.id === state.currentPlayerId);
+
+  // 按出牌方向排列（从"我"的下一位开始）
+  const ordered = [];
+  let idx = myIdx;
+  for (let i = 0; i < n - 1; i++) {
+    idx = (idx + dir + n) % n;
+    ordered.push(state.players[idx]);
+  }
+
+  // 计算每个玩家离当前回合的步数
+  const turnOrder = {};
+  let tidx = curIdx;
+  for (let step = 0; step < n; step++) {
+    turnOrder[state.players[tidx].id] = step;
+    tidx = (tidx + dir + n) % n;
+  }
+
+  // "你"标记（序列起点）
+  const myOrder  = turnOrder[state.players[myIdx].id] ?? 0;
+  const myBadge  = myOrder === 0 ? '🎯' : `#${myOrder}`;
+  const youEl = document.createElement('div');
+  youEl.className = 'play-order-you' + (myOrder === 0 ? ' active' : '');
+  youEl.innerHTML = `<span class="you-label">你</span><span class="you-order">${myBadge}</span>`;
+  el.appendChild(youEl);
+
+  ordered.forEach((p, i) => {
+    // 方向箭头
+    const arrowEl = document.createElement('span');
+    arrowEl.className = 'play-order-arrow';
+    arrowEl.textContent = dir === 1 ? '›' : '‹';
+    el.appendChild(arrowEl);
+
     const div = document.createElement('div');
     div.className = 'other-player';
     if (p.id === state.currentPlayerId) div.classList.add('active');
+
+    const nextIdx = (curIdx + dir + n) % n;
+    if (p.id === state.players[nextIdx]?.id && p.id !== state.currentPlayerId) {
+      div.classList.add('next');
+    }
+
     if (p.cardCount === 1 && !p.saidUno) div.classList.add('uno-danger');
     if (!p.connected) div.classList.add('disconnected');
     div.dataset.pid = p.id;
 
-    // 迷你背面牌（最多显示 10 张）
     const cardCount = Math.min(p.cardCount, 10);
     const miniCards = Array(cardCount).fill('<div class="mini-card"></div>').join('');
 
+    const order = turnOrder[p.id] ?? 0;
+    const orderBadge = order === 0 ? '🎯' : `#${order}`;
+
     div.innerHTML = `
+      <span class="turn-order-badge">${orderBadge}</span>
       ${p.saidUno ? '<span class="uno-tag">UNO!</span>' : ''}
       ${!p.connected ? '<span class="disconnected-tag">断线中…</span>' : ''}
       <div class="other-player-name">${p.name}</div>
       <div class="other-player-cards">${miniCards}</div>
-      <div class="other-player-score">🏆 ${p.score}胜 &nbsp;·&nbsp; ${p.points}分</div>
+      <div class="other-player-score">🏆 ${p.score}胜 · ${p.points}分</div>
     `;
 
-    // 点击抓 UNO（对方有1张且未喊）
     if (p.cardCount === 1 && !p.saidUno) {
       div.title = '点击抓 UNO！';
-      div.addEventListener('click', () => {
-        socket.emit('catch-uno', { targetId: p.id });
-      });
+      div.addEventListener('click', () => socket.emit('catch-uno', { targetId: p.id }));
     }
 
     el.appendChild(div);
@@ -601,15 +682,32 @@ function renderHand(hand, state) {
     return (a.value ?? 99) - (b.value ?? 99);
   });
 
+  // 2026-03-19: Jump-In 判定——非回合时检测完全匹配的牌
+  const jumpInEnabled = !isMyTurn && state.settings?.allowJumpIn && !state.challenge && state.pendingDraw === 0;
+
   sorted.forEach((card, i) => {
     const canPlay = isMyTurn && canPlayCard(card, state);
-    const el = makeCard(card, { playable: isMyTurn ? canPlay : null });
-    el.style.zIndex = i + 1; // 从左到右层叠，右边的牌在上
+    const canJump = jumpInEnabled && isExactMatch(card, state.topCard);
+    const el = makeCard(card, { playable: isMyTurn ? canPlay : (canJump ? true : null) });
+    if (canJump) el.classList.add('jump-in-ready');
+    el.style.zIndex = i + 1;
     if (isMyTurn && canPlay) {
       el.addEventListener('click', () => onCardClick(card));
+    } else if (canJump) {
+      el.addEventListener('click', () => {
+        socket.emit('jump-in', { cardId: card.id });
+      });
     }
     scroll.appendChild(el);
   });
+}
+
+// 2026-03-19: 判断是否为完全相同的牌（Jump-In 条件）
+function isExactMatch(card, topCard) {
+  if (!topCard || card.color === 'wild') return false;
+  if (card.color !== topCard.color || card.type !== topCard.type) return false;
+  if (card.type === 'number' && card.value !== topCard.value) return false;
+  return true;
 }
 
 function canPlayCard(card, state) {
@@ -698,6 +796,54 @@ function flyCardFromDeck() {
   }, FLIGHT_MS + 10);
 }
 
+// 2026-03-19: 对手出牌飞牌动画（参考自己的 flyCardToDiscard）
+function flyCardFromOpponent(playerId, card) {
+  const opEl = document.querySelector(`.other-player[data-pid="${playerId}"]`);
+  if (!opEl) return;
+
+  const srcRect  = opEl.getBoundingClientRect();
+  const destRect = $('discard-top').getBoundingClientRect();
+
+  const clone = makeCard(card);
+  clone.classList.add('flying-card');
+  const W = destRect.width || 72;
+  const H = destRect.height || 100;
+  clone.style.cssText += `
+    left:${srcRect.left + srcRect.width / 2 - W / 2}px;
+    top:${srcRect.top + srcRect.height / 2 - H / 2}px;
+    width:${W}px; height:${H}px;
+    transform:rotate(0deg); opacity:1;
+  `;
+  document.body.appendChild(clone);
+
+  const dx  = destRect.left + destRect.width  / 2 - (srcRect.left + srcRect.width  / 2);
+  const dy  = destRect.top  + destRect.height / 2 - (srcRect.top  + srcRect.height / 2);
+  const rot = (Math.random() - 0.5) * 22;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    clone.style.transition = `transform ${FLIGHT_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+    clone.style.transform  = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+  }));
+
+  setTimeout(() => {
+    clone.style.transition = 'opacity 80ms ease';
+    clone.style.opacity    = '0';
+    setTimeout(() => clone.remove(), 100);
+  }, FLIGHT_MS + 10);
+
+  const isWild = card.type === 'wild' || card.type === 'wild_draw4';
+  SoundEngine.playCard(isWild);
+
+  setTimeout(() => {
+    const dest = $('discard-top').getBoundingClientRect();
+    const cx = dest.left + dest.width  / 2;
+    const cy = dest.top  + dest.height / 2;
+    VFX.particles(cx, cy, card.color);
+    if (isWild) VFX.rainbowBurst(cx, cy);
+    if (card.type === 'draw2' || card.type === 'wild_draw4') VFX.screenFlash('rgba(239,83,80,0.25)');
+  }, FLIGHT_MS + 50);
+}
+
 function onCardClick(card) {
   const el = $('hand-scroll').querySelector(`[data-id="${card.id}"]`);
   if (el) flyCardToDiscard(el);
@@ -765,6 +911,14 @@ $('btn-pass-turn').addEventListener('click', () => {
 // 喊 UNO
 $('btn-uno').addEventListener('click', () => {
   socket.emit('say-uno');
+});
+
+// 2026-03-19: 质疑 +4
+$('btn-challenge').addEventListener('click', () => {
+  socket.emit('challenge-draw4');
+});
+$('btn-accept-draw4').addEventListener('click', () => {
+  socket.emit('accept-draw4');
 });
 
 // 整理手牌（重新排序）
@@ -836,6 +990,12 @@ $('btn-back-lobby').addEventListener('click', () => {
 });
 
 // ─── 广播事件 ────────────────────────────────────────────────
+// 2026-03-19: 对手出牌动画
+socket.on('card-played', ({ playerId, playerName, card }) => {
+  if (playerId === myId) return;
+  flyCardFromOpponent(playerId, card);
+});
+
 socket.on('uno-called', ({ playerName }) => {
   toast(`🔔 ${playerName} 喊了 UNO！`, 3000);
   SoundEngine.sayUno();
@@ -843,6 +1003,33 @@ socket.on('uno-called', ({ playerName }) => {
 
 socket.on('uno-caught', ({ targetName }) => {
   toast(`🚨 ${targetName} 忘喊 UNO，被抓了！摸 2 张`, 3000);
+});
+
+// 2026-03-19: 质疑 +4 结果
+socket.on('challenge-result', ({ success, penalizedName, drawnCount }) => {
+  $('challenge-modal').classList.add('hidden');
+  if (success) {
+    toast(`✅ 质疑成功！${penalizedName} 违规出 +4，罚摸 ${drawnCount} 张`, 4000);
+    SoundEngine.challenge(true);
+  } else {
+    toast(`❌ 质疑失败！${penalizedName} 罚摸 ${drawnCount} 张`, 4000);
+    SoundEngine.challenge(false);
+  }
+});
+
+socket.on('challenge-accepted', ({ playerId }) => {
+  $('challenge-modal').classList.add('hidden');
+});
+
+// 2026-03-19: Jump-In 抢牌
+socket.on('jumped-in', ({ playerId, playerName, card }) => {
+  if (playerId === myId) {
+    toast('⚡ 你抢牌成功！', 2500);
+  } else {
+    toast(`⚡ ${playerName} 抢牌！`, 2500);
+    flyCardFromOpponent(playerId, card);
+  }
+  SoundEngine.jumpIn();
 });
 
 socket.on('error', ({ message }) => {

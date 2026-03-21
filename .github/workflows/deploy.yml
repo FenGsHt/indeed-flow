@@ -62,6 +62,10 @@ jobs:
                       ${{ secrets.SERVER_PATH }}/games/minesweeper/server \
                       ${{ secrets.SERVER_PATH }}/games/snake/client \
                       ${{ secrets.SERVER_PATH }}/games/snake/server \
+                      ${{ secrets.SERVER_PATH }}/games/dice/client \
+                      ${{ secrets.SERVER_PATH }}/games/dice/server \
+                      ${{ secrets.SERVER_PATH }}/games/billiards/client \
+                      ${{ secrets.SERVER_PATH }}/games/billiards/server \
                       ${{ secrets.SERVER_PATH }}/backend && \
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
@@ -70,15 +74,16 @@ jobs:
           rsync -az -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
-      - name: Deploy static game pages
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            scp -i ~/.ssh/id_rsa games.html \
-              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+      # 2026-03-19: games.html 已加入 Vite 多页构建，随 dist/ 一起 rsync 部署，不再需要单独 scp
+      # - name: Deploy static game pages
+      #   uses: nick-fields/retry@v2
+      #   with:
+      #     max_attempts: 3
+      #     retry_wait_seconds: 15
+      #     timeout_minutes: 10
+      #     command: |
+      #       scp -i ~/.ssh/id_rsa games.html \
+      #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Deploy minesweeper client
         uses: nick-fields/retry@v2
@@ -235,6 +240,63 @@ jobs:
                && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
              || echo 'WARNING: nginx reload failed'"
 
+      - name: Deploy dice client
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa \
+              games/dice/client/index.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/client/
+            scp -i ~/.ssh/id_rsa \
+              games/dice/ecosystem.config.js \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/
+
+      - name: Deploy dice server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r games/dice/server/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/server/
+
+      - name: Start dice server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+               cd ${{ secrets.SERVER_PATH }}/games/dice/server && \
+               ([ ! -d node_modules ] && npm install --no-audit || \
+                (md5sum package.json > /tmp/dice_pkg_hash_new && \
+                 (diff -q /tmp/dice_pkg_hash_new /tmp/dice_pkg_hash_old > /dev/null 2>&1 || \
+                  (npm install --no-audit && cp /tmp/dice_pkg_hash_new /tmp/dice_pkg_hash_old)))) && \
+               pm2 stop dice-server 2>/dev/null; \
+               pm2 delete dice-server 2>/dev/null; \
+               fuser -k 3005/tcp 2>/dev/null || true; \
+               pm2 start server.js --name dice-server && \
+               pm2 save"
+
+      - name: Configure nginx proxy for dice WebSocket
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_dice_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_dice_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_dice_proxy.py; \
+             rm -f /tmp/nginx_add_dice_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || echo 'WARNING: nginx reload failed'"
+
       - name: Configure nginx proxy for snake WebSocket
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_snake_proxy.py \
@@ -253,6 +315,76 @@ jobs:
                && echo 'nginx reloaded OK (sudo)') \
              || echo 'WARNING: nginx reload failed'"
 
+      - name: Deploy billiards client
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa \
+              games/billiards/client/index.html \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/client/
+            scp -i ~/.ssh/id_rsa \
+              games/billiards/ecosystem.config.js \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/
+
+      - name: Deploy billiards server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            scp -i ~/.ssh/id_rsa -r games/billiards/server/* \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/server/
+
+      - name: Start billiards server
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          command: |
+            ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+               cd ${{ secrets.SERVER_PATH }}/games/billiards/server && \
+               ([ ! -d node_modules ] && npm install --no-audit || \
+                (md5sum package.json > /tmp/billiards_pkg_hash_new && \
+                 (diff -q /tmp/billiards_pkg_hash_new /tmp/billiards_pkg_hash_old > /dev/null 2>&1 || \
+                  (npm install --no-audit && cp /tmp/billiards_pkg_hash_new /tmp/billiards_pkg_hash_old)))) && \
+               pm2 stop billiards-server 2>/dev/null; \
+               pm2 delete billiards-server 2>/dev/null; \
+               fuser -k 3006/tcp 2>/dev/null || true; \
+               pm2 start server.js --name billiards-server && \
+               pm2 save"
+
+      - name: Configure nginx proxy for billiards WebSocket
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_billiards_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_billiards_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_billiards_proxy.py; \
+             rm -f /tmp/nginx_add_billiards_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || echo 'WARNING: nginx reload failed'"
+
+      - name: Configure nginx proxy for Flask API
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_api_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_api_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_api_proxy.py; \
+             rm -f /tmp/nginx_add_api_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || echo 'WARNING: nginx reload failed'"
+
       - name: Deploy backend
         uses: nick-fields/retry@v2
         with:
@@ -260,7 +392,9 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 10
           command: |
-            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py \
+            scp -i ~/.ssh/id_rsa backend/app.py backend/games_api.py backend/steam_price_check.py backend/llm_proxy.py backend/web_proxy.py backend/dice_api.py backend/db_pool.py \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
+            scp -i ~/.ssh/id_rsa requirements.txt \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/backend/
 
       - name: Restart Flask backend
@@ -279,6 +413,12 @@ jobs:
                echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env && \
                echo 'FLASK_DEBUG=false' >> .env && \
                echo 'BARK_KEY=${{ secrets.BARK_KEY }}' >> .env && \
+               echo 'LLM_API_KEY=${{ secrets.LLM_API_KEY }}' >> .env && \
+               echo 'OPENCLAW_WEBHOOK=${{ secrets.OPENCLAW_WEBHOOK }}' >> .env && \
+               echo 'OPENCLAW_TOKEN=${{ secrets.OPENCLAW_TOKEN }}' >> .env && \
+               echo 'OPENCLAW_GROUP=${{ secrets.OPENCLAW_GROUP }}' >> .env && \
+               echo 'RAWG_API_KEY=${{ secrets.RAWG_API_KEY }}' >> .env && \
+               pip3 install -q -r requirements.txt && \
                sudo systemctl restart flask-app && \
                sleep 2 && \
                sudo systemctl is-active flask-app"

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/auth-gate.js"></script>
   <title>INDEED // GAME CENTER</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -26,7 +27,6 @@
       -webkit-user-select: none;
     }
 
-    /* Three.js canvas behind everything */
     canvas {
       position: fixed !important;
       top: 0; left: 0;
@@ -35,7 +35,7 @@
       z-index: 0;
     }
 
-    /* ── HTML UI Overlay ─────────────────────────── */
+    /* ── UI Overlay ────────────────────────────── */
     .hud-ui {
       position: fixed;
       inset: 0;
@@ -44,26 +44,24 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 32px;
+      padding: 28px 32px;
     }
 
-    /* Top bar */
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
     }
 
-    .logo-block { line-height: 1.4; }
-
     .logo-sys {
       font-size: 10px;
       letter-spacing: 0.28em;
       color: #6e7b8c;
+      line-height: 2;
     }
 
     .logo-main {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       letter-spacing: 0.18em;
       color: #fff;
@@ -91,116 +89,119 @@
       transition: all 0.2s;
       clip-path: polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px);
     }
-
     .back-btn:hover {
       border-color: rgba(0,212,255,0.55);
       color: #00d4ff;
       background: rgba(0,212,255,0.05);
     }
 
-    /* ── Game Cards Row ──────────────────────────── */
+    /* ── Cards ─────────────────────────────────── */
     .cards-row {
       display: flex;
       justify-content: center;
-      gap: 18px;
+      flex-wrap: wrap;
+      gap: 14px;
+      max-width: 1120px;
+      margin: 0 auto;
+      width: 100%;
     }
 
     .game-panel {
       pointer-events: auto;
-      width: 210px;
+      width: 190px;
       background: rgba(7,8,10,0.82);
       border: 1px solid;
-      padding: 18px 16px 16px;
+      padding: 16px 14px 14px;
       position: relative;
       cursor: pointer;
       transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s, background 0.25s;
       text-decoration: none;
       display: block;
-      clip-path: polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px);
+      clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
     }
 
-    /* Accent colors */
     .snake-panel { --accent: #00d4ff; border-color: rgba(0,68,255,0.45); }
     .mine-panel  { --accent: #ff0033; border-color: rgba(255,0,51,0.45); }
     .uno-panel   { --accent: #ff9900; border-color: rgba(255,153,0,0.45); }
+    .pool-panel  { --accent: #d4a017; border-color: rgba(212,160,23,0.45); }
+    .dice-panel  { --accent: #c084fc; border-color: rgba(192,132,252,0.45); }
 
-    /* Top accent stripe */
     .game-panel::before {
       content: '';
       position: absolute;
-      top: 0; left: 14px; right: 0;
+      top: 0; left: 12px; right: 0;
       height: 2px;
       background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
     }
-
-    /* Corner accent bottom-right */
     .game-panel::after {
       content: '';
       position: absolute;
-      bottom: 0; right: 14px; left: 0;
+      bottom: 0; right: 12px; left: 0;
       height: 1px;
       background: linear-gradient(90deg, transparent 0%, var(--accent) 100%);
-      opacity: 0.4;
+      opacity: 0.35;
     }
 
-    .snake-panel:hover { border-color: rgba(0,212,255,0.75); background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(0,68,255,0.18), 0 10px 40px rgba(0,0,0,0.55); }
-    .mine-panel:hover  { border-color: rgba(255,0,51,0.75);   background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(255,0,51,0.18),  0 10px 40px rgba(0,0,0,0.55); }
-    .uno-panel:hover   { border-color: rgba(255,153,0,0.75);  background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(255,153,0,0.18), 0 10px 40px rgba(0,0,0,0.55); }
+    .snake-panel:hover { border-color: rgba(0,212,255,0.75);  background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(0,68,255,0.18),    0 10px 40px rgba(0,0,0,0.55); }
+    .mine-panel:hover  { border-color: rgba(255,0,51,0.75);    background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(255,0,51,0.18),     0 10px 40px rgba(0,0,0,0.55); }
+    .uno-panel:hover   { border-color: rgba(255,153,0,0.75);   background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(255,153,0,0.18),    0 10px 40px rgba(0,0,0,0.55); }
+    .pool-panel:hover  { border-color: rgba(212,160,23,0.75);  background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(212,160,23,0.18),   0 10px 40px rgba(0,0,0,0.55); }
+    .dice-panel:hover  { border-color: rgba(192,132,252,0.75); background: rgba(7,8,10,0.93); transform: translateY(-6px); box-shadow: 0 0 28px rgba(192,132,252,0.18),  0 10px 40px rgba(0,0,0,0.55); }
 
     .panel-node-id {
       font-size: 9px;
-      letter-spacing: 0.22em;
+      letter-spacing: 0.2em;
       color: var(--accent);
-      opacity: 0.75;
-      margin-bottom: 10px;
+      opacity: 0.7;
+      margin-bottom: 9px;
     }
 
     .panel-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
       font-family: 'Inter', 'Noto Sans SC', sans-serif;
       color: #fff;
-      letter-spacing: 0.04em;
-      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+      margin-bottom: 3px;
     }
 
     .panel-status {
       font-size: 9px;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.13em;
       color: var(--accent);
-      opacity: 0.8;
-      margin-bottom: 14px;
+      opacity: 0.75;
+      margin-bottom: 12px;
     }
 
     .panel-divider {
       height: 1px;
       background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .panel-desc {
       font-size: 11px;
-      line-height: 1.75;
-      color: rgba(221,229,237,0.5);
+      line-height: 1.7;
+      color: rgba(221,229,237,0.48);
       font-family: 'Noto Sans SC', sans-serif;
       font-weight: 400;
       letter-spacing: 0;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .panel-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
-      margin-bottom: 16px;
+      gap: 4px;
+      margin-bottom: 14px;
     }
 
     .panel-tag {
       font-size: 9px;
-      letter-spacing: 0.1em;
-      padding: 2px 8px;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
       border: 1px solid rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.32);
       background: rgba(255,255,255,0.03);
     }
 
@@ -208,28 +209,24 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 12px;
+      padding: 7px 11px;
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
       font-size: 10px;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.15em;
       color: var(--accent);
       transition: background 0.2s, border-color 0.2s;
       clip-path: polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px);
     }
-
     .game-panel:hover .panel-enter {
       background: rgba(255,255,255,0.07);
-      border-color: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.18);
     }
 
-    .enter-arrow {
-      transition: transform 0.2s;
-    }
-
+    .enter-arrow { transition: transform 0.2s; }
     .game-panel:hover .enter-arrow { transform: translateX(4px); }
 
-    /* ── Bottom status bar ───────────────────────── */
+    /* ── Bottom bar ─────────────────────────────── */
     .bottom-bar {
       display: flex;
       justify-content: space-between;
@@ -238,21 +235,21 @@
 
     .status-text {
       font-size: 9px;
-      letter-spacing: 0.22em;
+      letter-spacing: 0.2em;
       color: #6e7b8c;
-      line-height: 1.8;
+      line-height: 1.9;
     }
 
     .status-active {
-      font-size: 9px;
-      letter-spacing: 0.22em;
       color: #00ff44;
+      font-size: 9px;
+      letter-spacing: 0.2em;
     }
 
-    /* ── Mobile ──────────────────────────────────── */
+    /* ── Mobile ─────────────────────────────────── */
     @media (max-width: 700px) {
       body { overflow-y: auto; }
-      .hud-ui { overflow-y: auto; padding: 16px; justify-content: flex-start; gap: 20px; }
+      .hud-ui { overflow-y: auto; padding: 16px; justify-content: flex-start; gap: 18px; }
       .cards-row { flex-direction: column; align-items: center; }
       .game-panel { width: min(300px, 90vw); }
       .bottom-bar { display: none; }
@@ -261,25 +258,21 @@
 </head>
 <body>
 
-  <!-- HTML UI Overlay -->
   <div class="hud-ui">
-
-    <!-- Top -->
     <div class="top-bar">
-      <div class="logo-block">
+      <div>
         <div class="logo-sys">INDEED PLATFORM // GAME CENTER</div>
         <div class="logo-main">INDEED</div>
       </div>
       <a href="index.html" class="back-btn">← MAIN MENU</a>
     </div>
 
-    <!-- Game Cards -->
     <div class="cards-row">
 
       <a href="./games/snake/client/index.html" class="game-panel snake-panel">
         <div class="panel-node-id">NODE-01 // PRSS-SYS</div>
         <div class="panel-title">多人贪吃蛇</div>
-        <div class="panel-status">SIGNAL: ONLINE // REALTIME</div>
+        <div class="panel-status">REALTIME // ONLINE</div>
         <div class="panel-divider"></div>
         <div class="panel-desc">实时多人竞速<br>撞到对手即死亡，自动复活<br>争夺积分榜第一</div>
         <div class="panel-tags">
@@ -287,16 +280,13 @@
           <span class="panel-tag">积分榜</span>
           <span class="panel-tag">方向键</span>
         </div>
-        <div class="panel-enter">
-          <span>ENTER NODE</span>
-          <span class="enter-arrow">→</span>
-        </div>
+        <div class="panel-enter"><span>ENTER NODE</span><span class="enter-arrow">→</span></div>
       </a>
 
       <a href="./games/minesweeper/client/index.html" class="game-panel mine-panel">
         <div class="panel-node-id">NODE-02 // CONT-CORE</div>
         <div class="panel-title">多人扫雷</div>
-        <div class="panel-status">SIGNAL: ONLINE // COOPERATIVE</div>
+        <div class="panel-status">COOPERATIVE // ONLINE</div>
         <div class="panel-divider"></div>
         <div class="panel-desc">实时多人联机扫雷<br>协作排雷，赢得荣耀<br>挑战排行榜，成为大师</div>
         <div class="panel-tags">
@@ -304,16 +294,13 @@
           <span class="panel-tag">排行榜</span>
           <span class="panel-tag">协作</span>
         </div>
-        <div class="panel-enter">
-          <span>ENTER NODE</span>
-          <span class="enter-arrow">→</span>
-        </div>
+        <div class="panel-enter"><span>ENTER NODE</span><span class="enter-arrow">→</span></div>
       </a>
 
       <a href="./games/uno/client/index.html" class="game-panel uno-panel">
         <div class="panel-node-id">NODE-03 // BIO-TRK</div>
         <div class="panel-title">UNO 对战</div>
-        <div class="panel-status">SIGNAL: ONLINE // TURN-BASED</div>
+        <div class="panel-status">TURN-BASED // ONLINE</div>
         <div class="panel-divider"></div>
         <div class="panel-desc">经典 UNO 多人联机<br>+2/+4 叠加，喊 UNO 抓人<br>最先出完手牌获胜</div>
         <div class="panel-tags">
@@ -321,26 +308,49 @@
           <span class="panel-tag">房间系统</span>
           <span class="panel-tag">回合制</span>
         </div>
-        <div class="panel-enter">
-          <span>ENTER NODE</span>
-          <span class="enter-arrow">→</span>
+        <div class="panel-enter"><span>ENTER NODE</span><span class="enter-arrow">→</span></div>
+      </a>
+
+      <a href="./games/billiards/client/index.html" class="game-panel pool-panel">
+        <div class="panel-node-id">NODE-04 // POOL-SYS</div>
+        <div class="panel-title">多人台球</div>
+        <div class="panel-status">TURN-BASED // ONLINE</div>
+        <div class="panel-divider"></div>
+        <div class="panel-desc">经典八球制在线对战<br>回合制出杆，先清台者胜<br>创建房间邀请好友</div>
+        <div class="panel-tags">
+          <span class="panel-tag">2人对战</span>
+          <span class="panel-tag">房间系统</span>
+          <span class="panel-tag">排行榜</span>
         </div>
+        <div class="panel-enter"><span>ENTER NODE</span><span class="enter-arrow">→</span></div>
+      </a>
+
+      <a href="./games/dice/client/index.html" class="game-panel dice-panel">
+        <div class="panel-node-id">NODE-05 // GAME-SYS</div>
+        <div class="panel-title">吹牛骰</div>
+        <div class="panel-status">TURN-BASED // ONLINE</div>
+        <div class="panel-divider"></div>
+        <div class="panel-desc">经典酒馆骰子游戏<br>摇骰猜数，真话与谎言的博弈<br>质疑对手，拼胆量！</div>
+        <div class="panel-tags">
+          <span class="panel-tag">2~8人</span>
+          <span class="panel-tag">回合制</span>
+          <span class="panel-tag">骰子自定义</span>
+        </div>
+        <div class="panel-enter"><span>ENTER NODE</span><span class="enter-arrow">→</span></div>
       </a>
 
     </div>
 
-    <!-- Bottom status -->
     <div class="bottom-bar">
       <div class="status-text">
         SYS.NOMINAL // F-54703201<br>
-        ACTIVE NODES: 3
+        ACTIVE NODES: 5
       </div>
       <div class="status-text" style="text-align:right">
         PLATFORM STATUS<br>
         <span class="status-active">● ALL SYSTEMS NOMINAL</span>
       </div>
     </div>
-
   </div>
 
   <script type="module">
@@ -358,7 +368,6 @@
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x07080a, 0.022);
-
     const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 4, 16);
 
@@ -379,217 +388,191 @@
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.3;
 
-    const renderPass = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.8, 0.2
-    );
     const composer = new EffectComposer(renderer);
-    composer.addPass(renderPass);
-    composer.addPass(bloomPass);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.8, 0.2
+    ));
 
     const PALETTE = {
-      bg: 0x07080a, hud: 0x6e7b8c, hudText: 0xdde5ed, grid: 0x222633,
+      grid: 0x222633,
       pressureTop: 0x0044ff, pressureBot: 0xff0033,
       containCore: 0xff0033, containRing: 0x00d4ff,
-      bioGrid: 0x00ff44, bioEntity: 0xff9900
+      bioGrid: 0x00ff44, bioEntity: 0xff9900,
+      hudText: 0xdde5ed
     };
-    const BASE_MAT = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false };
+    const BASE = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false };
 
-    function createBoundingBox(w, h, d, color) {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      const edges = new THREE.EdgesGeometry(geo);
-      return new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.15 }));
+    function bbox(w, h, d, color) {
+      return new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d)),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.15 })
+      );
     }
 
-    // ── Node 1: Pressure Strata (Snake) ──────────────
-    const node1Group = new THREE.Group();
-    node1Group.position.set(-6, 0, 0);
-    node1Group.rotation.y = Math.PI / 6;
-    scene.add(node1Group);
-    node1Group.add(createBoundingBox(4, 5, 4, PALETTE.grid));
+    // ── Node 1: Pressure Strata ──────────────────
+    const n1 = new THREE.Group();
+    n1.position.set(-6, 0, 0); n1.rotation.y = Math.PI / 6;
+    scene.add(n1);
+    n1.add(bbox(4, 5, 4, PALETTE.grid));
 
     const planeGeo = new THREE.PlaneGeometry(3.5, 3.5, 32, 32);
     planeGeo.rotateX(-Math.PI / 2);
-
-    const pressureUniforms = { uTime: { value: 0 } };
-    const pressureVert = `
-      varying vec3 vPos;
-      uniform float uTime;
-      uniform float uBaseY;
+    const uTime = { value: 0 };
+    const pVert = `
+      varying vec3 vPos; uniform float uTime; uniform float uBaseY;
       void main() {
         vec3 pos = position;
-        pos.y += sin(pos.x * 2.0 + uTime + uBaseY) * cos(pos.z * 2.0 + uTime * 0.8) * 0.2;
+        pos.y += sin(pos.x*2.0+uTime+uBaseY)*cos(pos.z*2.0+uTime*0.8)*0.2;
         vPos = pos;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-      }
-    `;
-    const pressureFrag = `
-      varying vec3 vPos;
-      uniform float uBaseY;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
+      }`;
+    const pFrag = `
+      varying vec3 vPos; uniform float uBaseY;
       void main() {
-        float t = (uBaseY + 2.0) / 4.0;
-        vec3 col = mix(vec3(1.0,0.0,0.2), vec3(0.0,0.26,1.0), t);
-        float grid = max(step(0.95, fract(vPos.x * 4.0)), step(0.95, fract(vPos.z * 4.0)));
-        gl_FragColor = vec4(col * (0.4 + grid * 0.6), 0.8 * grid);
-      }
-    `;
+        float t = (uBaseY+2.0)/4.0;
+        vec3 col = mix(vec3(1.0,0.0,0.2),vec3(0.0,0.26,1.0),t);
+        float g = max(step(0.95,fract(vPos.x*4.0)),step(0.95,fract(vPos.z*4.0)));
+        gl_FragColor = vec4(col*(0.4+g*0.6),0.8*g);
+      }`;
     for (let i = 0; i < 5; i++) {
       const y = -1.8 + i * 0.9;
-      const mat = new THREE.ShaderMaterial({
-        vertexShader: pressureVert, fragmentShader: pressureFrag,
-        uniforms: { uTime: pressureUniforms.uTime, uBaseY: { value: y } },
+      n1.add(Object.assign(new THREE.Mesh(planeGeo, new THREE.ShaderMaterial({
+        vertexShader: pVert, fragmentShader: pFrag,
+        uniforms: { uTime, uBaseY: { value: y } },
         transparent: true, wireframe: true, blending: THREE.AdditiveBlending
-      });
-      const plane = new THREE.Mesh(planeGeo, mat);
-      plane.position.y = y;
-      node1Group.add(plane);
+      })), { position: { y } }));
     }
 
-    // ── Node 2: Containment Core (Minesweeper) ────────
-    const node2Group = new THREE.Group();
-    scene.add(node2Group);
+    // ── Node 2: Containment Core ─────────────────
+    const n2 = new THREE.Group();
+    scene.add(n2);
 
-    const gridHelper = new THREE.GridHelper(8, 16, PALETTE.containRing, PALETTE.grid);
-    gridHelper.position.y = -2;
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = 0.4;
-    gridHelper.material.blending = THREE.AdditiveBlending;
-    node2Group.add(gridHelper);
+    const gh2 = new THREE.GridHelper(8, 16, PALETTE.containRing, PALETTE.grid);
+    gh2.position.y = -2;
+    gh2.material.transparent = true; gh2.material.opacity = 0.4;
+    gh2.material.blending = THREE.AdditiveBlending;
+    n2.add(gh2);
 
     const core = new THREE.LineSegments(
       new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(1.2, 2)),
-      new THREE.LineBasicMaterial({ color: PALETTE.containCore, ...BASE_MAT })
+      new THREE.LineBasicMaterial({ color: PALETTE.containCore, ...BASE })
     );
-    node2Group.add(core);
-
+    n2.add(core);
     const innerCore = new THREE.Mesh(
       new THREE.IcosahedronGeometry(0.6, 1),
-      new THREE.MeshBasicMaterial({ color: PALETTE.containCore, wireframe: true, ...BASE_MAT })
+      new THREE.MeshBasicMaterial({ color: PALETTE.containCore, wireframe: true, ...BASE })
     );
-    node2Group.add(innerCore);
+    n2.add(innerCore);
 
     const rings = [];
     for (let i = 0; i < 3; i++) {
-      const ring = new THREE.LineSegments(
+      const r = new THREE.LineSegments(
         new THREE.WireframeGeometry(new THREE.TorusGeometry(2 + i * 0.4, 0.02, 4, 64)),
-        new THREE.LineBasicMaterial({ color: PALETTE.containRing, ...BASE_MAT })
+        new THREE.LineBasicMaterial({ color: PALETTE.containRing, ...BASE })
       );
-      ring.rotation.x = Math.random() * Math.PI;
-      ring.rotation.y = Math.random() * Math.PI;
-      rings.push({ mesh: ring, sx: (Math.random() - 0.5) * 0.02, sy: (Math.random() - 0.5) * 0.02 });
-      node2Group.add(ring);
+      r.rotation.x = Math.random() * Math.PI;
+      r.rotation.y = Math.random() * Math.PI;
+      rings.push({ mesh: r, sx: (Math.random() - 0.5) * 0.02, sy: (Math.random() - 0.5) * 0.02 });
+      n2.add(r);
     }
-
-    node2Group.add(new THREE.LineSegments(
+    n2.add(new THREE.LineSegments(
       new THREE.WireframeGeometry(new THREE.CylinderGeometry(2.8, 2.8, 4, 16, 1, true)),
       new THREE.LineBasicMaterial({ color: PALETTE.containRing, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending })
     ));
 
-    // ── Node 3: Bio Tracker (UNO) ─────────────────────
-    const node3Group = new THREE.Group();
-    node3Group.position.set(6, 0, 0);
-    node3Group.rotation.y = -Math.PI / 6;
-    scene.add(node3Group);
-    node3Group.add(createBoundingBox(4, 5, 4, PALETTE.grid));
+    // ── Node 3: Bio Tracker ──────────────────────
+    const n3 = new THREE.Group();
+    n3.position.set(6, 0, 0); n3.rotation.y = -Math.PI / 6;
+    scene.add(n3);
+    n3.add(bbox(4, 5, 4, PALETTE.grid));
 
-    const terrainGeo = new THREE.PlaneGeometry(3.5, 3.5, 20, 20);
-    terrainGeo.rotateX(-Math.PI / 2);
-    const tp = terrainGeo.attributes.position;
-    for (let i = 0; i < tp.count; i++) {
+    const tGeo = new THREE.PlaneGeometry(3.5, 3.5, 20, 20);
+    tGeo.rotateX(-Math.PI / 2);
+    const tp = tGeo.attributes.position;
+    for (let i = 0; i < tp.count; i++)
       tp.setY(i, Math.sin(tp.getX(i) * 2) * Math.cos(tp.getZ(i) * 2) * 0.4 - 1.5);
-    }
-    terrainGeo.computeVertexNormals();
-    node3Group.add(new THREE.LineSegments(
-      new THREE.WireframeGeometry(terrainGeo),
-      new THREE.LineBasicMaterial({ color: PALETTE.bioGrid, ...BASE_MAT, opacity: 0.3 })
+    tGeo.computeVertexNormals();
+    n3.add(new THREE.LineSegments(
+      new THREE.WireframeGeometry(tGeo),
+      new THREE.LineBasicMaterial({ color: PALETTE.bioGrid, ...BASE, opacity: 0.3 })
     ));
 
-    const particleCount = 400;
+    const PC = 400;
     const pGeo = new THREE.BufferGeometry();
-    const pPos = new Float32Array(particleCount * 3);
-    const pData = [];
-    for (let i = 0; i < particleCount; i++) {
+    const pPos = new Float32Array(PC * 3);
+    const pD = [];
+    for (let i = 0; i < PC; i++) {
       pPos[i*3] = (Math.random()-0.5)*3;
       pPos[i*3+1] = (Math.random()-0.5)*2;
       pPos[i*3+2] = (Math.random()-0.5)*3;
-      pData.push({ spd: 0.01+Math.random()*0.02, px: Math.random()*Math.PI*2, py: Math.random()*Math.PI*2, pz: Math.random()*Math.PI*2, r: 0.5+Math.random()*1.5 });
+      pD.push({ s: 0.01+Math.random()*0.02, px: Math.random()*Math.PI*2, py: Math.random()*Math.PI*2, pz: Math.random()*Math.PI*2, r: 0.5+Math.random()*1.5 });
     }
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-    const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: PALETTE.bioEntity, size: 0.08, ...BASE_MAT }));
-    node3Group.add(particles);
+    n3.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: PALETTE.bioEntity, size: 0.08, ...BASE })));
 
-    // ── HUD: Corner brackets ──────────────────────────
-    const gw = window.innerWidth, gh = window.innerHeight;
+    // ── HUD: Corner brackets ─────────────────────
+    const GW = window.innerWidth, GH = window.innerHeight;
 
-    function createHUDBracket(x, y, rotZ) {
-      const s = 30;
-      const pts = [new THREE.Vector3(s,0,0), new THREE.Vector3(0,0,0), new THREE.Vector3(0,s,0)];
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(pts),
+    function bracket(x, y, rz) {
+      const s = 28;
+      const l = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(s,0,0), new THREE.Vector3(0,0,0), new THREE.Vector3(0,s,0)
+        ]),
         new THREE.LineBasicMaterial({ color: PALETTE.hudText })
       );
-      line.position.set(x, y, 0);
-      line.rotation.z = rotZ;
-      return line;
+      l.position.set(x, y, 0); l.rotation.z = rz;
+      return l;
     }
+    hudScene.add(bracket(-GW/2+40,  GH/2-40, -Math.PI/2));
+    hudScene.add(bracket( GW/2-40,  GH/2-40,  Math.PI));
+    hudScene.add(bracket(-GW/2+40, -GH/2+40, 0));
+    hudScene.add(bracket( GW/2-40, -GH/2+40, Math.PI/2));
 
-    const pad = 40;
-    hudScene.add(createHUDBracket(-gw/2+pad, gh/2-pad, -Math.PI/2));
-    hudScene.add(createHUDBracket( gw/2-pad, gh/2-pad,  Math.PI));
-    hudScene.add(createHUDBracket(-gw/2+pad, -gh/2+pad, 0));
-    hudScene.add(createHUDBracket( gw/2-pad, -gh/2+pad, Math.PI/2));
-
-    // Crosshair helper
-    function createCross(x, y) {
+    function crosshair(x, y) {
       const s = 5;
-      const pts = [
-        new THREE.Vector3(-s,0,0), new THREE.Vector3(s,0,0),
-        new THREE.Vector3(0,-s,0), new THREE.Vector3(0,s,0)
-      ];
       const l = new THREE.LineSegments(
-        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-s,0,0), new THREE.Vector3(s,0,0),
+          new THREE.Vector3(0,-s,0), new THREE.Vector3(0,s,0)
+        ]),
         new THREE.LineBasicMaterial({ color: PALETTE.hudText })
       );
       l.position.set(x, y, 0);
       return l;
     }
+    hudScene.add(crosshair(-GW/4,  GH/3));
+    hudScene.add(crosshair( GW/4,  GH/3));
+    hudScene.add(crosshair(-GW/4, -GH/3));
+    hudScene.add(crosshair( GW/4, -GH/3));
 
-    hudScene.add(createCross(-gw/4, gh/3));
-    hudScene.add(createCross( gw/4, gh/3));
-    hudScene.add(createCross(-gw/4, -gh/3));
-    hudScene.add(createCross( gw/4, -gh/3));
-
-    // ── HUD: Connecting lines to 3D nodes ─────────────
-    const targets = [
-      { node: node1Group, xOffset: -gw/3+20, yOffset: gh/2-90 },
-      { node: node2Group, xOffset: 0,         yOffset: -gh/2+80 },
-      { node: node3Group, xOffset:  gw/3-20,  yOffset: gh/2-90 }
-    ];
-
-    const targetLines = targets.map(t => {
-      // Small dot at label anchor
+    // ── HUD: Tracking lines to nodes ─────────────
+    const trackers = [
+      { node: n1, ax: -GW/3+20, ay: GH/2-80 },
+      { node: n2, ax: 0,        ay: -GH/2+70 },
+      { node: n3, ax:  GW/3-20, ay: GH/2-80 }
+    ].map(t => {
       const dot = new THREE.Mesh(
         new THREE.CircleGeometry(3, 8),
         new THREE.MeshBasicMaterial({ color: PALETTE.hudText, side: THREE.DoubleSide })
       );
-      dot.position.set(t.xOffset, t.yOffset - 14, 0);
+      dot.position.set(t.ax, t.ay, 0);
       hudScene.add(dot);
 
-      const lineGeo = new THREE.BufferGeometry();
-      const positions = new Float32Array(6);
-      lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
-        color: PALETTE.hudText, transparent: true, opacity: 0.3
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+        color: PALETTE.hudText, transparent: true, opacity: 0.28
       }));
       hudScene.add(line);
 
-      const cross = createCross(0, 0);
-      hudScene.add(cross);
-
-      return { node: t.node, line, startX: t.xOffset, startY: t.yOffset - 14, cross };
+      const c = crosshair(0, 0);
+      hudScene.add(c);
+      return { node: t.node, line, ax: t.ax, ay: t.ay, cross: c };
     });
 
-    // ── Resize ────────────────────────────────────────
+    // ── Resize ────────────────────────────────────
     window.addEventListener('resize', () => {
       const w = window.innerWidth, h = window.innerHeight;
       camera.aspect = w / h;
@@ -601,45 +584,42 @@
       composer.setSize(w, h);
     });
 
-    // ── Animate ───────────────────────────────────────
+    // ── Animate ───────────────────────────────────
     const clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
       controls.update();
 
-      pressureUniforms.uTime.value = t * 2.0;
-
-      core.rotation.y = t * 0.5;
-      core.rotation.x = t * 0.3;
+      uTime.value = t * 2.0;
+      core.rotation.y = t * 0.5; core.rotation.x = t * 0.3;
       innerCore.rotation.y = -t * 0.8;
       rings.forEach(r => { r.mesh.rotation.x += r.sx; r.mesh.rotation.y += r.sy; });
 
       const pp = pGeo.attributes.position.array;
-      for (let i = 0; i < particleCount; i++) {
-        const d = pData[i];
-        pp[i*3]   = Math.sin(t * d.spd + d.px) * d.r;
-        pp[i*3+1] = Math.cos(t * d.spd * 1.5 + d.py) * (d.r * 0.5) - 0.5;
-        pp[i*3+2] = Math.sin(t * d.spd * 0.8 + d.pz) * d.r;
+      for (let i = 0; i < PC; i++) {
+        const d = pD[i];
+        pp[i*3]   = Math.sin(t*d.s+d.px)*d.r;
+        pp[i*3+1] = Math.cos(t*d.s*1.5+d.py)*(d.r*0.5)-0.5;
+        pp[i*3+2] = Math.sin(t*d.s*0.8+d.pz)*d.r;
       }
       pGeo.attributes.position.needsUpdate = true;
 
-      node1Group.rotation.y = Math.PI/6 + Math.sin(t * 0.2) * 0.05;
-      node3Group.rotation.y = -Math.PI/6 + Math.sin(t * 0.2) * 0.05;
+      n1.rotation.y =  Math.PI/6 + Math.sin(t*0.2)*0.05;
+      n3.rotation.y = -Math.PI/6 + Math.sin(t*0.2)*0.05;
 
-      // Update connecting lines
       const v = new THREE.Vector3();
-      targetLines.forEach(tl => {
-        tl.node.getWorldPosition(v);
+      trackers.forEach(tr => {
+        tr.node.getWorldPosition(v);
         v.project(camera);
         const sx = v.x * window.innerWidth / 2;
         const sy = v.y * window.innerHeight / 2;
-        const pa = tl.line.geometry.attributes.position;
-        pa.setXYZ(0, tl.startX, tl.startY, 0);
+        const pa = tr.line.geometry.attributes.position;
+        pa.setXYZ(0, tr.ax, tr.ay, 0);
         pa.setXYZ(1, sx, sy, 0);
         pa.needsUpdate = true;
-        tl.cross.position.set(sx, sy, 0);
-        tl.cross.rotation.z = t * 0.8;
+        tr.cross.position.set(sx, sy, 0);
+        tr.cross.rotation.z = t * 0.8;
       });
 
       renderer.clear();
@@ -649,5 +629,14 @@
     }
     animate();
   </script>
+
+  <!-- 主题引擎 -->
+  <script type="module">
+    import { initTheme } from './src/theme-engine.js';
+    initTheme();
+  </script>
+
+  <!-- page-agent AI 助手 -->
+  <script type="module" src="./src/page-agent-init.js"></script>
 </body>
 </html>

@@ -3,742 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/auth-gate.js"></script>
   <title>INDEED - 游戏库</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', 'Noto Sans SC', sans-serif;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #16213e 100%);
-      color: #fff;
-      overflow-x: hidden;
-    }
-
-    /* 背景动画 */
-    .bg-effect {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-
-    .bg-effect::before {
-      content: '';
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      top: -50%;
-      left: -50%;
-      background: radial-gradient(circle at 20% 80%, rgba(123, 47, 247, 0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.1) 0%, transparent 30%);
-      animation: bgMove 20s ease-in-out infinite;
-    }
-
-    @keyframes bgMove {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      50% { transform: translate(-5%, -5%) rotate(5deg); }
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    /* 头部 */
-    .header {
-      text-align: center;
-      padding: 2rem 0 3rem;
-    }
-
-    .logo {
-      font-size: clamp(2.5rem, 8vw, 4rem);
-      font-weight: 900;
-      letter-spacing: 0.15em;
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e, #00d4ff);
-      background-size: 300% 100%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: logoShine 3s ease-in-out infinite;
-      margin-bottom: 0.5rem;
-    }
-
-    @keyframes logoShine {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    @keyframes fadeOut {
-      from { opacity: 1; transform: translateX(-50%) translateY(0); }
-      to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-    }
-
-    .slogan {
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 0.3em;
-    }
-
-    /* Tab导航 */
-    .nav-tabs {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .nav-tab {
-      padding: 0.8rem 2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.6);
-      border-radius: 50px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .nav-tab:hover {
-      background: rgba(255,255,255,0.1);
-      transform: translateY(-2px);
-    }
-
-    .nav-tab.active {
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.3);
-    }
-
-    .nav-tab .icon {
-      font-size: 1.2rem;
-    }
-
-    /* 内容区 */
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.4s ease;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 新闻子Tab */
-    .sub-tabs {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      padding: 0.3rem;
-      background: rgba(255,255,255,0.05);
-      border-radius: 50px;
-      width: fit-content;
-    }
-
-    .sub-tab {
-      padding: 0.5rem 1.2rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.6);
-      border-radius: 50px;
-      transition: all 0.3s;
-    }
-
-    .sub-tab.active {
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-    }
-
-    .btn-ai-summary {
-      padding: 0.5rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      background: linear-gradient(135deg, rgba(123,47,247,0.3), rgba(0,212,255,0.3));
-      color: #fff;
-      border-radius: 50px;
-      transition: all 0.3s;
-      border: 1px solid rgba(123,47,247,0.5);
-    }
-
-    .btn-ai-summary:hover {
-      background: linear-gradient(135deg, rgba(123,47,247,0.5), rgba(0,212,255,0.5));
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(123,47,247,0.3);
-    }
-
-    /* Steam 每日推荐区域 */
-    .steam-recommendations {
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(123,47,247,0.1) 100%);
-      border-radius: 20px;
-      border: 1px solid rgba(0,212,255,0.2);
-    }
-
-    .steam-rec-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .steam-rec-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .steam-rec-date {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.5);
-    }
-
-    .steam-rec-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .steam-rec-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255,255,255,0.05);
-      position: relative;
-    }
-
-    .steam-rec-card:hover {
-      transform: translateY(-5px);
-      background: rgba(255,255,255,0.1);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      border-color: rgba(0,212,255,0.3);
-    }
-
-    .steam-rec-image {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
-    }
-
-    .steam-rec-info {
-      padding: 0.8rem;
-    }
-
-    .steam-rec-name {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 0.3rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .steam-rec-price {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-    }
-
-    .steam-rec-discount {
-      background: #4c6b22;
-      color: #beee11;
-      padding: 0.1rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .steam-rec-original {
-      text-decoration: line-through;
-      color: rgba(255,255,255,0.4);
-      font-size: 0.75rem;
-    }
-
-    .steam-rec-current {
-      color: #beee11;
-      font-weight: 600;
-    }
-
-    .steam-rec-new {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: linear-gradient(135deg, #ff006e, #ff4d6d);
-      color: #fff;
-      padding: 0.2rem 0.5rem;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
-
-    /* 游戏网格 */
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .game-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .game-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      background: rgba(255,255,255,0.1);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-      border-color: rgba(0,212,255,0.3);
-    }
-
-    .game-cover {
-      width: 100%;
-      height: 140px;
-      background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
-      background-size: cover;
-      background-position: center center;
-      background-repeat: no-repeat;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .game-cover.has-image {
-      background: none;
-    }
-
-    .cover-placeholder {
-      font-size: 3rem;
-      opacity: 0.5;
-    }
-
-    .steam-btn {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .steam-btn:hover {
-      background: #171a21;
-      transform: scale(1.1);
-    }
-
-    .steam-btn.success {
-      background: #4caf50;
-    }
-
-    .steam-card-link {
-      position: absolute;
-      bottom: 7px;
-      right: 7px;
-      background: rgba(23, 26, 33, 0.82);
-      border: 1px solid rgba(102, 192, 244, 0.45);
-      border-radius: 6px;
-      color: #66c0f4;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      padding: 2px 7px;
-      text-decoration: none;
-      line-height: 1.5;
-      backdrop-filter: blur(4px);
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-      z-index: 2;
-    }
-    .steam-card-link:hover {
-      background: rgba(23, 26, 33, 0.97);
-      border-color: #66c0f4;
-      color: #fff;
-    }
-
-    .status-badge {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 1.2rem;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .rating-badge {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      padding: 0.2rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
-
-    .game-info {
-      padding: 1rem;
-    }
-
-    .game-name {
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 0.3rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .game-meta {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    /* 新闻列表 */
-    .news-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .news-item {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 1.25rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      border: 1px solid transparent;
-    }
-
-    .news-item:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.1);
-      transform: translateX(4px);
-    }
-
-    .news-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .news-source {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      text-transform: uppercase;
-    }
-
-    .news-source.tieba { background: #00aaff; color: #fff; }
-    .news-source.douyin { background: #000; color: #fff; }
-    .news-source.weibo { background: #ff0000; color: #fff; }
-    .news-source.bilibili { background: #00aaff; color: #fff; }
-    .news-source.iran { background: #ff6b6b; color: #fff; }
-
-    .news-time {
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    .news-title {
-      font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.4;
-    }
-
-    .news-summary {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.5);
-      margin-top: 0.5rem;
-      line-height: 1.5;
-    }
-
-    /* 空状态 */
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    .empty-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    .empty-text {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .empty-hint {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.3);
-    }
-
-    /* 添加游戏按钮 */
-    .add-game-btn {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-      font-size: 1.8rem;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.4);
-      transition: all 0.3s;
-      z-index: 100;
-    }
-
-    .add-game-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 30px rgba(0,212,255,0.5);
-    }
-
-    /* 弹窗 */
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      backdrop-filter: blur(5px);
-    }
-
-    .modal.show { display: flex; }
-
-    .modal-content {
-      background: #1a1a3e;
-      border-radius: 20px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 400px;
-      max-height: 85vh;
-      overflow-y: auto;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .modal-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.6);
-      margin-bottom: 0.4rem;
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #00d4ff;
-    }
-
-    /* 修复 select 下拉选项样式 - 深色背景白色文字 */
-    .form-group select {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      font-size: 0.95rem;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      padding-right: 2.5rem;
-      cursor: pointer;
-    }
-
-    .form-group select option {
-      background: #1a1a3e;
-      color: #fff;
-      padding: 0.5rem;
-    }
-
-    /* 针对 Webkit 浏览器的额外修复 */
-    @media screen and (-webkit-min-device-pixel-ratio: 0) {
-      .form-group select option {
-        background: #1a1a3e;
-        color: #fff;
-      }
-    }
-
-    /* Firefox */
-    @-moz-document url-prefix() {
-      .form-group select option {
-        background: #1a1a3e;
-        color: #fff;
-      }
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 0.8rem;
-      margin-top: 1.5rem;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 0.8rem;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-
-    .btn-danger {
-      background: #ff4757;
-      color: #fff;
-    }
-
-    .btn-steam {
-      background: linear-gradient(135deg, #1b2838, #2a475e);
-      color: #fff;
-      border: 1px solid #66c0f4;
-    }
-
-    .btn-steam:hover {
-      background: linear-gradient(135deg, #2a475e, #66c0f4);
-    }
-
-    .btn:active { transform: scale(0.95); }
-
-    /* 加载动画 */
-    .loading {
-      display: flex;
-      justify-content: center;
-      padding: 3rem;
-    }
-
-    .loading::after {
-      content: '';
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: #00d4ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    /* AI 加载转圈圈 */
-    .ai-loading {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #00d4ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* 在线游戏卡片悬停效果 */
-    .online-game-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(0,255,136,0.3);
-      border-color: rgba(0,255,136,0.6) !important;
-    }
-
-    /* 移动端适配 */
-    @media (max-width: 600px) {
-      .container { padding: 1rem; }
-      .nav-tab { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
-      .games-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-      .game-cover { height: 100px; }
-    }
-  </style>
+  <!-- 2026-03-20: Nexus 主题字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Outfit:wght@300;500;800;900&display=swap" rel="stylesheet">
+  <!-- 2026-03-20: Joypad 主题字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:ital,wght@0,700;0,900;1,900&display=swap" rel="stylesheet">
+  <!-- 2026-03-19: 共享样式 -->
+  <link rel="stylesheet" href="./src/shared.css">
+  <!-- 2026-03-20: 主题样式 -->
+  <link rel="stylesheet" href="./src/themes/classic.css">
+  <link rel="stylesheet" href="./src/themes/nexus.css">
+  <link rel="stylesheet" href="./src/themes/joypad.css">
 </head>
-<body>
+<body data-theme="nexus">
+  <!-- 2026-03-20: Three.js WebGL 背景 (nexus 主题) -->
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- 2026-03-20: 装饰水印 (nexus 主题) -->
+  <div class="bg-watermark">INDEED<br>SYSTEM</div>
+
+  <!-- 2026-03-20: 装饰 SVG 叶片 (nexus 主题) -->
+  <svg class="deco-leaf leaf-1" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="grad-mc" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff00a0"/><stop offset="50%" stop-color="#7a00ff"/><stop offset="100%" stop-color="#00d2ff"/></linearGradient></defs>
+    <path d="M250 480 C 150 450, 50 350, 60 200 C 70 50, 200 20, 350 80 C 450 120, 480 250, 450 350 C 420 450, 300 480, 250 480 Z" fill="url(#grad-mc)" opacity="0.7"/>
+    <path d="M60 200 Q 150 250 250 250 Q 200 150 150 100 Q 100 150 60 200 Z" fill="#030303"/>
+    <path d="M450 350 Q 350 300 250 250 Q 350 200 400 150 Q 450 250 450 350 Z" fill="#030303"/>
+  </svg>
+  <svg class="deco-leaf leaf-2" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="grad-gy" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00d053"/><stop offset="100%" stop-color="#ffee00"/></linearGradient></defs>
+    <path d="M250 480 C 150 450, 50 350, 60 200 C 70 50, 200 20, 350 80 C 450 120, 480 250, 450 350 C 420 450, 300 480, 250 480 Z" fill="url(#grad-gy)" opacity="0.5"/>
+    <path d="M60 200 Q 150 250 250 250 Q 200 150 150 100 Q 100 150 60 200 Z" fill="#030303"/>
+  </svg>
+
+  <!-- 2026-03-20: Joypad 主题装饰 -->
+  <div class="joypad-sunburst"></div>
+  <div class="joypad-sunburst-overlay"></div>
+  <div class="joypad-star js1"></div>
+  <div class="joypad-star js2"></div>
+  <div class="joypad-star js3"></div>
+  <div class="joypad-confetti jc1"></div>
+  <div class="joypad-confetti jc2"></div>
+
+  <!-- Classic 主题背景 -->
   <div class="bg-effect"></div>
+
+  <!-- 2026-03-20: 主题切换浮动按钮移入 fab-stack-right 统一管理 -->
 
   <!-- 添加游戏弹窗 -->
   <div id="add-modal" class="modal">
@@ -894,52 +207,117 @@
     </div>
   </div>
 
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">INDEED</h1>
-      <p class="slogan">发现 · 评分 · 推荐</p>
-    </header>
+  <!-- 2026-03-20: 侧边栏 + 主内容 Grid 布局 -->
+  <div class="app-container">
+    <!-- 侧边栏 (nexus 主题) -->
+    <nav class="sidebar">
+      <div class="logo">INDEED<span class="logo-sub">SYSTEMS</span></div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-tab="game">游戏库</li>
+        <li class="nav-item" data-tab="news">新闻</li>
+      </ul>
+      <div class="theme-switcher">
+        <div class="theme-switcher-title">主题切换</div>
+        <div class="theme-switcher-options">
+          <button class="theme-option active" data-theme="nexus">Nexus</button>
+          <button class="theme-option" data-theme="classic">Classic</button>
+          <button class="theme-option" data-theme="joypad">Joypad</button>
+        </div>
+      </div>
+      <div class="mini-games-widget">
+        <a href="./games.html" style="text-decoration:none;color:inherit;">
+          <div class="widget-card">
+            <div class="widget-title">ARCADE LINK</div>
+            <div class="widget-desc">在线小游戏大厅 — 骰子 · 贪吃蛇 · UNO · 台球</div>
+          </div>
+        </a>
+      </div>
+    </nav>
 
-    <!-- 主导航 -->
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-tab="game">
-        <span class="icon">🎮</span> 游戏库
-      </button>
-      <button class="nav-tab" data-tab="news">
-        <span class="icon">📰</span> 新闻
-      </button>
-    </div>
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- Classic 主题头部 (居中布局) -->
+      <div class="classic-header">
+        <h1 class="logo">INDEED</h1>
+        <p class="slogan">发现 · 评分 · 推荐</p>
+        <div class="nav-tabs" style="margin-top:2rem;">
+          <button class="nav-tab active" data-tab="game">
+            <span class="icon">🎮</span> 游戏库
+          </button>
+          <button class="nav-tab" data-tab="news">
+            <span class="icon">📰</span> 新闻
+          </button>
+        </div>
+      </div>
 
-    <!-- 游戏内容 -->
-    <div id="tab-game" class="tab-content active">
+      <!-- Nexus 主题统计面板 -->
+      <header class="page-header">
+        <h1 class="page-title" data-text="BACKLOG">BACKLOG</h1>
+        <div class="stats-cluster">
+          <div class="stat-box">
+            <div class="stat-val" id="stat-pending">--</div>
+            <div class="stat-label">待玩</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" id="stat-cleared">--</div>
+            <div class="stat-label">已完</div>
+          </div>
+          <div class="stat-box" style="border-color:var(--green,#00ff55);">
+            <div class="stat-val green" id="stat-active">--</div>
+            <div class="stat-label">游玩中</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 游戏内容 -->
+      <div id="tab-game" class="tab-content active">
       <!-- 在线游戏入口 -->
-      <div class="online-games-section" style="margin-bottom: 2rem;">
-        <div style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.8);">🎮 在线游戏</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-          <a href="./games/snake/client/index.html" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(0,255,136,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">🐍</div>
+      <!-- 2026-03-20: 重构在线游戏卡片，移除内联样式，支持主题切换 -->
+      <div class="online-games-section">
+        <div class="online-games-title">🎮 在线游戏</div>
+        <div class="online-games-grid">
+          <a href="./games/snake/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="green">
+              <div class="game-card-icon">🐍</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">多人贪吃蛇</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">实时多人 • 吃豆变长 • 积分榜</div>
+                <div class="game-card-name">多人贪吃蛇</div>
+                <div class="game-card-desc">实时多人 · 吃豆变长 · 积分榜</div>
               </div>
             </div>
           </a>
-          <a href="./games/minesweeper/client/" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,215,0,0.2)); border: 1px solid rgba(255,107,107,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">💣</div>
+          <a href="./games/minesweeper/client/" class="online-game-link">
+            <div class="online-game-card" data-accent="red">
+              <div class="game-card-icon">💣</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">扫雷</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">经典怀旧 • 排雷专家</div>
+                <div class="game-card-name">扫雷</div>
+                <div class="game-card-desc">经典怀旧 · 排雷专家</div>
               </div>
             </div>
           </a>
-          <a href="./games/uno/client/index.html" style="text-decoration: none;">
-            <div class="online-game-card" style="background: linear-gradient(135deg, rgba(229,57,53,0.2), rgba(255,112,67,0.2)); border: 1px solid rgba(229,57,53,0.3); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 1rem;">
-              <div style="font-size: 2.5rem;">🃏</div>
+          <a href="./games/uno/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="orange">
+              <div class="game-card-icon">🃏</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem;">UNO 对战</div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">多人实时 • 喊UNO • 2~10人</div>
+                <div class="game-card-name">UNO 对战</div>
+                <div class="game-card-desc">多人实时 · 喊UNO · 2~10人</div>
+              </div>
+            </div>
+          </a>
+          <a href="./games/dice/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="gold">
+              <div class="game-card-icon">🎲</div>
+              <div>
+                <div class="game-card-name">吹牛骰</div>
+                <div class="game-card-desc">酒馆骰子 · 2~8人 · 真话与谎言</div>
+              </div>
+            </div>
+          </a>
+          <a href="./games/billiards/client/index.html" class="online-game-link">
+            <div class="online-game-card" data-accent="yellow">
+              <div class="game-card-icon">🎱</div>
+              <div>
+                <div class="game-card-name">多人台球</div>
+                <div class="game-card-desc">八球制 · 2/3/4人分区 · 房间系统</div>
               </div>
             </div>
           </a>
@@ -957,11 +335,23 @@
         </div>
       </div>
       
+      <!-- Nexus 分区标题 -->
+      <h3 class="section-title-nexus">GAME LIBRARY</h3>
+
       <div id="games-list" class="games-grid">
         <div class="loading"></div>
       </div>
       <button class="add-game-btn" onclick="openAddModal()">+</button>
+      <!-- 2026-03-19: AI 助手测试入口（左下角小按钮） -->
+      <a href="./ai-test.html" class="ai-fab" title="AI 助手测试台">🤖</a>
     </div>
+
+  <!-- 2026-03-20: 右侧 FAB 列表容器，所有右侧浮动按钮统一在此 -->
+  <div class="fab-stack-right">
+    <button class="theme-fab" onclick="(function(){var ts=['nexus','classic','joypad'],c=document.body.getAttribute('data-theme'),i=(ts.indexOf(c)+1)%ts.length;switchTheme(ts[i]);})()" title="切换主题">🎨</button>
+    <a href="http://150.158.110.168:19000/" target="_blank" rel="noopener noreferrer" class="office-fab" title="进入 Star Office">🏢</a>
+    <button class="add-game-btn" onclick="openAddModal()">+</button>
+  </div>
 
     <!-- 新闻内容 -->
     <div id="tab-news" class="tab-content">
@@ -985,46 +375,44 @@
         </div>
       </div>
     </div>
+    </main>
   </div>
 
   <script>
     const API_BASE = 'http://150.158.110.168:5001';
 
     // ============ 图片上传处理 ============
-    async function handleImageUpload(input) {
+    // 2026-03-19: 原先有两个几乎一样的函数，合并为通用版本
+    function uploadImage(input, previewId, urlInputId) {
       const file = input.files[0];
       if (!file) return;
-
-      const preview = document.getElementById('image-preview');
-      const urlInput = document.getElementById('game-image-url');
-
-      // 读取文件并转换为base64
+      const preview = document.getElementById(previewId);
+      const urlInput = document.getElementById(urlInputId);
       const reader = new FileReader();
       reader.onload = function(e) {
-        const b64 = e.target.result;
-        urlInput.value = b64;
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+        // 2026-03-20: 压缩图片再存入，避免 base64 超出数据库字段限制
+        const img = new Image();
+        img.onload = function() {
+          const MAX = 600;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const b64 = canvas.toDataURL('image/jpeg', 0.82);
+          urlInput.value = b64;
+          preview.style.display = 'block';
+          preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
-
-    async function handleDetailImageUpload(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      const preview = document.getElementById('detail-image-preview');
-      const urlInput = document.getElementById('detail-image');
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const b64 = e.target.result;
-        urlInput.value = b64;
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + b64 + '" style="width:100%;height:150px;object-fit:cover;">';
-      };
-      reader.readAsDataURL(file);
-    }
+    function handleImageUpload(input) { uploadImage(input, 'image-preview', 'game-image-url'); }
+    function handleDetailImageUpload(input) { uploadImage(input, 'detail-image-preview', 'detail-image'); }
 
     // 显示临时提示（3秒后自动消失）
     function showTip(message, type = 'info') {
@@ -1065,7 +453,15 @@
       try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
     }
     function lsSet(key, val) {
-      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+      try {
+        const str = JSON.stringify(val);
+        // 2026-03-19: 防止缓存累积过大（>500KB 时清除该 key 重新写入）
+        if (str.length > 512000) {
+          localStorage.removeItem(key);
+          return;
+        }
+        localStorage.setItem(key, str);
+      } catch(e) { console.warn('localStorage写入失败:', e); }
     }
 
     // 内存缓存（同一页面内不重复请求）
@@ -1225,28 +621,20 @@
     }
 
     // ============ Steam 搜图（自动下载转base64） ============
-    async function searchSteamForGame() {
-      const gameName = document.getElementById('game-name').value.trim();
-      const urlInput = document.getElementById('game-image-url');
-      const preview = document.getElementById('image-preview');
-
-      if (!gameName) {
-        showTip('请先输入游戏名称', 'error');
-        return;
-      }
-
+    // 2026-03-19: 原先有两个几乎一样的函数，合并为通用版本
+    async function searchSteamImage(gameName, urlInputId, previewId) {
+      if (!gameName) { showTip('请先输入游戏名称', 'error'); return; }
       const btn = event.target;
       const originalText = btn.textContent;
       btn.textContent = '⏳ 搜索中...';
       btn.disabled = true;
-
       try {
-        // 使用新的自动搜索接口，直接返回base64图片
         const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(gameName));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-
         if (data.success && data.image) {
-          urlInput.value = data.image;
+          document.getElementById(urlInputId).value = data.image;
+          const preview = document.getElementById(previewId);
           preview.style.display = 'block';
           preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
           btn.textContent = '✓ 已获取';
@@ -1257,54 +645,43 @@
           setTimeout(() => { btn.textContent = originalText; }, 2000);
         }
       } catch(e) {
+        console.error('Steam搜图失败:', e);
         showTip('搜索失败，请手动上传图片', 'error');
         btn.textContent = originalText;
       } finally {
         btn.disabled = false;
       }
     }
-
-    // 详情页Steam搜图
-    async function searchSteamForDetail() {
+    function searchSteamForGame() {
+      searchSteamImage(document.getElementById('game-name').value.trim(), 'game-image-url', 'image-preview');
+    }
+    function searchSteamForDetail() {
       if (!currentGame) return;
-      
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = '⏳ 搜索中...';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch(API_BASE + '/api/search-steam-auto?q=' + encodeURIComponent(currentGame.name));
-        const data = await res.json();
-
-        if (data.success && data.image) {
-          document.getElementById('detail-image').value = data.image;
-          const preview = document.getElementById('detail-image-preview');
-          preview.style.display = 'block';
-          preview.innerHTML = '<img src="' + data.image + '" style="width:100%;height:150px;object-fit:cover;">';
-          btn.textContent = '✓ 已获取';
-          btn.style.background = 'linear-gradient(135deg, #00d4ff, #7b2ff7)';
-        } else {
-          showTip(data.error || '未找到游戏图片', 'error');
-          btn.textContent = '✗ 未找到';
-          setTimeout(() => { btn.textContent = originalText; }, 2000);
-        }
-      } catch(e) {
-        showTip('搜索失败', 'error');
-        btn.textContent = originalText;
-      } finally {
-        btn.disabled = false;
-      }
+      searchSteamImage(currentGame.name, 'detail-image', 'detail-image-preview');
     }
 
-    // Tab切换
+    // Tab切换 + 懒加载
+    // 2026-03-19: 新闻数据延迟到用户首次点击 news tab 时加载
+    // 2026-03-20: 同时绑定侧边栏 nav-item 和经典模式 nav-tab
+    const _tabLoaded = {};
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll(`.nav-tab[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+      document.querySelectorAll(`.nav-item[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+      document.getElementById('tab-' + tabName).classList.add('active');
+      if (tabName === 'news' && !_tabLoaded.news) {
+        _tabLoaded.news = true;
+        loadHot();
+        loadIran();
+      }
+    }
     document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
-      });
+      tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
+    });
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() { switchTab(this.dataset.tab); });
     });
 
     // 新闻子Tab
@@ -1317,6 +694,20 @@
       });
     });
 
+    // 2026-03-20: 更新 Nexus 统计面板
+    function updateStatsPanel(games) {
+      const pending = document.getElementById('stat-pending');
+      const cleared = document.getElementById('stat-cleared');
+      const active = document.getElementById('stat-active');
+      if (!pending) return;
+      const todoCount = games.filter(g => g.status === 'todo' || !g.status).length;
+      const completedCount = games.filter(g => g.status === 'completed').length;
+      const playingCount = games.filter(g => g.status === 'playing').length;
+      pending.textContent = todoCount;
+      cleared.textContent = completedCount;
+      active.textContent = playingCount;
+    }
+
     // 加载游戏
     async function loadGames() {
       const list = document.getElementById('games-list');
@@ -1327,13 +718,13 @@
         try {
           const res = await fetch(API_BASE + '/api/games');
           if (res.ok) games = await res.json();
-        } catch(e) { console.log('API fail'); }
+        } catch(e) { console.warn('游戏列表API加载失败:', e); }
 
         if (games.length === 0) {
           try {
             const res = await fetch('/data/games.json');
-            games = await res.json();
-          } catch {}
+            if (res.ok) games = await res.json();
+          } catch(e) { console.warn('fallback games.json加载失败:', e); }
         }
 
         if (games.length === 0) {
@@ -1345,6 +736,9 @@
             </div>`;
           return;
         }
+
+        // 2026-03-20: 更新统计面板
+        updateStatsPanel(games);
 
         // 排序：优先级（越小越前）+ 字母顺序
         games.sort((a, b) => {
@@ -1358,49 +752,64 @@
         // Steam 评分会异步加载并更新
         const gamesWithRatings = games.map(g => ({ ...g, steamRating: null }));
 
-        list.innerHTML = gamesWithRatings.slice(0, 12).map((g, i) => {
-          // 根据游戏名生成唯一渐变色
+        // 2026-03-20: 检测当前主题
+        const isNexus = document.body.getAttribute('data-theme') === 'nexus';
+
+        list.innerHTML = gamesWithRatings.map((g, i) => {
           const hash = g.name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
           const hue1 = hash % 360;
           const hue2 = (hash * 2) % 360;
           const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%) 0%, hsl(${hue2}, 60%, 40%) 100%)`;
 
-          const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
-          const statusIcon = statusMap[g.status] || '📋 待玩';
-
-          // Steam 好评率显示
-          let ratingDisplay = '';
-          let ratingBadge = '';
-          
-          const ratingData = g.steamRating;
-          if (ratingData && ratingData.success && ratingData.rating_percent !== undefined) {
-            const percent = ratingData.rating_percent;
-            const total = ratingData.total_reviews || 0;
-            const desc = ratingData.review_score_desc || '';
-            
-            // 卡片右下角显示好评率
-            ratingDisplay = `${percent}% 好评`;
-            ratingBadge = `<span class="rating-badge" style="background: ${percent >= 70 ? 'linear-gradient(135deg, #4caf50, #8bc34a)' : (percent >= 40 ? 'linear-gradient(135deg, #ff9800, #ffc107)' : 'linear-gradient(135deg, #f44336, #ff5722)')}">${percent}%</span>`;
-          } else {
-            // 没有 Steam 评价时显示暂无
-            ratingDisplay = '<span style="color:rgba(255,255,255,0.4);font-size:0.75rem;">暂无评价</span>';
-          }
-
-          // 显示推荐人（如果有）和好评率（同行，推荐人左对齐，好评率右对齐）
+          const status = g.status || 'todo';
           const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
-          
-          // 好评率显示（放在推荐人右边）- 初始显示加载动画
-          let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
-          
           const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
           const steamCardBtn = knownAppid
             ? `<a class="steam-card-link" href="https://store.steampowered.com/app/${knownAppid}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Steam</a>`
             : `<a class="steam-card-link" style="display:none" data-pending-steam></a>`;
 
+          if (isNexus) {
+            const statusLabels = {todo: 'Queued', playing: 'Active', completed: 'Cleared'};
+            const statusLabel = statusLabels[status] || 'Queued';
+            const coverStyle = g.image
+              ? `background-image:url(${g.image});background-size:cover;background-position:center;`
+              : `background:${gradient};`;
+            return `
+            <div class="game-card status-${status}" style="animation-delay:${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
+              <div class="card-hover-border"></div>
+              <div class="game-cover" style="${coverStyle}">
+                <span class="status-badge ${status}">${statusLabel}</span>
+                ${steamCardBtn}
+              </div>
+              <div class="game-info">
+                <div class="game-name">${g.name}</div>
+                <div class="game-meta">
+                  <span>${recommenderText}</span>
+                  <span class="steam-rating-tag" style="font-size:0.8rem;">...</span>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-header">
+                    <span>Rating</span>
+                    <span class="steam-rating-pct">--</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill ${status}" style="width:0%;transition:width 0.6s ease;"></div>
+                  </div>
+                </div>
+                <div class="game-price-row" style="font-size:0.72rem;margin-top:0.3rem;min-height:1rem;color:rgba(255,255,255,0.4);"></div>
+              </div>
+            </div>`;
+          }
+
+          // Classic 主题卡片
+          const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
+          const statusIcon = statusMap[status] || '📋 待玩';
+          let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
+
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
             <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover; background-position: center center; background-repeat: no-repeat;">
-              <span class="status-badge" title="${g.status || 'todo'}">${statusIcon}</span>
+              <span class="status-badge" title="${status}">${statusIcon}</span>
               ${steamCardBtn}
             </div>
             <div class="game-info">
@@ -1417,19 +826,24 @@
         // 价格渲染辅助函数
         function renderPriceEl(priceEl, pd) {
           if (!pd || !pd.success) return;
+          // 2026-03-20: joypad 白底卡片需要深色文字
+          const isLight = document.body.getAttribute('data-theme') === 'joypad';
+          const priceColor = isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)';
+          const origColor  = isLight ? 'rgba(0,0,0,0.3)'  : 'rgba(255,255,255,0.3)';
+          const freeColor  = isLight ? '#00875a' : 'rgba(100,220,100,0.8)';
           if (pd.free) {
-            priceEl.innerHTML = `<span style="color:rgba(100,220,100,0.6)">免费</span>`;
+            priceEl.innerHTML = `<span style="color:${freeColor}">免费</span>`;
           } else if (pd.discount > 0) {
             priceEl.innerHTML =
-              `<span style="color:#ff9800;font-weight:600">-${pd.discount}%</span> ` +
-              `<span style="color:rgba(255,255,255,0.85)">¥${pd.final_price.toFixed(0)}</span> ` +
-              `<span style="text-decoration:line-through;color:rgba(255,255,255,0.3)">¥${pd.original_price.toFixed(0)}</span>`;
+              `<span style="color:#e65100;font-weight:600">-${pd.discount}%</span> ` +
+              `<span style="color:${priceColor}">¥${pd.final_price.toFixed(0)}</span> ` +
+              `<span style="text-decoration:line-through;color:${origColor}">¥${pd.original_price.toFixed(0)}</span>`;
           } else {
-            priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.35)">¥${pd.final_price.toFixed(0)}</span>`;
+            priceEl.innerHTML = `<span style="color:${priceColor}">¥${pd.final_price.toFixed(0)}</span>`;
           }
         }
 
-        const visibleGames = games.slice(0, 12);
+        const visibleGames = games;
 
         // ── 评分：独立并行 ──────────────────────────────────────────
         getSteamRatingsBatch(visibleGames).then(ratingsMap => {
@@ -1446,10 +860,22 @@
               const percent = rd.rating_percent;
               const color = percent >= 70 ? '#4caf50' : (percent >= 40 ? '#ff9800' : '#f44336');
               metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${color};font-weight:600;">${percent}% 好评</span>`;
+              // 2026-03-20: 更新 nexus 进度条
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              const fillEl = cards[i].querySelector('.progress-fill');
+              if (pctEl) pctEl.textContent = percent + '%';
+              if (fillEl) fillEl.style.width = percent + '%';
             } else if (rd && rd.success && rd.total_reviews === 0) {
-              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>`;
+              // 2026-03-20: joypad 白底用深色，其他主题用半透明白色
+              const mutedColor = document.body.getAttribute('data-theme') === 'joypad' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.3)';
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${mutedColor};">暂无评价</span>`;
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              if (pctEl) pctEl.textContent = 'N/A';
             } else {
-              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>`;
+              const mutedColor = document.body.getAttribute('data-theme') === 'joypad' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.3)';
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${mutedColor};">暂无</span>`;
+              const pctEl = cards[i].querySelector('.steam-rating-pct');
+              if (pctEl) pctEl.textContent = '--';
             }
 
             // 收集通过名字搜索才发现的 appid（之前未知的），用于补充拉取价格和显示 Steam 按钮
@@ -1948,7 +1374,12 @@
         }
 
         closeModal('add-modal');
+        // 2026-03-20: 先立即刷新显示游戏（无封面），后台自动获取封面后再刷新一次
         loadGames();
+        if (!image) {
+          showTip('正在自动获取 Steam 封面…', 'info');
+          setTimeout(() => loadGames(), 4000);
+        }
       } catch {
         alert('添加失败，请重试');
       }
@@ -2137,8 +1568,23 @@
 
     loadGames();
     loadSteamRecommendations();
-    loadHot();
-    loadIran();
+    // 2026-03-19: loadHot() 和 loadIran() 改为懒加载，点击 news tab 时才触发
+
+    // 2026-03-20: 主题切换后重新渲染卡片（因为 nexus/classic 卡片结构不同）
+    const _origSwitchTheme = window.switchTheme;
+    window.switchTheme = function(name) {
+      if (_origSwitchTheme) _origSwitchTheme(name);
+      loadGames();
+    };
   </script>
+
+  <!-- 2026-03-20: 主题引擎（切换 + Three.js 背景） -->
+  <script type="module">
+    import { initTheme } from './src/theme-engine.js';
+    initTheme();
+  </script>
+
+  <!-- 2026-03-19: page-agent AI 助手（模块化接入，不影响其他功能） -->
+  <script type="module" src="./src/page-agent-init.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import json
 import uuid
 import re
 import time
+import threading
 import urllib.request
 import urllib.parse
 import os
@@ -22,7 +23,13 @@ try:
 except ImportError:
     pass
 
+# 2026-03-19: 使用共享连接池替代每次 pymysql.connect()
+from db_pool import get_db
+
 games_bp = Blueprint('games', __name__)
+
+# 2026-03-19: 原先硬编码在 URL 里，改为从环境变量读取
+RAWG_API_KEY = os.getenv('RAWG_API_KEY', '')
 
 # ============ Steam 评分后端缓存 ============
 # { cache_key: {'data': {...}, 'ts': timestamp} }
@@ -32,19 +39,6 @@ STEAM_RATING_CACHE_TTL = 24 * 3600  # 24 小时
 # ============ Steam 价格后端缓存 ============
 _steam_price_cache = {}
 STEAM_PRICE_CACHE_TTL = 6 * 3600  # 6 小时（价格变动比评分频繁）
-
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', '3306')),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'indeed_flow'),
-    'charset': 'utf8mb4'
-}
-
-
-def get_db():
-    return pymysql.connect(**DB_CONFIG)
 
 
 def init_db():
@@ -88,15 +82,16 @@ def init_db():
             if cursor.fetchone()[0] == 0:
                 cursor.execute(f"ALTER TABLE games ADD COLUMN {col} {col_def}")
         
-        # 迁移：把 image 字段从 VARCHAR(512) 改为 TEXT（支持 base64 图片）
+        # 迁移：把 image 字段从 VARCHAR(512) 或 TEXT 改为 MEDIUMTEXT（支持大图 base64，最大 16MB）
         cursor.execute(
-            "SELECT COUNT(*) FROM information_schema.COLUMNS "
-            "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME='image' AND COLUMN_TYPE='varchar(512)'",
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA=%s AND TABLE_NAME='games' AND COLUMN_NAME='image'",
             (db_name,)
         )
-        if cursor.fetchone()[0] > 0:
-            cursor.execute("ALTER TABLE games MODIFY COLUMN image TEXT")
-            print("Migrated image column to TEXT for base64 support")
+        row = cursor.fetchone()
+        if row and row[0].lower() in ('varchar(512)', 'text'):
+            cursor.execute("ALTER TABLE games MODIFY COLUMN image MEDIUMTEXT")
+            print(f"Migrated image column from {row[0]} to MEDIUMTEXT")
         
         # 创建 Steam 联机游戏推荐表
         cursor.execute('''
@@ -175,7 +170,9 @@ def upload_image():
     """处理图片上传，转换为base64"""
     if 'image' not in request.files:
         # 检查是否是base64字符串或URL
-        data = request.json
+        # 2026-03-19: 原先 request.json 不安全，非 JSON 请求会抛异常
+        # data = request.json
+        data = request.get_json(silent=True) or {}
         if data and 'image' in data:
             b64_image = convert_url_to_base64(data['image'])
             return jsonify({'success': True, 'image': b64_image})
@@ -205,7 +202,7 @@ def upload_image():
 
 @games_bp.route('/api/bookmarks', methods=['POST'])
 def add_bookmark():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     news_item = {
         'id': data.get('id'),
         'title': data.get('title'),
@@ -277,9 +274,10 @@ def search_game_image():
         return jsonify({'image': None})
 
     try:
+        # 2026-03-19: 原先 key 硬编码在此，改为引用模块变量 RAWG_API_KEY
         url = (
             f"https://api.rawg.io/api/games"
-            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"?key={RAWG_API_KEY}"
             f"&search={urllib.parse.quote(query)}&page_size=1"
         )
         with urllib.request.urlopen(url, timeout=5) as response:
@@ -436,7 +434,7 @@ def get_steam_game_details(app_id):
 
 @games_bp.route('/api/games/<game_id>/image', methods=['PUT'])
 def update_game_image(game_id):
-    data = request.json
+    data = request.get_json(silent=True) or {}
     new_image = data.get('image', '')
     conn = get_db()
     try:
@@ -533,9 +531,11 @@ def get_game_news():
         return jsonify({'news': []})
 
     try:
+        # 2026-03-19: 原先 key 硬编码在此，改为引用模块变量 RAWG_API_KEY
+        # f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
         url = (
             f"https://api.rawg.io/api/games"
-            f"?key=5d1eb2a07cda4e899f6020e3d7465b1c"
+            f"?key={RAWG_API_KEY}"
             f"&search={urllib.parse.quote(query)}&page_size=3"
         )
         with urllib.request.urlopen(url, timeout=5) as response:
@@ -677,7 +677,7 @@ def get_steam_ratings_batch():
     Body: { "items": [{"id": "...", "name": "...", "appid": "..."}, ...] }
     Response: { "<game_id>": { rating data } }
     """
-    data  = request.json or {}
+    data  = request.get_json(silent=True) or {}
     items = data.get('items', [])
     results = {}
 
@@ -757,7 +757,7 @@ def get_steam_prices_batch():
     Body: { "items": [{"id": "...", "appid": "..."}, ...] }
     Response: { "<id>": { price data } }
     """
-    data  = request.json or {}
+    data  = request.get_json(silent=True) or {}
     items = data.get('items', [])
     results = {}
 
@@ -803,9 +803,49 @@ def get_games():
     return jsonify(games)
 
 
+def _auto_fetch_steam_cover(game_id, game_name):
+    """后台自动从 Steam 搜索封面并回填到数据库"""
+    try:
+        search_url = (
+            f"https://store.steampowered.com/api/storesearch/"
+            f"?term={urllib.parse.quote(game_name)}&l=schinese&cc=CN"
+        )
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            items = data.get('items', [])
+            if not items:
+                return
+            app_id = items[0].get('id')
+            if not app_id:
+                return
+
+        # 优先取 header.jpg（横幅封面）
+        image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+        b64 = convert_url_to_base64(image_url)
+
+        if not b64:
+            return
+
+        conn = get_db()
+        try:
+            cursor = conn.cursor()
+            # 只在 image 仍为空时才写入，避免覆盖用户手动设置的图片
+            cursor.execute(
+                'UPDATE games SET image = %s, steam_appid = %s WHERE id = %s AND (image IS NULL OR image = "")',
+                (b64, str(app_id), game_id)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        print(f"[AutoCover] {game_name} → appid={app_id} OK")
+    except Exception as e:
+        print(f"[AutoCover] {game_name} failed: {e}")
+
+
 @games_bp.route('/api/games', methods=['POST'])
 def add_game():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     game = {
         'id': data.get('id') or str(uuid.uuid4())[:8],
         'name': data.get('name'),
@@ -838,12 +878,21 @@ def add_game():
         conn.commit()
     finally:
         conn.close()
+
+    # 2026-03-20: 若未提供封面，后台线程自动从 Steam 搜索并回填
+    if not game['image']:
+        threading.Thread(
+            target=_auto_fetch_steam_cover,
+            args=(game['id'], game['name']),
+            daemon=True
+        ).start()
+
     return jsonify({'success': True, 'game': game})
 
 
 @games_bp.route('/api/games/<game_id>/rate', methods=['POST'])
 def rate_game(game_id):
-    data = request.json
+    data = request.get_json(silent=True) or {}
     user = data.get('user', '匿名')
     score = data.get('score', 3)
 
@@ -873,7 +922,7 @@ def rate_game(game_id):
 
 @games_bp.route('/api/games/<game_id>/comment', methods=['POST'])
 def comment_game(game_id):
-    data = request.json
+    data = request.get_json(silent=True) or {}
     conn = get_db()
     try:
         cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -899,7 +948,7 @@ def comment_game(game_id):
 @games_bp.route('/api/games/<game_id>', methods=['PUT'])
 def update_game(game_id):
     """更新游戏信息"""
-    data = request.json
+    data = request.get_json(silent=True) or {}
     
     # 构建更新字段
     updates = []
@@ -955,7 +1004,7 @@ def update_game(game_id):
 
 @games_bp.route('/api/games/<game_id>/status', methods=['PUT'])
 def update_game_status(game_id):
-    data = request.json
+    data = request.get_json(silent=True) or {}
     new_status = data.get('status', 'todo')
     valid_statuses = ['todo', 'playing', 'completed']
     if new_status not in valid_statuses:
