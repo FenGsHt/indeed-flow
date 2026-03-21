@@ -258,7 +258,7 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
   <div class="lobby-wrap">
     <div class="lobby-title">
       <h1>🎱 BILLIARDS</h1>
-      <p>多人在线台球 · 八球制 · 实时对战</p>
+      <p>多人在线台球 · 八球制 / 三人分区 · 实时对战</p>
     </div>
 
     <!-- Left: Create/Join -->
@@ -275,6 +275,14 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
         <details class="room-opts">
           <summary>▶ 房间选项</summary>
           <div class="opts-grid">
+            <!-- 2026-03-19: 新增玩家人数选项，支持三人分区八球制 -->
+            <div class="opt-item">
+              <label>玩家人数</label>
+              <select id="opt-mode">
+                <option value="2player">2人对战</option>
+                <option value="3player">3人分区八球</option>
+              </select>
+            </div>
             <div class="opt-item">
               <label>玩法</label>
               <select id="opt-gametype">
@@ -324,12 +332,14 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
 
 <!-- ══ WAITING ════════════════════════════════════════════════════════════ -->
 <div id="screen-waiting" class="screen">
-  <div class="waiting-box">
+    <div class="waiting-box">
     <div class="waiting-title">台球室</div>
     <div class="waiting-room-id">房间号 <span id="w-room-id">—</span></div>
-    <div class="waiting-players">
+    <!-- 2026-03-19: slot-2 默认隐藏，三人模式时显示 -->
+    <div class="waiting-players" id="waiting-players">
       <div class="player-slot" id="slot-0"><div class="slot-empty">等待玩家…</div></div>
       <div class="player-slot" id="slot-1"><div class="slot-empty">等待玩家…</div></div>
+      <div class="player-slot" id="slot-2" style="display:none"><div class="slot-empty">等待玩家…</div></div>
     </div>
     <div class="waiting-actions">
       <button class="btn btn-gold" id="ready-btn" onclick="toggleReady()">准备</button>
@@ -341,26 +351,60 @@ html,body{width:100%;height:100%;background:#0a0805;color:#e8d5a3;font-family:'S
 
 <!-- ══ GAME ════════════════════════════════════════════════════════════════ -->
 <div id="screen-game" class="screen">
-  <div class="game-hud">
-    <div class="hud-player" id="hud-p0">
-      <div class="p-score" id="hud-score-0">0</div>
-      <div>
-        <div class="p-name" id="hud-name-0">—</div>
-        <div class="p-type" id="hud-type-0">—</div>
+  <div class="game-hud" id="game-hud">
+    <!-- 2人模式 HUD（默认显示） -->
+    <div id="hud-2p" style="display:contents">
+      <div class="hud-player" id="hud-p0">
+        <div class="p-score" id="hud-score-0">0</div>
+        <div>
+          <div class="p-name" id="hud-name-0">—</div>
+          <div class="p-type" id="hud-type-0">—</div>
+        </div>
+        <div class="p-balls" id="hud-balls-0"></div>
       </div>
-      <div class="p-balls" id="hud-balls-0"></div>
-    </div>
-    <div class="hud-turn" id="hud-turn">
-      <span class="turn-name" id="turn-name">—</span>
-      <div class="turn-indicator">⬤ 回合中</div>
-    </div>
-    <div class="hud-player" style="flex-direction:row-reverse" id="hud-p1">
-      <div class="p-score" id="hud-score-1">0</div>
-      <div style="text-align:right">
-        <div class="p-name" id="hud-name-1">—</div>
-        <div class="p-type" id="hud-type-1">—</div>
+      <div class="hud-turn" id="hud-turn">
+        <span class="turn-name" id="turn-name">—</span>
+        <div class="turn-indicator">⬤ 回合中</div>
       </div>
-      <div class="p-balls" id="hud-balls-1"></div>
+      <div class="hud-player" style="flex-direction:row-reverse" id="hud-p1">
+        <div class="p-score" id="hud-score-1">0</div>
+        <div style="text-align:right">
+          <div class="p-name" id="hud-name-1">—</div>
+          <div class="p-type" id="hud-type-1">—</div>
+        </div>
+        <div class="p-balls" id="hud-balls-1"></div>
+      </div>
+    </div>
+    <!-- 2026-03-19: 三人模式 HUD（默认隐藏），横排显示3名玩家+回合提示 -->
+    <div id="hud-3p" style="display:none;width:100%;align-items:center;gap:0.5rem">
+      <div class="hud-player hud-3p-player" id="hud-3p-p0" style="flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-0">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-0" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-0" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-0" style="flex-wrap:wrap"></div>
+      </div>
+      <div class="hud-turn" id="hud-turn-3p" style="min-width:100px;text-align:center">
+        <span class="turn-name" id="turn-name-3p">—</span>
+        <div class="turn-indicator" id="turn-indicator-3p">⬤ 回合中</div>
+      </div>
+      <div class="hud-player hud-3p-player" id="hud-3p-p1" style="flex:1;min-width:0">
+        <div class="p-score" id="hud-score3-1">0</div>
+        <div style="min-width:0;overflow:hidden">
+          <div class="p-name" id="hud-name3-1" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-1" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-1" style="flex-wrap:wrap"></div>
+      </div>
+      <div class="hud-player hud-3p-player" id="hud-3p-p2" style="flex:1;min-width:0;flex-direction:row-reverse">
+        <div class="p-score" id="hud-score3-2">0</div>
+        <div style="min-width:0;overflow:hidden;text-align:right">
+          <div class="p-name" id="hud-name3-2" style="font-size:.8rem">—</div>
+          <div class="p-type" id="hud-type3-2" style="font-size:.7rem"></div>
+        </div>
+        <div class="p-balls" id="hud-balls3-2" style="flex-wrap:wrap"></div>
+      </div>
     </div>
   </div>
 
@@ -579,7 +623,8 @@ const TX = 50, TY = 55;            // Table origin
 const TW = 820, TH = 390;          // Table playable area
 const BALL_R = 13;
 const POCKET_R = 22;
-const FRICTION = 0.983;
+// 2026-03-19: 原值 0.983 阻力偏大，改为 0.989 更接近真实台球手感
+const FRICTION = 0.989;
 const WALL_REST = 0.72;
 const BALL_REST = 0.96;
 const MIN_V = 0.08;
@@ -1394,17 +1439,21 @@ socket.on('connect', ()=>{ socket.emit('get-init'); });
 socket.on('rooms-update', list=>{
   const el=document.getElementById('rooms-list');
   if (!list.length){ el.innerHTML='<div class="rooms-empty">暂无房间，创建一个吧</div>'; return; }
-  el.innerHTML=list.map(r=>`
+  el.innerHTML=list.map(r=>{
+    // 2026-03-19: 显示模式标签（三人分区）
+    const modeTag = r.mode === '3player' ? ' <span style="color:#64b5f6;font-size:.7rem">[三人]</span>' : '';
+    return `
     <div class="room-item">
       <div class="room-info">
-        <div class="room-id">${r.id}</div>
-        <div class="room-meta">${r.playerNames.join(' vs ') || '等待玩家'} · ${r.players}/2</div>
+        <div class="room-id">${r.id}${modeTag}</div>
+        <div class="room-meta">${r.playerNames.join(' · ') || '等待玩家'} · ${r.players}/${r.maxPlayers}</div>
       </div>
       <div style="display:flex;align-items:center;gap:0.6rem">
         <span class="room-status ${r.status}">${r.status==='waiting'?'等待中':'游戏中'}</span>
-        ${r.status==='waiting'&&r.players<2?`<button class="btn btn-outline" style="padding:.3rem .7rem;font-size:.78rem" onclick="joinRoom('${r.id}')">加入</button>`:''}
+        ${r.status==='waiting'&&r.players<r.maxPlayers?`<button class="btn btn-outline" style="padding:.3rem .7rem;font-size:.78rem" onclick="joinRoom('${r.id}')">加入</button>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 });
 
 socket.on('stats-update', data=>{ lbData=data; renderLeaderboard(); });
@@ -1464,10 +1513,15 @@ socket.on('shot-result', ({result, gameState:gs})=>{
 
   if (gs.phase==='placing_cue') {
     phase='placing_cue';
-    // Is it MY job to place? (opponent of scratched player)
-    const scratchedIdx = result.nextTurn === undefined ? gs.currentTurn : (gs.currentTurn===0?1:0);
-    cueBallPlaceable = (playerIndex !== scratchedIdx) && playerIndex>=0;
-    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':'等待对手放置母球…', cueBallPlaceable?'my':'');
+    // 2026-03-19: 三人模式 currentTurn 已推进到有球权的玩家；二人模式是对手放球
+    if (gs.options?.mode === '3player') {
+      cueBallPlaceable = playerIndex === gs.currentTurn;
+    } else {
+      const scratchedIdx = result.nextTurn === undefined ? gs.currentTurn : (gs.currentTurn===0?1:0);
+      cueBallPlaceable = (playerIndex !== scratchedIdx) && playerIndex>=0;
+    }
+    const placer = gs.players[gs.currentTurn]?.name || '对手';
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':`等待 ${placer} 放置母球…`, cueBallPlaceable?'my':'');
   } else {
     phase='aiming';
     updateTurnUI(gs);
@@ -1514,9 +1568,15 @@ function startGame() {
 function updateGamePhaseFromServer(gs) {
   if (gs.phase==='placing_cue' && phase!=='placing_cue') {
     phase='placing_cue';
-    const idx = gs.currentTurn===0?1:0; // who scratched (before turn swap)
-    cueBallPlaceable = playerIndex>=0 && playerIndex!==idx;
-    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':'等待对手放置母球…', cueBallPlaceable?'my':'');
+    // 2026-03-19: 三人模式 currentTurn 已是有球权玩家
+    if (gs.options?.mode === '3player') {
+      cueBallPlaceable = playerIndex === gs.currentTurn;
+    } else {
+      const idx = gs.currentTurn===0?1:0;
+      cueBallPlaceable = playerIndex>=0 && playerIndex!==idx;
+    }
+    const placer = gs.players[gs.currentTurn]?.name || '对手';
+    setStatus(cueBallPlaceable?'🎱 球在手 — 点击桌面放置母球':`等待 ${placer} 放置母球…`, cueBallPlaceable?'my':'');
   } else if (gs.phase==='aiming' && phase!=='aiming') {
     phase='aiming';
     updateTurnUI(gs);
@@ -1524,69 +1584,155 @@ function updateGamePhaseFromServer(gs) {
 }
 
 function updateTurnUI(gs) {
-  const isMyTurn = playerIndex===gs.currentTurn;
+  const isMyTurn = playerIndex === gs.currentTurn;
   const turnerName = gs.players[gs.currentTurn]?.name || '—';
-  document.getElementById('turn-name').textContent = isMyTurn?'你的回合':turnerName;
-  const hudTurn = document.getElementById('hud-turn');
-  hudTurn.className = 'hud-turn'+(isMyTurn?' my-turn':'');
-  if (isMyTurn) setStatus('你的回合，拖拽任意处瞄准，松手出杆','my');
-  else setStatus(`${turnerName} 的回合…`);
+  const is3P = gs.options?.mode === '3player';
+
+  if (is3P) {
+    // 三人模式使用单独的 turn-name-3p
+    document.getElementById('turn-name-3p').textContent = isMyTurn ? '你的回合' : turnerName;
+    const indicator = document.getElementById('turn-indicator-3p');
+    if (indicator) indicator.style.color = isMyTurn ? '#7dbb5e' : '#d4a017';
+  } else {
+    document.getElementById('turn-name').textContent = isMyTurn ? '你的回合' : turnerName;
+    const hudTurn = document.getElementById('hud-turn');
+    hudTurn.className = 'hud-turn' + (isMyTurn ? ' my-turn' : '');
+  }
+
+  if (isMyTurn) {
+    // 2026-03-19: 三人模式提示目标球组
+    if (is3P) {
+      const myGroup = GROUPS_CLIENT_3P[playerIndex] || [];
+      const cleared = myGroup.every(n => gs.pocketed?.includes(n));
+      setStatus(cleared ? '🎱 你的回合 — 冲刺8号球！' : `你的回合 — 打进 ${GROUP_LABELS_CLIENT[playerIndex]} 的球`, 'my');
+    } else {
+      setStatus('你的回合，拖拽任意处瞄准，松手出杆', 'my');
+    }
+  } else {
+    setStatus(`${turnerName} 的回合…`);
+  }
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
 const TYPE_LABELS = {solid:'实心球',stripe:'条纹球',null:'—'};
 const BALL_DOTS_SOLID = [1,2,3,4,5,6,7];
 const BALL_DOTS_STRIPE = [9,10,11,12,13,14,15];
+// 三人模式分组常量（客户端）
+const GROUPS_CLIENT_3P = [[1,2,3,4,5],[6,7,9,10],[11,12,13,14,15]];
+const GROUP_COLORS_CLIENT = ['#f5c518','#64b5f6','#81c784'];
+const GROUP_LABELS_CLIENT = ['1-5号','6,7,9,10','11-15号'];
 
 function updateHUD() {
   if (!gameState) return;
   const ps = gameState.players;
-  [0,1].forEach(i=>{
-    const p=ps[i];
-    if (!p) return;
-    document.getElementById(`hud-name-${i}`).textContent=p.name||'—';
-    document.getElementById(`hud-score-${i}`).textContent=p.score||0;
-    const typeEl=document.getElementById(`hud-type-${i}`);
-    typeEl.textContent=p.type?TYPE_LABELS[p.type]:'未定';
-    typeEl.className='p-type '+(p.type||'');
-    // Ball dots
-    const dotsEl=document.getElementById(`hud-balls-${i}`);
-    const myBalls=p.type==='solid'?BALL_DOTS_SOLID:p.type==='stripe'?BALL_DOTS_STRIPE:[];
-    dotsEl.innerHTML=myBalls.map(n=>{
-      const pocketed=gameState.pocketed?.includes(n);
-      return `<span class="ball-dot" style="background:${pocketed?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${pocketed?'opacity:.3':''}"></span>`;
-    }).join('');
-  });
+  const is3P = gameState.options?.mode === '3player';
+
+  // 2026-03-19: 切换 HUD 布局
+  document.getElementById('hud-2p').style.display = is3P ? 'none' : 'contents';
+  document.getElementById('hud-3p').style.display = is3P ? 'flex' : 'none';
+
+  if (is3P) {
+    // 三人 HUD
+    for (let i = 0; i < 3; i++) {
+      const p = ps[i];
+      if (!p) continue;
+      document.getElementById(`hud-name3-${i}`).textContent = p.name || '—';
+      document.getElementById(`hud-score3-${i}`).textContent = p.score || 0;
+      const typeEl = document.getElementById(`hud-type3-${i}`);
+      const group = GROUPS_CLIENT_3P[i] || [];
+      const cleared = group.every(n => gameState.pocketed?.includes(n));
+      typeEl.textContent = cleared ? '冲8号球！' : GROUP_LABELS_CLIENT[i];
+      typeEl.style.color = cleared ? '#ff9800' : GROUP_COLORS_CLIENT[i];
+      // 球点：本组球
+      const dotsEl = document.getElementById(`hud-balls3-${i}`);
+      const dots = group.map(n => {
+        const poc = gameState.pocketed?.includes(n);
+        return `<span class="ball-dot" style="background:${poc?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${poc?'opacity:.3':''}"></span>`;
+      });
+      // 组清空后显示8号球指示
+      if (cleared) {
+        const poc8 = gameState.pocketed?.includes(8);
+        dots.push(`<span class="ball-dot" style="background:${poc8?'rgba(255,255,255,0.1)':'#222'};border:1px solid rgba(255,255,255,0.5);${poc8?'opacity:.3':''}"></span>`);
+      }
+      dotsEl.innerHTML = dots.join('');
+      // 高亮当前回合玩家
+      const wrapper = document.getElementById(`hud-3p-p${i}`);
+      if (wrapper) {
+        wrapper.style.background = i === gameState.currentTurn
+          ? 'rgba(212,160,23,0.12)' : 'transparent';
+        wrapper.style.borderRadius = '8px';
+        wrapper.style.padding = '2px 4px';
+      }
+    }
+  } else {
+    // 二人 HUD（原逻辑）
+    [0,1].forEach(i=>{
+      const p=ps[i];
+      if (!p) return;
+      document.getElementById(`hud-name-${i}`).textContent=p.name||'—';
+      document.getElementById(`hud-score-${i}`).textContent=p.score||0;
+      const typeEl=document.getElementById(`hud-type-${i}`);
+      typeEl.textContent=p.type?TYPE_LABELS[p.type]:'未定';
+      typeEl.className='p-type '+(p.type||'');
+      const dotsEl=document.getElementById(`hud-balls-${i}`);
+      const myBalls=p.type==='solid'?BALL_DOTS_SOLID:p.type==='stripe'?BALL_DOTS_STRIPE:[];
+      dotsEl.innerHTML=myBalls.map(n=>{
+        const pocketed=gameState.pocketed?.includes(n);
+        return `<span class="ball-dot" style="background:${pocketed?'rgba(255,255,255,0.1)':BALL_COLORS[n]};${pocketed?'opacity:.3':''}"></span>`;
+      }).join('');
+    });
+  }
 }
 
 // ── Waiting screen ────────────────────────────────────────────────────────────
 function updateWaitingScreen() {
   if (!gameState) return;
-  const ps=gameState.players;
-  [0,1].forEach(i=>{
-    const slot=document.getElementById(`slot-${i}`);
-    const p=ps[i];
+  const ps = gameState.players;
+  const maxP = gameState.maxPlayers || 2;
+  const is3P = gameState.options?.mode === '3player';
+
+  // 2026-03-19: 三人模式时显示第三槽，调整网格
+  const waitingGrid = document.getElementById('waiting-players');
+  const slot2 = document.getElementById('slot-2');
+  if (is3P) {
+    waitingGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    slot2.style.display = '';
+  } else {
+    waitingGrid.style.gridTemplateColumns = '';
+    slot2.style.display = 'none';
+  }
+
+  const GROUP_LABELS = ['组1: 1-5号', '组2: 6,7,9,10号', '组3: 11-15号'];
+  const GROUP_COLORS = ['#f5c518','#64b5f6','#81c784'];
+
+  for (let i = 0; i < maxP; i++) {
+    const slot = document.getElementById(`slot-${i}`);
+    if (!slot) continue;
+    const p = ps[i];
     if (p) {
-      const isMe=p.socketId===socket.id;
-      slot.className='player-slot filled';
-      slot.innerHTML=`
+      const isMe = p.socketId === socket.id;
+      slot.className = 'player-slot filled';
+      const groupHint = is3P ? `<div style="font-size:.68rem;color:${GROUP_COLORS[i]};margin-top:2px">${GROUP_LABELS[i]}</div>` : '';
+      slot.innerHTML = `
         <div class="slot-avatar">${p.name.charAt(0).toUpperCase()}</div>
         <div class="slot-name">${p.name}${isMe?' (你)':''}</div>
-        <span class="${p.ready?'ready-badge':'not-ready-badge'}">${p.ready?'✓ 已准备':'未准备'}</span>`;
+        <span class="${p.ready?'ready-badge':'not-ready-badge'}">${p.ready?'✓ 已准备':'未准备'}</span>
+        ${groupHint}`;
     } else {
-      slot.className='player-slot';
-      slot.innerHTML='<div class="slot-empty">等待玩家…</div>';
+      slot.className = 'player-slot';
+      slot.innerHTML = '<div class="slot-empty">等待玩家…</div>';
     }
-  });
-  const hint=document.getElementById('waiting-hint');
-  const readyBtn=document.getElementById('ready-btn');
-  if (ps.length<2) {
-    hint.textContent='等待对手加入…';
-    readyBtn.disabled=true; readyBtn.style.opacity='0.4';
+  }
+
+  const hint = document.getElementById('waiting-hint');
+  const readyBtn = document.getElementById('ready-btn');
+  if (ps.length < maxP) {
+    hint.textContent = `等待玩家加入… (${ps.length}/${maxP})`;
+    readyBtn.disabled = true; readyBtn.style.opacity = '0.4';
   } else {
-    hint.textContent='双方准备后自动开始';
-    readyBtn.disabled=false; readyBtn.style.opacity='1';
-    readyBtn.textContent=isReady?'取消准备':'准备';
+    hint.textContent = `${maxP}人全部准备后自动开始`;
+    readyBtn.disabled = false; readyBtn.style.opacity = '1';
+    readyBtn.textContent = isReady ? '取消准备' : '准备';
   }
 }
 
@@ -1654,7 +1800,11 @@ function renderLeaderboard() {
 function createRoom() {
   playerName=document.getElementById('player-name').value.trim();
   if (!playerName) { alert('请输入昵称'); return; }
-  const options = { gameType: document.getElementById('opt-gametype').value };
+  // 2026-03-19: 加入 mode 选项传给服务端
+  const options = {
+    gameType: document.getElementById('opt-gametype').value,
+    mode: document.getElementById('opt-mode').value,
+  };
   socket.emit('create-room',{name:playerName,options});
 }
 

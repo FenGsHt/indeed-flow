@@ -27,9 +27,11 @@ function broadcastRooms() {
   const list = [...rooms.entries()].map(([id, { game }]) => ({
     id,
     players: game.players.length,
-    maxPlayers: 2,
+    // 2026-03-19: maxPlayers 改为从 game 对象读取，支持三人房间
+    maxPlayers: game.maxPlayers,
     status: game.status,
     playerNames: game.players.map(p => p.name),
+    mode: game.options.mode,
   }));
   io.emit('rooms-update', list);
 }
@@ -56,8 +58,10 @@ io.on('connection', (socket) => {
 
   socket.on('get-init', () => {
     socket.emit('rooms-update', [...rooms.entries()].map(([id, { game }]) => ({
-      id, players: game.players.length, maxPlayers: 2,
+      // 2026-03-19: maxPlayers 动态化
+      id, players: game.players.length, maxPlayers: game.maxPlayers,
       status: game.status, playerNames: game.players.map(p => p.name),
+      mode: game.options.mode,
     })));
     socket.emit('stats-update', getLeaderboard());
   });
@@ -80,7 +84,8 @@ io.on('connection', (socket) => {
     if (!entry) return socket.emit('join-error', '房间不存在');
     const { game } = entry;
 
-    if (game.players.length < 2 && game.status === 'waiting') {
+    // 2026-03-19: 上限改为 game.maxPlayers（支持三人房间）
+    if (game.players.length < game.maxPlayers && game.status === 'waiting') {
       if (!name?.trim()) return socket.emit('join-error', '请输入昵称');
       const ok = game.addPlayer(name.trim(), socket.id);
       if (!ok) return socket.emit('join-error', '房间已满');
@@ -108,7 +113,6 @@ io.on('connection', (socket) => {
   });
 
   // ── Shoot: active player fires ─────────────────────────────────────────────
-  // Server broadcasts to all so both clients can run the same physics
   socket.on('shoot', ({ roomId, angle, power, ballPositions }) => {
     const entry = rooms.get(roomId);
     if (!entry) return;
@@ -117,7 +121,6 @@ io.on('connection', (socket) => {
     const idx = game.players.findIndex(p => p.socketId === socket.id);
     if (idx !== game.currentTurn) return;
 
-    // Store authoritative ball positions before this shot
     if (ballPositions) game.ballPositions = ballPositions;
     game.setPhase('simulating');
 
@@ -140,10 +143,18 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('shot-result', { result, gameState: game.getState() });
 
     if (result.type === 'game_over') {
-      const winner = game.players[result.winner];
-      const loser = game.players[1 - result.winner];
-      if (winner) recordGame(winner.name, true);
-      if (loser) recordGame(loser.name, false);
+      // 2026-03-19: 三人模式遍历所有玩家记录胜负
+      if (game.is3Player()) {
+        const winnerIdx = result.winner;
+        game.players.forEach((p, i) => {
+          if (p) recordGame(p.name, i === winnerIdx);
+        });
+      } else {
+        const winner = game.players[result.winner];
+        const loser = game.players[1 - result.winner];
+        if (winner) recordGame(winner.name, true);
+        if (loser) recordGame(loser.name, false);
+      }
       io.emit('stats-update', getLeaderboard());
     }
 
@@ -212,7 +223,7 @@ function handleLeave(socket, roomId) {
   socket.leave(roomId);
 
   if (game.status === 'playing' && player) {
-    // Remaining player wins by default
+    // 2026-03-19: 无论2人/3人，只要有人离场，剩余第一位玩家默认胜
     const remaining = game.players[0];
     if (remaining) {
       game.status = 'finished';
