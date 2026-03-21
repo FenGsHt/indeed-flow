@@ -12,6 +12,10 @@ export default defineConfig({
         games: resolve(__dirname, 'games.html'),
         aitest: resolve(__dirname, 'ai-test.html'),
       },
+      external: [
+        'three',
+        /^three\/addons\//,
+      ],
     },
   },
   json: {
