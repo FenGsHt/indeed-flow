@@ -16,7 +16,7 @@
   --font-ui: 'Outfit', sans-serif;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) {
+[data-theme="nexus"] {
   background-color: var(--bg-dark);
   color: var(--text-main);
   font-family: var(--font-ui);
@@ -25,19 +25,19 @@
 }
 
 /* 隐藏 classic / joypad 专属元素 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .classic-header { display: none !important; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .bg-effect { display: none !important; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .joypad-sunburst { display: none !important; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .joypad-sunburst-overlay { display: none !important; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .joypad-star { display: none !important; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .joypad-confetti { display: none !important; }
+[data-theme="nexus"] .classic-header { display: none !important; }
+[data-theme="nexus"] .bg-effect { display: none !important; }
+[data-theme="nexus"] .joypad-sunburst { display: none !important; }
+[data-theme="nexus"] .joypad-sunburst-overlay { display: none !important; }
+[data-theme="nexus"] .joypad-star { display: none !important; }
+[data-theme="nexus"] .joypad-confetti { display: none !important; }
 
 /* 隐藏侧边栏内的主题切换器 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-switcher { display: none !important; }
+[data-theme="nexus"] .theme-switcher { display: none !important; }
 
 /* 主题切换 FAB（右下角浮动按钮） */
 /* theme-fab 样式（位置由 .fab-stack-right 容器控制） */
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-fab {
+[data-theme="nexus"] .theme-fab {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -54,14 +54,14 @@
   backdrop-filter: blur(8px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-fab:hover {
+[data-theme="nexus"] .theme-fab:hover {
   border-color: var(--cyan);
   color: var(--cyan);
   box-shadow: 0 0 12px rgba(0,210,255,0.3);
 }
 
 /* ===== WebGL 画布 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) #gl-canvas {
+[data-theme="nexus"] #gl-canvas {
   position: fixed;
   top: 0;
   left: 0;
@@ -72,7 +72,7 @@
 }
 
 /* ===== 装饰元素 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .bg-watermark {
+[data-theme="nexus"] .bg-watermark {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -87,21 +87,21 @@
   text-align: center;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .deco-leaf {
+[data-theme="nexus"] .deco-leaf {
   position: fixed;
   z-index: -1;
   pointer-events: none;
   filter: drop-shadow(0 20px 30px rgba(0,0,0,0.8));
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .leaf-1 {
+[data-theme="nexus"] .leaf-1 {
   bottom: -10%;
   left: -5%;
   width: 35vw;
   transform: rotate(15deg);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .leaf-2 {
+[data-theme="nexus"] .leaf-2 {
   top: -5%;
   right: -10%;
   width: 30vw;
@@ -109,7 +109,7 @@
 }
 
 /* ===== 侧边栏 + 主内容 Grid 布局 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .app-container {
+[data-theme="nexus"] .app-container {
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
@@ -119,7 +119,7 @@
 }
 
 /* ===== 侧边栏 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .sidebar {
+[data-theme="nexus"] .sidebar {
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 100%);
@@ -131,7 +131,7 @@
   overflow-y: auto;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .sidebar .logo {
+[data-theme="nexus"] .sidebar .logo {
   padding: 0 32px;
   font-family: var(--font-display);
   font-size: 2.2rem;
@@ -145,7 +145,7 @@
   flex-shrink: 0;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .sidebar .logo-sub {
+[data-theme="nexus"] .sidebar .logo-sub {
   display: block;
   color: var(--cyan);
   font-family: var(--font-display);
@@ -155,7 +155,7 @@
   margin-top: 4px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-list {
+[data-theme="nexus"] .nav-list {
   list-style: none;
   display: flex;
   flex-direction: column;
@@ -165,7 +165,7 @@
   flex-shrink: 0;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item {
+[data-theme="nexus"] .nav-item {
   padding: 14px 32px;
   font-weight: 800;
   font-size: 1rem;
@@ -179,12 +179,12 @@
   user-select: none;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item:hover,
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item.active {
+[data-theme="nexus"] .nav-item:hover,
+[data-theme="nexus"] .nav-item.active {
   color: var(--text-main);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item::before {
+[data-theme="nexus"] .nav-item::before {
   content: '';
   position: absolute;
   top: 0;
@@ -197,16 +197,16 @@
   transform-origin: bottom;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item.active::before {
+[data-theme="nexus"] .nav-item.active::before {
   transform: scaleY(1);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .nav-item.active {
+[data-theme="nexus"] .nav-item.active {
   background: linear-gradient(90deg, rgba(0, 255, 85, 0.1) 0%, transparent 100%);
 }
 
 /* 主题切换器 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-switcher {
+[data-theme="nexus"] .theme-switcher {
   margin: 0 24px 8px;
   padding: 10px 12px;
   background: var(--panel-bg);
@@ -215,7 +215,7 @@
   flex-shrink: 0;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-switcher-title {
+[data-theme="nexus"] .theme-switcher-title {
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -223,13 +223,13 @@
   margin-bottom: 6px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-switcher-options {
+[data-theme="nexus"] .theme-switcher-options {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-option {
+[data-theme="nexus"] .theme-option {
   flex: 1 1 0;
   padding: 5px 0;
   border: 1px solid transparent;
@@ -245,24 +245,24 @@
   height: auto;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-option:hover {
+[data-theme="nexus"] .theme-option:hover {
   background: rgba(255,255,255,0.05);
   color: var(--text-main);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .theme-option.active {
+[data-theme="nexus"] .theme-option.active {
   border-color: var(--cyan);
   color: var(--cyan);
   background: rgba(0,210,255,0.08);
 }
 
 /* 迷你游戏卡片 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .mini-games-widget {
+[data-theme="nexus"] .mini-games-widget {
   margin: 8px 24px 0;
   flex-shrink: 0;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-card {
+[data-theme="nexus"] .widget-card {
   background: var(--panel-bg);
   border: 1px solid rgba(255,0,255,0.3);
   border-radius: 14px;
@@ -273,13 +273,13 @@
   transition: all 0.3s ease;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-card:hover {
+[data-theme="nexus"] .widget-card:hover {
   border-color: var(--magenta);
   box-shadow: 0 0 25px rgba(217, 0, 255, 0.2);
   transform: translateY(-2px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-card::after {
+[data-theme="nexus"] .widget-card::after {
   content: '';
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -288,38 +288,38 @@
   transition: transform 0.6s ease;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-card:hover::after {
+[data-theme="nexus"] .widget-card:hover::after {
   transform: translateX(100%);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-title {
+[data-theme="nexus"] .widget-title {
   font-family: var(--font-display);
   font-size: 1rem;
   color: var(--magenta);
   margin-bottom: 4px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .widget-desc {
+[data-theme="nexus"] .widget-desc {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
 /* ===== 主内容区 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .main-content {
+[data-theme="nexus"] .main-content {
   padding: 40px 50px;
   overflow-y: auto;
   height: 100vh;
 }
 
 /* ===== 页面头部统计面板 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .page-header {
+[data-theme="nexus"] .page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 36px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .page-title {
+[data-theme="nexus"] .page-title {
   font-family: var(--font-display);
   font-size: 3.5rem;
   line-height: 0.85;
@@ -328,7 +328,7 @@
   position: relative;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .page-title::after {
+[data-theme="nexus"] .page-title::after {
   content: attr(data-text);
   position: absolute;
   top: 4px;
@@ -340,12 +340,12 @@
   filter: blur(8px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .stats-cluster {
+[data-theme="nexus"] .stats-cluster {
   display: flex;
   gap: 16px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .stat-box {
+[data-theme="nexus"] .stat-box {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   padding: 14px 22px;
@@ -353,16 +353,16 @@
   text-align: center;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .stat-val {
+[data-theme="nexus"] .stat-val {
   font-size: 1.6rem;
   font-weight: 900;
   color: var(--cyan);
   line-height: 1;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .stat-val.green { color: var(--green); }
+[data-theme="nexus"] .stat-val.green { color: var(--green); }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .stat-label {
+[data-theme="nexus"] .stat-label {
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -371,7 +371,7 @@
 }
 
 /* ===== 分区标题 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .section-title-nexus {
+[data-theme="nexus"] .section-title-nexus {
   font-family: var(--font-display);
   font-size: 1.5rem;
   color: var(--text-main);
@@ -381,7 +381,7 @@
   gap: 14px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .section-title-nexus::after {
+[data-theme="nexus"] .section-title-nexus::after {
   content: '';
   flex-grow: 1;
   height: 2px;
@@ -389,12 +389,12 @@
 }
 
 /* ===== Tab 内容区 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .tab-content {
+[data-theme="nexus"] .tab-content {
   display: none;
   animation: nxFadeIn 0.4s ease;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .tab-content.active {
+[data-theme="nexus"] .tab-content.active {
   display: block;
 }
 
@@ -405,7 +405,7 @@
 
 /* ===== 游戏卡片 (Nexus) ===== */
 /* Mobile-first: 2 columns default, expands on desktop */
-:is([data-theme="nexus"], [data-theme="abyss"]) .games-grid {
+[data-theme="nexus"] .games-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
@@ -413,13 +413,13 @@
 }
 
 @media (min-width: 769px) {
-  :is([data-theme="nexus"], [data-theme="abyss"]) .games-grid {
+  [data-theme="nexus"] .games-grid {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 24px;
   }
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card {
+[data-theme="nexus"] .game-card {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
@@ -431,13 +431,13 @@
   cursor: pointer;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card:hover {
+[data-theme="nexus"] .game-card:hover {
   transform: translateY(-6px);
   border-color: var(--cyan);
   box-shadow: 0 12px 35px rgba(0, 210, 255, 0.15);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-cover {
+[data-theme="nexus"] .game-cover {
   width: 100%;
   height: 150px;
   position: relative;
@@ -447,8 +447,8 @@
   background-position: center;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-cover img,
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-cover .cover-img {
+[data-theme="nexus"] .game-cover img,
+[data-theme="nexus"] .game-cover .cover-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -456,13 +456,13 @@
   filter: grayscale(30%) contrast(110%);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card:hover .cover-img,
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card:hover .game-cover img {
+[data-theme="nexus"] .game-card:hover .cover-img,
+[data-theme="nexus"] .game-card:hover .game-cover img {
   transform: scale(1.08);
   filter: grayscale(0%) contrast(110%);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .status-badge {
+[data-theme="nexus"] .status-badge {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -477,18 +477,18 @@
   text-shadow: none;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .status-badge.playing { background: var(--green); }
-:is([data-theme="nexus"], [data-theme="abyss"]) .status-badge.todo { background: var(--orange); }
-:is([data-theme="nexus"], [data-theme="abyss"]) .status-badge.completed { background: var(--cyan); }
+[data-theme="nexus"] .status-badge.playing { background: var(--green); }
+[data-theme="nexus"] .status-badge.todo { background: var(--orange); }
+[data-theme="nexus"] .status-badge.completed { background: var(--cyan); }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-info {
+[data-theme="nexus"] .game-info {
   padding: 16px;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-name {
+[data-theme="nexus"] .game-name {
   font-size: 1.15rem;
   font-weight: 800;
   margin-bottom: 6px;
@@ -498,7 +498,7 @@
   text-overflow: ellipsis;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-meta {
+[data-theme="nexus"] .game-meta {
   display: flex;
   justify-content: space-between;
   color: var(--text-muted);
@@ -507,7 +507,7 @@
   font-weight: 500;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .rating-badge {
+[data-theme="nexus"] .rating-badge {
   position: static;
   display: inline-block;
   background: none;
@@ -519,11 +519,11 @@
 }
 
 /* 进度条（好评率） */
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-container {
+[data-theme="nexus"] .progress-container {
   margin-top: auto;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-header {
+[data-theme="nexus"] .progress-header {
   display: flex;
   justify-content: space-between;
   font-size: 0.7rem;
@@ -533,7 +533,7 @@
   color: var(--text-muted);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-track {
+[data-theme="nexus"] .progress-track {
   width: 100%;
   height: 5px;
   background: rgba(255,255,255,0.08);
@@ -541,25 +541,25 @@
   overflow: hidden;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-fill {
+[data-theme="nexus"] .progress-fill {
   height: 100%;
   border-radius: 3px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-fill.playing {
+[data-theme="nexus"] .progress-fill.playing {
   background: linear-gradient(90deg, #003311, var(--green));
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-fill.todo {
+[data-theme="nexus"] .progress-fill.todo {
   background: linear-gradient(90deg, #442200, var(--orange));
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .progress-fill.completed {
+[data-theme="nexus"] .progress-fill.completed {
   background: linear-gradient(90deg, #002244, var(--cyan));
 }
 
 /* 卡片 hover 边框 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .card-hover-border {
+[data-theme="nexus"] .card-hover-border {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   border: 2px solid transparent;
@@ -568,12 +568,12 @@
   transition: all 0.3s ease;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card.status-playing:hover .card-hover-border { border-color: var(--green); }
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card.status-todo:hover .card-hover-border { border-color: var(--orange); }
-:is([data-theme="nexus"], [data-theme="abyss"]) .game-card.status-completed:hover .card-hover-border { border-color: var(--cyan); }
+[data-theme="nexus"] .game-card.status-playing:hover .card-hover-border { border-color: var(--green); }
+[data-theme="nexus"] .game-card.status-todo:hover .card-hover-border { border-color: var(--orange); }
+[data-theme="nexus"] .game-card.status-completed:hover .card-hover-border { border-color: var(--cyan); }
 
 /* Steam 卡片链接 */
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-card-link {
+[data-theme="nexus"] .steam-card-link {
   position: absolute;
   bottom: 7px;
   right: 7px;
@@ -592,14 +592,14 @@
   z-index: 2;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-card-link:hover {
+[data-theme="nexus"] .steam-card-link:hover {
   background: rgba(8,8,8,0.97);
   border-color: var(--cyan);
   color: #fff;
 }
 
 /* ===== Steam 每日推荐 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-recommendations {
+[data-theme="nexus"] .steam-recommendations {
   margin-bottom: 2rem;
   padding: 1.5rem;
   background: rgba(0,210,255,0.04);
@@ -607,14 +607,14 @@
   border: 1px solid rgba(0,210,255,0.15);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-header {
+[data-theme="nexus"] .steam-rec-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-title {
+[data-theme="nexus"] .steam-rec-title {
   font-family: var(--font-display);
   font-size: 1.1rem;
   display: flex;
@@ -622,26 +622,26 @@
   gap: 0.5rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-date {
+[data-theme="nexus"] .steam-rec-date {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
 /* Mobile-first: 2 columns default */
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-grid {
+[data-theme="nexus"] .steam-rec-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 
 @media (min-width: 769px) {
-  :is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-grid {
+  [data-theme="nexus"] .steam-rec-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
   }
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-card {
+[data-theme="nexus"] .steam-rec-card {
   background: rgba(255,255,255,0.03);
   border-radius: 10px;
   overflow: hidden;
@@ -651,22 +651,22 @@
   position: relative;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-card:hover {
+[data-theme="nexus"] .steam-rec-card:hover {
   transform: translateY(-4px);
   background: rgba(255,255,255,0.06);
   box-shadow: 0 8px 25px rgba(0,0,0,0.4);
   border-color: var(--cyan);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-image {
+[data-theme="nexus"] .steam-rec-image {
   width: 100%;
   height: 100px;
   object-fit: cover;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-info { padding: 0.8rem; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-name {
+[data-theme="nexus"] .steam-rec-info { padding: 0.8rem; }
+[data-theme="nexus"] .steam-rec-name {
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.3rem;
@@ -675,14 +675,14 @@
   text-overflow: ellipsis;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-price {
+[data-theme="nexus"] .steam-rec-price {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-discount {
+[data-theme="nexus"] .steam-rec-discount {
   background: #3a5a18;
   color: var(--green);
   padding: 0.1rem 0.4rem;
@@ -691,18 +691,18 @@
   font-weight: 700;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-original {
+[data-theme="nexus"] .steam-rec-original {
   text-decoration: line-through;
   color: var(--text-muted);
   font-size: 0.75rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-current {
+[data-theme="nexus"] .steam-rec-current {
   color: var(--green);
   font-weight: 600;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-new {
+[data-theme="nexus"] .steam-rec-new {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
@@ -715,7 +715,7 @@
 }
 
 /* ===== 新闻列表 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) .sub-tabs {
+[data-theme="nexus"] .sub-tabs {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
@@ -725,7 +725,7 @@
   width: fit-content;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .sub-tab {
+[data-theme="nexus"] .sub-tab {
   padding: 0.5rem 1.2rem;
   font-size: 0.85rem;
   font-weight: 500;
@@ -738,12 +738,12 @@
   font-family: var(--font-ui);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .sub-tab.active {
+[data-theme="nexus"] .sub-tab.active {
   background: rgba(255,255,255,0.1);
   color: var(--text-main);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .btn-ai-summary {
+[data-theme="nexus"] .btn-ai-summary {
   padding: 0.5rem 1rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -757,19 +757,19 @@
   font-family: var(--font-ui);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .btn-ai-summary:hover {
+[data-theme="nexus"] .btn-ai-summary:hover {
   background: rgba(217,0,255,0.25);
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(217,0,255,0.2);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-list {
+[data-theme="nexus"] .news-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-item {
+[data-theme="nexus"] .news-item {
   background: rgba(255,255,255,0.03);
   border-radius: 10px;
   padding: 1.25rem;
@@ -778,20 +778,20 @@
   border: 1px solid transparent;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-item:hover {
+[data-theme="nexus"] .news-item:hover {
   background: rgba(255,255,255,0.06);
   border-color: var(--panel-border);
   transform: translateX(4px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-header {
+[data-theme="nexus"] .news-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source {
+[data-theme="nexus"] .news-source {
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.2rem 0.6rem;
@@ -799,24 +799,24 @@
   text-transform: uppercase;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source.tieba { background: var(--cyan); color: #000; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source.douyin { background: #222; color: #fff; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source.weibo { background: #ff0000; color: #fff; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source.bilibili { background: var(--cyan); color: #000; }
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-source.iran { background: var(--orange); color: #000; }
+[data-theme="nexus"] .news-source.tieba { background: var(--cyan); color: #000; }
+[data-theme="nexus"] .news-source.douyin { background: #222; color: #fff; }
+[data-theme="nexus"] .news-source.weibo { background: #ff0000; color: #fff; }
+[data-theme="nexus"] .news-source.bilibili { background: var(--cyan); color: #000; }
+[data-theme="nexus"] .news-source.iran { background: var(--orange); color: #000; }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-time {
+[data-theme="nexus"] .news-time {
   font-size: 0.7rem;
   color: var(--text-muted);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-title {
+[data-theme="nexus"] .news-title {
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.4;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .news-summary {
+[data-theme="nexus"] .news-summary {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin-top: 0.5rem;
@@ -825,19 +825,19 @@
 
 /* ===== 在线游戏区域 ===== */
 /* Mobile-first: 2 columns, desktop expands via auto-fit */
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-games-grid {
+[data-theme="nexus"] .online-games-grid {
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
 @media (min-width: 769px) {
-  :is([data-theme="nexus"], [data-theme="abyss"]) .online-games-grid {
+  [data-theme="nexus"] .online-games-grid {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
   }
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-games-section .online-games-title {
+[data-theme="nexus"] .online-games-section .online-games-title {
   font-family: var(--font-title) !important;
   font-size: 0.85rem !important;
   font-weight: 400 !important;
@@ -847,7 +847,7 @@
   margin-bottom: 1rem !important;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card {
+[data-theme="nexus"] .online-game-card {
   background: var(--panel-bg) !important;
   border: 1px solid var(--panel-border) !important;
   border-radius: 12px !important;
@@ -857,7 +857,7 @@
   overflow: hidden;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card::before {
+[data-theme="nexus"] .online-game-card::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -866,24 +866,24 @@
   transition: opacity 0.3s;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card:hover {
+[data-theme="nexus"] .online-game-card:hover {
   transform: translateY(-3px);
   border-color: var(--cyan) !important;
   box-shadow: 0 4px 20px rgba(0,210,255,0.15), inset 0 0 30px rgba(0,210,255,0.03);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card:hover::before {
+[data-theme="nexus"] .online-game-card:hover::before {
   opacity: 1;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card .game-card-name {
+[data-theme="nexus"] .online-game-card .game-card-name {
   font-family: var(--font-ui);
   font-weight: 600;
   font-size: 1rem;
   color: var(--text-main);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card .game-card-desc {
+[data-theme="nexus"] .online-game-card .game-card-desc {
   font-size: 0.75rem;
   color: var(--text-muted);
   letter-spacing: 0.5px;
@@ -891,7 +891,7 @@
 
 /* ===== 浮动按钮 ===== */
 /* add-game-btn 样式（位置由 .fab-stack-right 容器控制） */
-:is([data-theme="nexus"], [data-theme="abyss"]) .add-game-btn {
+[data-theme="nexus"] .add-game-btn {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -906,13 +906,13 @@
   backdrop-filter: blur(8px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .add-game-btn:hover {
+[data-theme="nexus"] .add-game-btn:hover {
   transform: scale(1.1);
   background: rgba(0,210,255,0.2);
   box-shadow: 0 0 30px rgba(0,210,255,0.5);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .ai-fab {
+[data-theme="nexus"] .ai-fab {
   position: fixed;
   bottom: 2rem;
   left: 2rem;
@@ -933,12 +933,12 @@
   backdrop-filter: blur(8px);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .ai-fab:hover {
+[data-theme="nexus"] .ai-fab:hover {
   transform: scale(1.15);
   box-shadow: 0 0 25px rgba(217,0,255,0.4);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .office-fab {
+[data-theme="nexus"] .office-fab {
   background: rgba(0,255,85,0.08);
   border: 1px solid rgba(0,255,85,0.35);
   box-shadow: 0 0 12px rgba(0,255,85,0.15);
@@ -947,7 +947,7 @@
   border-radius: 8px;
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .office-fab:hover {
+[data-theme="nexus"] .office-fab:hover {
   background: rgba(0,255,85,0.18);
   box-shadow: 0 0 25px rgba(0,255,85,0.35);
   transform: translateY(-3px);
@@ -959,11 +959,11 @@
   border: 1px solid rgba(0,210,255,0.4);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .btn-steam:hover {
+[data-theme="nexus"] .btn-steam:hover {
   background: rgba(0,210,255,0.2);
 }
 
-:is([data-theme="nexus"], [data-theme="abyss"]) .ai-loading {
+[data-theme="nexus"] .ai-loading {
   display: inline-block;
   width: 40px;
   height: 40px;
@@ -975,23 +975,23 @@
 }
 
 /* ===== 自定义滚动条 ===== */
-:is([data-theme="nexus"], [data-theme="abyss"]) ::-webkit-scrollbar { width: 7px; }
-:is([data-theme="nexus"], [data-theme="abyss"]) ::-webkit-scrollbar-track { background: var(--bg-dark); }
-:is([data-theme="nexus"], [data-theme="abyss"]) ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-:is([data-theme="nexus"], [data-theme="abyss"]) ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+[data-theme="nexus"] ::-webkit-scrollbar { width: 7px; }
+[data-theme="nexus"] ::-webkit-scrollbar-track { background: var(--bg-dark); }
+[data-theme="nexus"] ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+[data-theme="nexus"] ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
 
 /* ===== 移动端适配 ===== */
 @media (max-width: 768px) {
   /* ── 布局 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .app-container {
+  [data-theme="nexus"] .app-container {
     grid-template-columns: 1fr;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .sidebar {
+  [data-theme="nexus"] .sidebar {
     display: none !important;
   }
 
   /* ── Nexus 移动端顶栏 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header {
+  [data-theme="nexus"] .classic-header {
     display: block !important;
     background: linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.85) 100%);
     border-bottom: 1px solid var(--panel-border);
@@ -1002,7 +1002,7 @@
     backdrop-filter: blur(12px);
     text-align: left;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .logo {
+  [data-theme="nexus"] .classic-header .logo {
     font-family: var(--font-display);
     font-size: 1.6rem;
     color: var(--text-main);
@@ -1012,10 +1012,10 @@
     letter-spacing: 3px;
     display: inline-block;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .slogan {
+  [data-theme="nexus"] .classic-header .slogan {
     display: none;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .nav-tabs {
+  [data-theme="nexus"] .classic-header .nav-tabs {
     display: flex;
     justify-content: flex-start;
     gap: 6px;
@@ -1025,8 +1025,8 @@
     scrollbar-width: none;
     padding-bottom: 2px;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .nav-tabs::-webkit-scrollbar { display: none; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .nav-tab {
+  [data-theme="nexus"] .classic-header .nav-tabs::-webkit-scrollbar { display: none; }
+  [data-theme="nexus"] .classic-header .nav-tab {
     padding: 0.5rem 1.1rem;
     font-size: 0.82rem;
     font-weight: 700;
@@ -1040,14 +1040,14 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .classic-header .nav-tab.active {
+  [data-theme="nexus"] .classic-header .nav-tab.active {
     background: rgba(0,255,85,0.12);
     color: var(--green);
     border-color: rgba(0,255,85,0.35);
   }
 
   /* ── 主内容 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .main-content {
+  [data-theme="nexus"] .main-content {
     padding: 14px 14px 6rem;
     height: auto;
     min-height: 100dvh;
@@ -1055,18 +1055,18 @@
   }
 
   /* ── 页头统计 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .page-header {
+  [data-theme="nexus"] .page-header {
     flex-direction: row !important;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 20px;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .page-title {
+  [data-theme="nexus"] .page-title {
     font-size: 1.8rem;
     flex-shrink: 0;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .stats-cluster {
+  [data-theme="nexus"] .stats-cluster {
     display: flex;
     gap: 6px;
     overflow-x: auto;
@@ -1074,44 +1074,44 @@
     scrollbar-width: none;
     flex-shrink: 1;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .stats-cluster::-webkit-scrollbar { display: none; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .stat-box {
+  [data-theme="nexus"] .stats-cluster::-webkit-scrollbar { display: none; }
+  [data-theme="nexus"] .stat-box {
     padding: 8px 12px;
     min-width: 54px;
     border-radius: 6px;
     flex-shrink: 0;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .stat-val { font-size: 1.1rem; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .stat-label { font-size: 0.58rem; }
+  [data-theme="nexus"] .stat-val { font-size: 1.1rem; }
+  [data-theme="nexus"] .stat-label { font-size: 0.58rem; }
 
   /* ── 分区标题 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .section-title-nexus {
+  [data-theme="nexus"] .section-title-nexus {
     font-size: 1.1rem;
     margin-bottom: 14px;
   }
 
   /* ── 在线游戏 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card {
+  [data-theme="nexus"] .online-game-card {
     padding: 0.85rem 0.9rem !important;
     gap: 0.65rem !important;
     border-radius: 10px !important;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .game-card-icon { font-size: 1.9rem; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card .game-card-name { font-size: 0.88rem; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .online-game-card .game-card-desc { font-size: 0.68rem; }
+  [data-theme="nexus"] .game-card-icon { font-size: 1.9rem; }
+  [data-theme="nexus"] .online-game-card .game-card-name { font-size: 0.88rem; }
+  [data-theme="nexus"] .online-game-card .game-card-desc { font-size: 0.68rem; }
 
   /* ── 游戏卡片网格 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .game-cover { height: 100px; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .game-name { font-size: 1rem; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .game-info { padding: 12px; }
+  [data-theme="nexus"] .game-cover { height: 100px; }
+  [data-theme="nexus"] .game-name { font-size: 1rem; }
+  [data-theme="nexus"] .game-info { padding: 12px; }
 
   /* ── Steam 推荐 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-image { height: 80px; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .steam-recommendations {
+  [data-theme="nexus"] .steam-rec-image { height: 80px; }
+  [data-theme="nexus"] .steam-recommendations {
     padding: 1rem;
     margin-bottom: 1.2rem;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-header {
+  [data-theme="nexus"] .steam-rec-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
@@ -1119,23 +1119,23 @@
   }
 
   /* ── 新闻 tab ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) #tab-news > div:first-child {
+  [data-theme="nexus"] #tab-news > div:first-child {
     flex-wrap: wrap;
     gap: 8px;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .sub-tabs {
+  [data-theme="nexus"] .sub-tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     max-width: 100%;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .sub-tabs::-webkit-scrollbar { display: none; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .sub-tab {
+  [data-theme="nexus"] .sub-tabs::-webkit-scrollbar { display: none; }
+  [data-theme="nexus"] .sub-tab {
     padding: 0.45rem 0.9rem;
     font-size: 0.8rem;
     white-space: nowrap;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .btn-ai-summary {
+  [data-theme="nexus"] .btn-ai-summary {
     padding: 0.45rem 0.85rem;
     font-size: 0.75rem;
   }
@@ -1146,35 +1146,35 @@
     right: 1.2rem;
     gap: 8px;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .add-game-btn {
+  [data-theme="nexus"] .add-game-btn {
     width: 48px;
     height: 48px;
     font-size: 1.4rem;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .ai-fab {
+  [data-theme="nexus"] .ai-fab {
     bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
     left: 1.2rem;
   }
 
   /* ── 装饰元素 ── */
-  :is([data-theme="nexus"], [data-theme="abyss"]) .bg-watermark { font-size: 30vw; }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .deco-leaf { display: none !important; }
+  [data-theme="nexus"] .bg-watermark { font-size: 30vw; }
+  [data-theme="nexus"] .deco-leaf { display: none !important; }
 }
 
 /* 极小屏幕（< 390px） */
 @media (max-width: 390px) {
-  :is([data-theme="nexus"], [data-theme="abyss"]) .games-grid {
+  [data-theme="nexus"] .games-grid {
     grid-template-columns: 1fr;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .online-games-grid {
+  [data-theme="nexus"] .online-games-grid {
     grid-template-columns: 1fr;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .steam-rec-grid {
+  [data-theme="nexus"] .steam-rec-grid {
     grid-template-columns: 1fr;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .page-header {
+  [data-theme="nexus"] .page-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  :is([data-theme="nexus"], [data-theme="abyss"]) .page-title { font-size: 2rem; }
+  [data-theme="nexus"] .page-title { font-size: 2rem; }
 }

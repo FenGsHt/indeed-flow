@@ -6,7 +6,7 @@
 import { initWebGL, destroyWebGL } from './webgl-bg.js';
 
 const LS_KEY = 'indeed-theme';
-const THEMES = ['nexus', 'classic', 'joypad', 'abyss'];
+const THEMES = ['nexus', 'classic', 'joypad'];
 let threeLoaded = false;
 
 function loadThreeJS() {
