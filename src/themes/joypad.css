@@ -547,6 +547,20 @@
   box-shadow: 3px 3px 0 var(--black);
 }
 
+/* Star Office 入口按钮 */
+[data-theme="joypad"] .office-fab {
+  background: var(--white);
+  border: 4px solid var(--black);
+  box-shadow: 4px 4px 0 var(--teal-dark);
+  border-radius: 10px;
+  color: var(--black);
+}
+
+[data-theme="joypad"] .office-fab:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--teal-dark);
+}
+
 /* AI fab */
 [data-theme="joypad"] .ai-fab {
   background: var(--magenta) !important;

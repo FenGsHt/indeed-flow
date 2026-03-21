@@ -548,6 +548,20 @@
   box-shadow: 0 4px 20px rgba(123,47,247,0.5);
 }
 
+[data-theme="classic"] .office-fab {
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(123,47,247,0.15));
+  border: 1px solid rgba(0,212,255,0.3);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  color: #fff;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="classic"] .office-fab:hover {
+  background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(123,47,247,0.25));
+  box-shadow: 0 6px 25px rgba(0,212,255,0.4);
+}
+
 [data-theme="classic"] .btn-steam {
   background: linear-gradient(135deg, #1b2838, #2a475e);
   color: #fff;

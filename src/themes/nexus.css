@@ -942,7 +942,22 @@
   box-shadow: 0 0 25px rgba(217,0,255,0.4);
 }
 
-[data-theme="nexus"] .btn-steam {
+[data-theme="nexus"] .office-fab {
+  background: rgba(0,255,85,0.08);
+  border: 1px solid rgba(0,255,85,0.35);
+  box-shadow: 0 0 12px rgba(0,255,85,0.15);
+  color: var(--green);
+  font-size: 1.3rem;
+  border-radius: 8px;
+}
+
+[data-theme="nexus"] .office-fab:hover {
+  background: rgba(0,255,85,0.18);
+  box-shadow: 0 0 25px rgba(0,255,85,0.35);
+  transform: translateY(-3px);
+}
+
+
   background: rgba(0,210,255,0.1);
   color: var(--cyan);
   border: 1px solid rgba(0,210,255,0.4);
@@ -1139,6 +1154,10 @@
   }
   [data-theme="nexus"] .theme-fab {
     bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    right: 1.2rem;
+  }
+  [data-theme="nexus"] .office-fab {
+    bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
     right: 1.2rem;
   }
   [data-theme="nexus"] .ai-fab {
