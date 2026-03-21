@@ -806,15 +806,20 @@
         // 价格渲染辅助函数
         function renderPriceEl(priceEl, pd) {
           if (!pd || !pd.success) return;
+          // 2026-03-20: joypad 白底卡片需要深色文字
+          const isLight = document.body.getAttribute('data-theme') === 'joypad';
+          const priceColor = isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)';
+          const origColor  = isLight ? 'rgba(0,0,0,0.3)'  : 'rgba(255,255,255,0.3)';
+          const freeColor  = isLight ? '#00875a' : 'rgba(100,220,100,0.8)';
           if (pd.free) {
-            priceEl.innerHTML = `<span style="color:rgba(100,220,100,0.6)">免费</span>`;
+            priceEl.innerHTML = `<span style="color:${freeColor}">免费</span>`;
           } else if (pd.discount > 0) {
             priceEl.innerHTML =
-              `<span style="color:#ff9800;font-weight:600">-${pd.discount}%</span> ` +
-              `<span style="color:rgba(255,255,255,0.85)">¥${pd.final_price.toFixed(0)}</span> ` +
-              `<span style="text-decoration:line-through;color:rgba(255,255,255,0.3)">¥${pd.original_price.toFixed(0)}</span>`;
+              `<span style="color:#e65100;font-weight:600">-${pd.discount}%</span> ` +
+              `<span style="color:${priceColor}">¥${pd.final_price.toFixed(0)}</span> ` +
+              `<span style="text-decoration:line-through;color:${origColor}">¥${pd.original_price.toFixed(0)}</span>`;
           } else {
-            priceEl.innerHTML = `<span style="color:rgba(255,255,255,0.35)">¥${pd.final_price.toFixed(0)}</span>`;
+            priceEl.innerHTML = `<span style="color:${priceColor}">¥${pd.final_price.toFixed(0)}</span>`;
           }
         }
 
@@ -841,11 +846,14 @@
               if (pctEl) pctEl.textContent = percent + '%';
               if (fillEl) fillEl.style.width = percent + '%';
             } else if (rd && rd.success && rd.total_reviews === 0) {
-              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无评价</span>`;
+              // 2026-03-20: joypad 白底用深色，其他主题用半透明白色
+              const mutedColor = document.body.getAttribute('data-theme') === 'joypad' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.3)';
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${mutedColor};">暂无评价</span>`;
               const pctEl = cards[i].querySelector('.steam-rating-pct');
               if (pctEl) pctEl.textContent = 'N/A';
             } else {
-              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:rgba(255,255,255,0.3);">暂无</span>`;
+              const mutedColor = document.body.getAttribute('data-theme') === 'joypad' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.3)';
+              metaEl.innerHTML = `<span>${recommenderText}</span><span style="font-size:0.75rem;color:${mutedColor};">暂无</span>`;
               const pctEl = cards[i].querySelector('.steam-rating-pct');
               if (pctEl) pctEl.textContent = '--';
             }
