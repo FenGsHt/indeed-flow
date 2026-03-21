@@ -35,3 +35,4 @@ test.yml
 backend/data/
 games/minesweeper/server/state.json
 games/uno/server/stats.json
+.claude/worktrees/
