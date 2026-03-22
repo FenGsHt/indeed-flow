@@ -44,7 +44,6 @@
   pointer-events: none;
   z-index: 9997;
   background:
-    radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(0,0,0,0.88) 100%),
     linear-gradient(
       to bottom,
       transparent 0%,
@@ -55,14 +54,14 @@
       transparent 60%,
       transparent 100%
     );
-  background-size: 100% 100%, 100% 220px;
-  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 220px;
+  background-repeat: no-repeat;
   animation: fo-scanroll 7s linear infinite;
 }
 
 @keyframes fo-scanroll {
-  from { background-position: 0 0, 0 -220px; }
-  to   { background-position: 0 0, 0 110vh;  }
+  from { background-position: 0 -220px; }
+  to   { background-position: 0 110vh;  }
 }
 
 /* ===== CRT 效果层 2：扫描线 + RGB 子像素 + 屏幕闪烁 ===== */
