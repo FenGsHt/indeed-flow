@@ -1,0 +1,319 @@
+/* ===== Fallout Terminal Theme ===== */
+/* 2026-03-22: RobCo OS 绿色磷光终端风格 */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* ===== CSS 变量：覆盖 nexus 同名变量 ===== */
+[data-theme="fallout"] {
+  --magenta: #2aff4d;
+  --cyan:    #2aff4d;
+  --green:   #2aff4d;
+  --orange:  #aaff44;
+  --yellow:  #88ee22;
+  --bg-dark: #061207;
+  --panel-bg: rgba(4, 14, 5, 0.92);
+  --panel-border: rgba(42, 255, 77, 0.3);
+  --text-main:  #2aff4d;
+  --text-muted: #117721;
+  --font-display: 'VT323', monospace;
+  --font-ui:     'VT323', monospace;
+
+  /* fallout 专属变量 */
+  --phosphor-glow: 0 0 4px rgba(42,255,77,0.8), 0 0 12px rgba(42,255,77,0.4);
+  --phosphor-glow-dim: 0 0 3px rgba(17,119,33,0.6);
+}
+
+/* ===== 基础样式 ===== */
+[data-theme="fallout"] {
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* CRT 扫描线 */
+[data-theme="fallout"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.22) 50%),
+    linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.01), rgba(0,0,255,0.04));
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 9998;
+  animation: fo-flicker 0.12s infinite;
+}
+
+/* 屏幕角落渐变阴影（模拟 CRT 弯曲） */
+[data-theme="fallout"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.7), inset 0 0 30px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 9997;
+}
+
+@keyframes fo-flicker {
+  0%   { opacity: 0.98; }
+  50%  { opacity: 0.95; }
+  100% { opacity: 0.99; }
+}
+
+/* 隐藏其他主题专属元素 */
+[data-theme="fallout"] .classic-header  { display: none !important; }
+[data-theme="fallout"] .joypad-sunburst { display: none !important; }
+[data-theme="fallout"] .bg-effect       { display: none !important; }
+[data-theme="fallout"] .deco-leaf       { display: none !important; }
+
+/* ===== 文字发光 ===== */
+[data-theme="fallout"] h1,
+[data-theme="fallout"] h2,
+[data-theme="fallout"] h3,
+[data-theme="fallout"] .logo,
+[data-theme="fallout"] .game-title-text,
+[data-theme="fallout"] .section-title {
+  text-shadow: var(--phosphor-glow);
+}
+
+/* ===== 侧边栏 Logo ===== */
+[data-theme="fallout"] .sidebar .logo {
+  color: var(--text-main) !important;
+  text-shadow: var(--phosphor-glow) !important;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+  font-size: 2rem;
+  letter-spacing: 3px;
+}
+
+[data-theme="fallout"] .sidebar .logo-sub {
+  color: var(--text-muted) !important;
+  text-shadow: var(--phosphor-glow-dim) !important;
+  letter-spacing: 4px;
+}
+
+/* ===== 侧边栏背景 ===== */
+[data-theme="fallout"] .sidebar {
+  background: linear-gradient(180deg, rgba(4,14,5,0.98) 0%, rgba(6,18,7,0.9) 100%) !important;
+  border-right: 1px solid rgba(42,255,77,0.25) !important;
+}
+
+/* ===== 导航项 ===== */
+[data-theme="fallout"] .nav-item {
+  font-size: 1.15rem;
+  letter-spacing: 2px;
+}
+
+[data-theme="fallout"] .nav-item::before {
+  background: var(--green) !important;
+  box-shadow: 0 0 8px var(--green);
+}
+
+[data-theme="fallout"] .nav-item.active,
+[data-theme="fallout"] .nav-item:hover {
+  text-shadow: var(--phosphor-glow);
+}
+
+/* nav 激活项：显示 ">" 前缀 */
+[data-theme="fallout"] .nav-item.active .nav-icon::before {
+  content: '> ';
+}
+
+/* ===== 页面 Header ===== */
+[data-theme="fallout"] .page-header {
+  background: none !important;
+  border-bottom: 1px solid rgba(42,255,77,0.3) !important;
+  text-shadow: var(--phosphor-glow);
+}
+
+[data-theme="fallout"] .page-header::before { display: none; }
+
+/* ===== 游戏卡片 ===== */
+[data-theme="fallout"] .game-card {
+  background: rgba(4,14,5,0.88) !important;
+  border: 1px solid rgba(42,255,77,0.35) !important;
+  clip-path: none !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 8px rgba(42,255,77,0.08), inset 0 0 20px rgba(0,0,0,0.5) !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+[data-theme="fallout"] .game-card:hover {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 16px rgba(42,255,77,0.25), inset 0 0 20px rgba(0,0,0,0.4) !important;
+}
+
+/* 卡片顶角装饰（ASCII 风格） */
+[data-theme="fallout"] .game-card::before {
+  content: none !important;
+}
+
+/* ===== 状态徽章 ===== */
+[data-theme="fallout"] .status-badge {
+  border-radius: 0 !important;
+  font-family: var(--font-ui) !important;
+  font-size: 1rem !important;
+  letter-spacing: 1.5px;
+  border: 1px solid currentColor;
+}
+
+[data-theme="fallout"] .status-badge.playing   { background: rgba(42,255,77,0.15)  !important; color: #2aff4d !important; border-color: #2aff4d !important; }
+[data-theme="fallout"] .status-badge.todo      { background: rgba(170,255,68,0.12) !important; color: #aaff44 !important; border-color: #aaff44 !important; }
+[data-theme="fallout"] .status-badge.completed { background: rgba(17,119,33,0.2)   !important; color: #117721 !important; border-color: #117721 !important; }
+
+/* ===== 在线游戏卡片 ===== */
+[data-theme="fallout"] .online-game-card {
+  background: rgba(4,14,5,0.9) !important;
+  border: 1px solid rgba(42,255,77,0.3) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+
+[data-theme="fallout"] .online-game-card::before {
+  background: linear-gradient(135deg, rgba(42,255,77,0.1), transparent) !important;
+}
+
+[data-theme="fallout"] .online-game-card:hover {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 20px rgba(42,255,77,0.2) !important;
+}
+
+[data-theme="fallout"] .online-game-card .game-card-name {
+  text-shadow: var(--phosphor-glow);
+}
+
+/* ===== 分区标题 ===== */
+[data-theme="fallout"] .section-title {
+  color: var(--text-main) !important;
+  text-shadow: var(--phosphor-glow);
+  letter-spacing: 4px;
+}
+
+[data-theme="fallout"] .section-title::after {
+  background: var(--green) !important;
+  box-shadow: 0 0 8px var(--green);
+}
+
+/* ===== 按钮 ===== */
+[data-theme="fallout"] .btn-ai-summary {
+  background: transparent !important;
+  border: 1px solid var(--green) !important;
+  color: var(--green) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  text-shadow: var(--phosphor-glow-dim);
+  letter-spacing: 2px;
+}
+
+[data-theme="fallout"] .btn-ai-summary:hover {
+  background: rgba(42,255,77,0.12) !important;
+  box-shadow: 0 0 12px rgba(42,255,77,0.3) !important;
+}
+
+[data-theme="fallout"] .add-game-btn {
+  background: rgba(4,14,5,0.95) !important;
+  border: 1px solid rgba(42,255,77,0.5) !important;
+  color: var(--green) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 12px rgba(42,255,77,0.15) !important;
+}
+
+[data-theme="fallout"] .add-game-btn:hover {
+  background: rgba(42,255,77,0.1) !important;
+  box-shadow: 0 0 20px rgba(42,255,77,0.3) !important;
+}
+
+/* ===== 主题切换器 ===== */
+[data-theme="fallout"] .theme-switcher {
+  background: rgba(4,14,5,0.95) !important;
+  border: 1px solid rgba(42,255,77,0.4) !important;
+  border-radius: 0 !important;
+}
+
+[data-theme="fallout"] .theme-option {
+  border-radius: 0 !important;
+  border: 1px solid rgba(42,255,77,0.3) !important;
+}
+
+[data-theme="fallout"] .theme-option.active {
+  background: rgba(42,255,77,0.15) !important;
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+  box-shadow: 0 0 8px rgba(42,255,77,0.3) !important;
+}
+
+/* ===== 房间卡片 ===== */
+[data-theme="fallout"] .room-card {
+  background: rgba(4,14,5,0.88) !important;
+  border: 1px solid rgba(42,255,77,0.3) !important;
+  border-radius: 0 !important;
+}
+
+/* ===== 榜单 ===== */
+[data-theme="fallout"] .leaderboard-panel,
+[data-theme="fallout"] .lb-panel {
+  background: rgba(4,14,5,0.88) !important;
+  border: 1px solid rgba(42,255,77,0.25) !important;
+  border-radius: 0 !important;
+}
+
+/* ===== FAB 按钮 ===== */
+[data-theme="fallout"] .theme-fab,
+[data-theme="fallout"] .office-fab,
+[data-theme="fallout"] .ai-fab {
+  background: rgba(4,14,5,0.95) !important;
+  border: 1px solid rgba(42,255,77,0.4) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 10px rgba(42,255,77,0.15) !important;
+}
+
+/* ===== 输入框、选择器 ===== */
+[data-theme="fallout"] input,
+[data-theme="fallout"] select,
+[data-theme="fallout"] textarea {
+  background: rgba(4,14,5,0.9) !important;
+  border: 1px solid rgba(42,255,77,0.4) !important;
+  border-radius: 0 !important;
+  color: var(--text-main) !important;
+  font-family: var(--font-ui) !important;
+}
+
+[data-theme="fallout"] input:focus,
+[data-theme="fallout"] select:focus,
+[data-theme="fallout"] textarea:focus {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 8px rgba(42,255,77,0.25) !important;
+  outline: none !important;
+}
+
+/* ===== 滚动条 ===== */
+[data-theme="fallout"] ::-webkit-scrollbar {
+  width: 6px;
+  background: #061207;
+}
+
+[data-theme="fallout"] ::-webkit-scrollbar-thumb {
+  background: rgba(42,255,77,0.4);
+}
+
+[data-theme="fallout"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(42,255,77,0.7);
+}
+
+/* ===== 图片封面：加绿色调 ===== */
+[data-theme="fallout"] .cover-img,
+[data-theme="fallout"] .game-cover img {
+  filter: grayscale(80%) sepia(40%) hue-rotate(80deg) brightness(0.7) !important;
+}
+
+[data-theme="fallout"] .game-card:hover .cover-img,
+[data-theme="fallout"] .game-card:hover .game-cover img {
+  filter: grayscale(60%) sepia(30%) hue-rotate(80deg) brightness(0.8) !important;
+}
+
+/* ===== 评分徽章 ===== */
+[data-theme="fallout"] .rating-badge {
+  background: rgba(4,14,5,0.95) !important;
+  border: 1px solid rgba(42,255,77,0.4) !important;
+  border-radius: 0 !important;
+  color: var(--green) !important;
+}
