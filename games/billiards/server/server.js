@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3006;
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168'];
+const io = new Server(server, { cors: { origin: ALLOWED_ORIGIN, methods: ['GET', 'POST'] } });
 
 // Serve static client files
 app.use(express.static(path.join(__dirname, '../client')));

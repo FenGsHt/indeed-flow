@@ -1,6 +1,17 @@
 // API 基础 URL
 const API_BASE = 'http://150.158.110.168:5001';
 
+// XSS 防护：转义 HTML 特殊字符
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // 当前选中的游戏
 let currentGames = [];
 let currentTab = 'library';
@@ -164,18 +175,18 @@ function renderGames() {
     
     // 生成标签
     const tags = g.tags || ['Game'];
-    const tagsHtml = tags.map(t => `<span class="tag">${t}</span>`).join('');
-    
+    const tagsHtml = tags.map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
+
     // 推荐人信息
-    const recommenderText = g.recommender ? ` · 推荐人: ${g.recommender}` : '';
-    
+    const recommenderText = g.recommender ? ` · 推荐人: ${escHtml(g.recommender)}` : '';
+
     return `
-      <div class="grid-row ${statusClass}" data-id="${g.id}" onclick="showDetail('${g.id}')">
+      <div class="grid-row ${statusClass}" data-id="${escHtml(g.id)}" onclick="showDetail('${escHtml(g.id)}')">
         <div class="cell-index">${String(i + 1).padStart(2, '0')}</div>
-        <div class="cell-cover" style="${g.image ? `background-image:url('${g.image}')` : 'background:linear-gradient(135deg,#FF3366,#FF9933)'}" onerror="this.style.background='linear-gradient(135deg,#FF3366,#FF9933)'"></div>
+        <div class="cell-cover" style="${g.image ? `background-image:url('${escHtml(g.image)}')` : 'background:linear-gradient(135deg,#FF3366,#FF9933)'}"></div>
         <div class="cell-title">
-          <span class="game-title">${g.name}</span>
-          <span class="game-platform">${g.created_by || 'Anonymous'}${recommenderText}${g.source ? ' · ' + g.source : ''}</span>
+          <span class="game-title">${escHtml(g.name)}</span>
+          <span class="game-platform">${escHtml(g.created_by || 'Anonymous')}${recommenderText}${g.source ? ' · ' + escHtml(g.source) : ''}</span>
         </div>
         <div class="cell-tags">${tagsHtml}</div>
         <div class="cell-status ${statusClass}">
@@ -210,7 +221,7 @@ function renderGames() {
     document.getElementById('featured-time').textContent = `${tabLabel} · ${Object.keys(featured.ratings || {}).length} ratings`;
     const imgWrapper = document.getElementById('featured-image');
     if (featured.image) {
-      imgWrapper.innerHTML = `<img src="${featured.image}" onerror="this.parentElement.innerHTML='<div class=\\'featured-placeholder\\'>🎮</div>'">`;
+      imgWrapper.innerHTML = `<img src="${escHtml(featured.image)}" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\\'featured-placeholder\\'>🎮</div>')">`;
     } else {
       imgWrapper.innerHTML = '<div class="featured-placeholder">🎮</div>';
     }
@@ -251,13 +262,13 @@ async function loadIranNews() {
         const isBookmarked = bookmarks.some(b => b.id === item.id);
         return `
         <div class="news-item">
-          <h3>${item.title}</h3>
-          <p>${item.summary || ''}</p>
+          <h3>${escHtml(item.title)}</h3>
+          <p>${escHtml(item.summary || '')}</p>
           <div class="news-actions">
-            <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" onclick="toggleBookmark('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.summary || ''}', '${item.url || ''}', 'iran')">
+            <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" onclick="toggleBookmark('${escHtml(item.id)}', '${escHtml(item.title)}', '${escHtml(item.summary || '')}', '${escHtml(item.url || '')}', 'iran')">
               ${isBookmarked ? '★' : '☆'}
             </button>
-            ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+            ${item.url ? `<a href="${escHtml(item.url)}" target="_blank">查看详情 →</a>` : ''}
           </div>
         </div>
       `}).join('');
@@ -332,11 +343,11 @@ function renderBookmarks() {
   
   list.innerHTML = bookmarks.map(item => `
     <div class="news-item">
-      <h3>${item.title}</h3>
-      <p>${item.summary || ''}</p>
+      <h3>${escHtml(item.title)}</h3>
+      <p>${escHtml(item.summary || '')}</p>
       <div class="news-actions">
-        <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.summary || ''}', '${item.url || ''}', '${item.source || ''}')">★</button>
-        ${item.url ? `<a href="${item.url}" target="_blank">查看详情 →</a>` : ''}
+        <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${escHtml(item.id)}', '${escHtml(item.title)}', '${escHtml(item.summary || '')}', '${escHtml(item.url || '')}', '${escHtml(item.source || '')}')">★</button>
+        ${item.url ? `<a href="${escHtml(item.url)}" target="_blank">查看详情 →</a>` : ''}
       </div>
     </div>
   `).join('');
@@ -373,64 +384,65 @@ async function showDetail(id) {
     {value: 'completed', label: '已完'}
   ].map(opt => `<option value="${opt.value}" ${opt.value === currentStatus ? 'selected' : ''}>${opt.label}</option>`).join('');
   
+  const safeId = escHtml(game.id);
   document.getElementById('detail-content').innerHTML = `
     <div class="form-group">
       <label>游戏名称</label>
-      <input type="text" id="detail-name" value="${game.name || ''}" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
-      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameName('${game.id}')">保存名称</button>
+      <input type="text" id="detail-name" value="${escHtml(game.name || '')}" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
+      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameName('${safeId}')">保存名称</button>
     </div>
-    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${game.created_by || 'Anonymous'}${game.recommender ? ' · 推荐人: ' + game.recommender : ''}${game.source ? ' · Source: ' + game.source : ''} · ${game.created_at?.slice(0,10) || '-'}</p>
-    ${game.image ? `<img src="${game.image}" class="detail-image" onerror="this.style.display='none'">` : ''}
-    
+    <p style="color:var(--text-muted);font-size:0.8rem;">Added by ${escHtml(game.created_by || 'Anonymous')}${game.recommender ? ' · 推荐人: ' + escHtml(game.recommender) : ''}${game.source ? ' · Source: ' + escHtml(game.source) : ''} · ${escHtml(game.created_at?.slice(0,10) || '-')}</p>
+    ${game.image ? `<img src="${escHtml(game.image)}" class="detail-image" onerror="this.style.display='none'">` : ''}
+
     <div class="change-image-section">
-      <input type="text" id="new-image-url" placeholder="New image URL" value="${game.image || ''}">
-      <button class="btn" onclick="changeImage('${game.id}')">Change Cover</button>
-      <button class="btn" onclick="fetchSteamImage('${game.id}', '${game.name.replace(/'/g, "\\'")}')">🔍 Steam</button>
+      <input type="text" id="new-image-url" placeholder="New image URL" value="${escHtml(game.image || '')}">
+      <button class="btn" onclick="changeImage('${safeId}')">Change Cover</button>
+      <button class="btn" onclick="fetchSteamImage('${safeId}', '${escHtml(game.name)}')">🔍 Steam</button>
     </div>
-    
+
     <div class="form-group">
       <label>推荐人</label>
-      <input type="text" id="detail-recommender" value="${game.recommender || ''}" placeholder="推荐人（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
+      <input type="text" id="detail-recommender" value="${escHtml(game.recommender || '')}" placeholder="推荐人（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
     </div>
-    
+
     <div class="form-group">
       <label>备注</label>
-      <textarea id="detail-notes" placeholder="备注（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);min-height:60px;">${game.notes || ''}</textarea>
-      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameInfo('${game.id}')">保存推荐人和备注</button>
+      <textarea id="detail-notes" placeholder="备注（选填）" style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);min-height:60px;">${escHtml(game.notes || '')}</textarea>
+      <button class="btn" style="margin-top:0.5rem;" onclick="updateGameInfo('${safeId}')">保存推荐人和备注</button>
     </div>
-    
+
     <div class="status-section">
       <h3>Status</h3>
-      <select id="detail-status" onchange="updateGameStatus('${game.id}', this.value)">
+      <select id="detail-status" onchange="updateGameStatus('${safeId}', this.value)">
         ${statusOptions}
       </select>
     </div>
-    
+
     <div class="rating-section">
       <h3>Rating: ${avg > 0 ? '⭐ ' + avg.toFixed(1) : 'No ratings'}</h3>
       <div class="rate-buttons">
-        ${[1,2,3,4,5].map(n => `<button class="rate-btn" onclick="rateGame('${id}', ${n})">${n}⭐</button>`).join('')}
+        ${[1,2,3,4,5].map(n => `<button class="rate-btn" onclick="rateGame('${safeId}', ${n})">${n}⭐</button>`).join('')}
       </div>
     </div>
-    
+
     <div class="comments-section">
       <h3>Comments (${comments.length})</h3>
       ${comments.length > 0 ? comments.map(c => `
         <div class="comment">
-          <div class="comment-user">${c.user}</div>
-          <div class="comment-text">${c.text}</div>
+          <div class="comment-user">${escHtml(c.user)}</div>
+          <div class="comment-text">${escHtml(c.text)}</div>
         </div>
       `).join('') : '<p style="color:var(--text-muted)">No comments yet</p>'}
-      
+
       <div style="margin-top:1rem;">
         <input type="text" id="comment-user" placeholder="Your name" style="width:100%;padding:8px;margin-bottom:0.5rem;border:var(--border-thin);border-radius:var(--radius-sm);">
         <input type="text" id="comment-text" placeholder="Add a comment..." style="width:100%;padding:8px;border:var(--border-thin);border-radius:var(--radius-sm);">
-        <button class="btn" style="margin-top:0.5rem;" onclick="addComment('${id}')">Post Comment</button>
+        <button class="btn" style="margin-top:0.5rem;" onclick="addComment('${safeId}')">Post Comment</button>
       </div>
     </div>
-    
+
     <div class="detail-actions">
-      <button class="btn btn-danger" onclick="deleteGame('${id}')">Delete</button>
+      <button class="btn btn-danger" onclick="deleteGame('${safeId}')">Delete</button>
       <button class="btn btn-secondary" onclick="closeModal('detail-modal')">Close</button>
     </div>
   `;
@@ -639,9 +651,9 @@ async function searchSteam() {
     const resultsDiv = document.getElementById('steam-results');
     if (data.items && data.items.length > 0) {
       resultsDiv.innerHTML = data.items.slice(0, 5).map(item => `
-        <div class="steam-item" onclick="selectSteamGame('${item.id}', '${item.name.replace(/'/g, "\\'")}')">
-          <img src="${item.thumb}" onerror="this.style.display='none'">
-          <span>${item.name}</span>
+        <div class="steam-item" onclick="selectSteamGame('${escHtml(item.id)}', '${escHtml(item.name)}')">
+          <img src="${escHtml(item.thumb)}" onerror="this.style.display='none'">
+          <span>${escHtml(item.name)}</span>
         </div>
       `).join('');
     } else {
@@ -661,7 +673,7 @@ function selectSteamGame(id, name) {
   
   // 预览图片
   const preview = document.getElementById('image-preview');
-  preview.innerHTML = `<img src="https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg" onerror="this.parentElement.innerHTML=''">`;
+  preview.innerHTML = `<img src="https://cdn.cloudflare.steamstatic.com/steam/apps/${escHtml(id)}/header.jpg" onerror="this.style.display='none'">`;
 }
 
 // 弹窗控制

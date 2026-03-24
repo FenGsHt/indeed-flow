@@ -9,8 +9,9 @@ const stats       = require('./stats');
 
 const app    = express();
 const server = http.createServer(app);
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168'];
 const io     = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: { origin: ALLOWED_ORIGIN, methods: ['GET', 'POST'] },
 });
 
 app.use(express.static(path.join(__dirname, '../client')));

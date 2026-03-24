@@ -17,6 +17,8 @@ function loadThreeJS() {
     s.onload = resolve;
     s.onerror = reject;
     document.head.appendChild(s);
+    // 10 秒超时，防止 CDN 卡住
+    setTimeout(() => reject(new Error('Three.js load timeout')), 10000);
   });
 }
 
@@ -35,9 +37,10 @@ async function activateWebGL() {
 }
 
 // ===== Fallout FX =====
-let _foBgCanvas = null;
-let _foBgRaf    = null;
-let _foPipboy   = null;
+let _foBgCanvas  = null;
+let _foBgRaf     = null;
+let _foPipboy    = null;
+let _foGlitchTid = null;
 
 const FO_CMDS = [
   '> ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL',
@@ -83,9 +86,10 @@ function activateFallout() {
 }
 
 function deactivateFallout() {
-  if (_foBgRaf)    { cancelAnimationFrame(_foBgRaf); _foBgRaf = null; }
-  if (_foBgCanvas) { _foBgCanvas.remove(); _foBgCanvas = null; }
-  if (_foPipboy)   { _foPipboy.remove();   _foPipboy = null; }
+  if (_foBgRaf)     { cancelAnimationFrame(_foBgRaf); _foBgRaf = null; }
+  if (_foBgCanvas)  { _foBgCanvas.remove(); _foBgCanvas = null; }
+  if (_foPipboy)    { _foPipboy.remove();   _foPipboy = null; }
+  if (_foGlitchTid) { clearTimeout(_foGlitchTid); _foGlitchTid = null; }
 }
 
 function _startFoBg() {
@@ -201,7 +205,8 @@ function _injectPipboy() {
   // Occasional glitch on the level number
   function glitchLoop() {
     if (!_foPipboy) return;
-    setTimeout(() => {
+    _foGlitchTid = setTimeout(() => {
+      if (!_foPipboy) return;
       const n = document.getElementById('fo-pb-n');
       if (n) {
         const orig = n.textContent;

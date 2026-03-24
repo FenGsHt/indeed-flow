@@ -8,9 +8,10 @@ const { RoomManager, MinesweeperGame } = require('./game');
 
 const app = express();
 const server = http.createServer(app);
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168'];
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: ALLOWED_ORIGIN,
     methods: ['GET', 'POST']
   }
 });
@@ -188,6 +189,18 @@ io.on('connection', (socket) => {
   let currentRoom = null;
   let currentPlayer = null;
 
+  // 输入验证工具
+  function validateCoord(x, y, room) {
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
+    if (x < 0 || y < 0) return false;
+    if (x >= room.game.width || y >= room.game.height) return false;
+    return true;
+  }
+
+  function validateName(name) {
+    return typeof name === 'string' && name.trim().length > 0 && name.length <= 20;
+  }
+
   // 获取房间列表
   socket.on('get-rooms', () => {
     socket.emit('room-list', roomManager.getRoomList());
@@ -201,8 +214,12 @@ io.on('connection', (socket) => {
 
   // 加入房间
   socket.on('join-room', ({ roomId, playerName, width, height, mines }) => {
-    if (!roomId) {
-      socket.emit('error', { message: '房间号不能为空' });
+    if (!roomId || typeof roomId !== 'string' || roomId.length > 32) {
+      socket.emit('error', { message: '房间号无效' });
+      return;
+    }
+    if (!validateName(playerName)) {
+      socket.emit('error', { message: '玩家名称无效（1-20个字符）' });
       return;
     }
 
@@ -260,6 +277,7 @@ io.on('connection', (socket) => {
 
   // 揭开格子
   socket.on('reveal-cell', ({ x, y }) => {
+    try {
     if (!currentRoom || !currentPlayer) {
       socket.emit('error', { message: '未在房间中' });
       return;
@@ -267,6 +285,11 @@ io.on('connection', (socket) => {
 
     const room = roomManager.getRoom(currentRoom);
     if (!room) return;
+
+    if (!validateCoord(x, y, room)) {
+      socket.emit('error', { message: '坐标无效' });
+      return;
+    }
 
     if (room.game.gameStatus === 'waiting') {
       room.game.placeMines(x, y);
@@ -306,14 +329,21 @@ io.on('connection', (socket) => {
         if (currentRoom === DEFAULT_ROOM) saveState();
       }
     }
+    } catch (err) {
+      console.error('[reveal-cell] error:', err);
+      socket.emit('error', { message: '操作失败，请重试' });
+    }
   });
 
   // 标记/取消旗帜
   socket.on('toggle-flag', ({ x, y }) => {
+    try {
     if (!currentRoom || !currentPlayer) return;
 
     const room = roomManager.getRoom(currentRoom);
     if (!room) return;
+
+    if (!validateCoord(x, y, room)) return;
 
     const success = room.game.toggleFlag(x, y);
     if (success) {
@@ -321,6 +351,9 @@ io.on('connection', (socket) => {
         ...room.game.getState(),
         players: roomManager.getPlayersList(currentRoom),
       });
+    }
+    } catch (err) {
+      console.error('[toggle-flag] error:', err);
     }
   });
 

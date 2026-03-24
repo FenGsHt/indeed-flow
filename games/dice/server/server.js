@@ -9,7 +9,8 @@ const { Server } = require('socket.io');
 const { DiceGame } = require('./game');
 
 const server = http.createServer();
-const io = new Server(server, { cors: { origin: '*' } });
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168'];
+const io = new Server(server, { cors: { origin: ALLOWED_ORIGIN, methods: ['GET', 'POST'] } });
 
 const FLASK_URL = process.env.FLASK_URL || 'http://127.0.0.1:5001';
 
