@@ -14,23 +14,41 @@ API_KEY := "fengshtindeed4789"
     Send, ^c
     ClipWait, 2
 
-    ; 用 PowerShell 判断剪贴板是否含图片（优先于文字判断，解决QQ图片问题）
-    psCheck := "Add-Type -AssemblyName System.Windows.Forms; if ([System.Windows.Forms.Clipboard]::ContainsImage()) { Write-Output 'image' } else { Write-Output 'text' }"
+    ; 用 PowerShell 判断类型：bitmap > 文件路径含图片扩展名 > 文字
     tmpType := A_Temp . "\clip_type.txt"
+    psCheck := "Add-Type -AssemblyName System.Windows.Forms;"
+             . "Add-Type -AssemblyName System.Drawing;"
+             . "$exts = @('.png','.jpg','.jpeg','.gif','.bmp','.webp');"
+             . "if ([System.Windows.Forms.Clipboard]::ContainsImage()) { Write-Output 'image_bitmap' }"
+             . "elseif ([System.Windows.Forms.Clipboard]::ContainsFileDropList()) {"
+             . "  $f = [System.Windows.Forms.Clipboard]::GetFileDropList()[0];"
+             . "  if ($exts -contains [IO.Path]::GetExtension($f).ToLower()) { Write-Output ('image_file:' + $f) }"
+             . "  else { Write-Output 'text' }"
+             . "} else { Write-Output 'text' }"
     RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psCheck%" -OutFile "%tmpType%", , Hide
     FileRead, detectedType, %tmpType%
     FileDelete, %tmpType%
     detectedType := Trim(detectedType, "`r`n ")
 
-    if (detectedType = "image") {
+    if (detectedType = "image_bitmap" or InStr(detectedType, "image_file:")) {
         ; ── 图片推送 ──
         tmpImg  := A_Temp . "\clip_img.png"
         tmpJson := A_Temp . "\clip_push.json"
 
-        psImg := "Add-Type -AssemblyName System.Windows.Forms;"
-               . "Add-Type -AssemblyName System.Drawing;"
-               . "$img = [System.Windows.Forms.Clipboard]::GetImage();"
-               . "if ($img) { $img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png) }"
+        if (InStr(detectedType, "image_file:")) {
+            ; QQ/文件管理器复制图片文件 → 直接从路径读
+            srcFile := SubStr(detectedType, 12)
+            psImg := "Add-Type -AssemblyName System.Drawing;"
+                   . "$img = [System.Drawing.Image]::FromFile('" . srcFile . "');"
+                   . "$img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png);"
+                   . "$img.Dispose()"
+        } else {
+            ; 截图/bitmap → 从剪贴板读
+            psImg := "Add-Type -AssemblyName System.Windows.Forms;"
+                   . "Add-Type -AssemblyName System.Drawing;"
+                   . "$img = [System.Windows.Forms.Clipboard]::GetImage();"
+                   . "if ($img) { $img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png) }"
+        }
         RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psImg%", , Hide
 
         IfNotExist, %tmpImg%
