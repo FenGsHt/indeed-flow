@@ -14,7 +14,7 @@ API_KEY := "fengshtindeed4789"
     Send, ^c
     ClipWait, 2
 
-    ; 用 PowerShell 判断类型：bitmap > 文件路径含图片扩展名 > 文字
+    ; 用 PowerShell 判断类型：bitmap > 文件路径 > 文字中含图片路径 > 文字
     tmpType := A_Temp . "\clip_type.txt"
     psCheck := "Add-Type -AssemblyName System.Windows.Forms;"
              . "Add-Type -AssemblyName System.Drawing;"
@@ -24,7 +24,11 @@ API_KEY := "fengshtindeed4789"
              . "  $f = [System.Windows.Forms.Clipboard]::GetFileDropList()[0];"
              . "  if ($exts -contains [IO.Path]::GetExtension($f).ToLower()) { Write-Output ('image_file:' + $f) }"
              . "  else { Write-Output 'text' }"
-             . "} else { Write-Output 'text' }"
+             . "} else {"
+             . "  $t = [System.Windows.Forms.Clipboard]::GetText().Trim();"
+             . "  if ($t -and (Test-Path $t) -and ($exts -contains [IO.Path]::GetExtension($t).ToLower())) { Write-Output ('image_file:' + $t) }"
+             . "  else { Write-Output 'text' }"
+             . "}"
     RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psCheck%" -OutFile "%tmpType%", , Hide
     FileRead, detectedType, %tmpType%
     FileDelete, %tmpType%
