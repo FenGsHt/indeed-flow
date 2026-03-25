@@ -10,12 +10,15 @@ API_KEY := "fengshtindeed4789"
 
 ; ── Win + Shift + C : 推送剪贴板到 VPS ──────────────────
 #+c::
-    savedClip := ClipboardAll
-    Clipboard := ""
+    beforeClip := ClipboardAll
     Send, ^c
     ClipWait, 2
-    if (Clipboard = "" && ClipboardAll = "") {
-        Clipboard := savedClip
+    if (ClipboardAll = "" || ClipboardAll = beforeClip) {
+        if (beforeClip = "") {
+            TrayTip, 剪贴板同步, 剪贴板为空，跳过, 1
+            return
+        }
+        Clipboard := beforeClip
         ClipWait, 1
     }
 
