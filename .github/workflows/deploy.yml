@@ -359,6 +359,15 @@ jobs:
                pm2 start server.js --name billiards-server && \
                pm2 save"
 
+      - name: Register PM2 with systemd (auto-start on reboot)
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
+             pm2 startup systemd -u \$(whoami) --hp \$HOME 2>&1 | tail -1 | sudo bash && \
+             sudo systemctl enable pm2-\$(whoami) 2>/dev/null || true && \
+             pm2 save --force && \
+             echo 'PM2 startup registered, process list saved'"
+
       - name: Configure nginx proxy for billiards WebSocket
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_billiards_proxy.py \
