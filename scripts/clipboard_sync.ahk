@@ -39,18 +39,11 @@ API_KEY := "fengshtindeed4789"
         tmpJson := A_Temp . "\clip_push.json"
 
         if (InStr(detectedType, "image_file:")) {
-            ; QQ/文件管理器复制图片文件 → 直接从路径读
             srcFile := SubStr(detectedType, 12)
-            psImg := "Add-Type -AssemblyName System.Drawing;"
-                   . "$img = [System.Drawing.Image]::FromFile('" . srcFile . "');"
-                   . "$img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png);"
-                   . "$img.Dispose()"
-        } else {
-            ; 截图/bitmap → 从剪贴板读
-            psImg := "Add-Type -AssemblyName System.Windows.Forms;"
-                   . "Add-Type -AssemblyName System.Drawing;"
-                   . "$img = [System.Windows.Forms.Clipboard]::GetImage();"
-                   . "if ($img) { $img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png) }"
+            psImg := "Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile('" . srcFile . "'); $img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png); $img.Dispose()"
+        }
+        if (!InStr(detectedType, "image_file:")) {
+            psImg := "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $img = [System.Windows.Forms.Clipboard]::GetImage(); if ($img) { $img.Save('" . tmpImg . "', [System.Drawing.Imaging.ImageFormat]::Png) }"
         }
         RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psImg%", , Hide
 
