@@ -9,6 +9,20 @@ const fs   = require('fs');
 
 const ROOT = __dirname;
 
+// 从 .env 读取 OpenClaw 配置（不引入额外依赖，手动解析）
+function loadEnvVars() {
+  const envFile = path.join(ROOT, '.env');
+  const vars = {};
+  if (!fs.existsSync(envFile)) return vars;
+  fs.readFileSync(envFile, 'utf8').split('\n').forEach(line => {
+    const m = line.match(/^\s*(OPENCLAW_\w+)\s*=\s*(.+)/);
+    if (m) vars[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  });
+  return vars;
+}
+
+const openclawEnv = loadEnvVars();
+
 // ── 固定服务 ─────────────────────────────────────────────
 const apps = [
   {
@@ -34,6 +48,7 @@ fs.readdirSync(gamesDir).forEach(game => {
       interpreter: 'node',
       autorestart: true,
       watch      : false,
+      env        : { ...openclawEnv },
     });
   }
 });
