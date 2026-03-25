@@ -23,6 +23,7 @@ from llm_proxy import llm_bp
 from web_proxy import proxy_bp
 # 2026-03-19: 吹牛骰积分 & 榜单 API
 from dice_api import dice_bp, init_dice_db
+from clipboard_api import clipboard_bp
 
 app = Flask(__name__, template_folder='.')
 CORS(app)
@@ -35,6 +36,7 @@ app.register_blueprint(llm_bp)
 app.register_blueprint(proxy_bp)
 # 2026-03-19: 挂载吹牛骰 Blueprint
 app.register_blueprint(dice_bp)
+app.register_blueprint(clipboard_bp)
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
