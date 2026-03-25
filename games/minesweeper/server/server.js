@@ -1,10 +1,42 @@
 // 多人实时扫雷 WebSocket 服务
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { Server } = require('socket.io');
 const { RoomManager, MinesweeperGame } = require('./game');
+
+const OPENCLAW_WEBHOOK = process.env.OPENCLAW_WEBHOOK || '';
+const OPENCLAW_TOKEN   = process.env.OPENCLAW_TOKEN   || '';
+const OPENCLAW_GROUP   = process.env.OPENCLAW_GROUP   || '';
+
+function sendOpenClaw(message) {
+  if (!OPENCLAW_WEBHOOK || !OPENCLAW_GROUP) return;
+  const body = JSON.stringify({
+    message,
+    agentId: 'work-agent',
+    channel: 'qq',
+    to:      OPENCLAW_GROUP,
+    deliver: true,
+  });
+  const url = new URL(OPENCLAW_WEBHOOK);
+  const mod = url.protocol === 'https:' ? https : http;
+  const req = mod.request(url, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': OPENCLAW_TOKEN,
+      'Content-Length': Buffer.byteLength(body),
+    },
+  }, res => {
+    res.resume();
+    console.log(`[OpenClaw] 推送状态: ${res.statusCode}`);
+  });
+  req.on('error', e => console.error('[OpenClaw] 推送失败:', e.message));
+  req.write(body);
+  req.end();
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -313,6 +345,7 @@ io.on('connection', (socket) => {
           recordHistory(currentPlayer.name, 'won', room.game.width, room.game.height, room.game.mines, room.game.getState().board);
           saveState();
           io.to(currentRoom).emit('game-over', { won: true, message: '🎉 恭喜，你们赢了！' });
+          sendOpenClaw(`🎉 [扫雷] ${currentPlayer.name} 在「${currentRoom}」成功扫雷！棋盘：${room.game.width}×${room.game.height}，雷数：${room.game.mines}`);
         } else if (room.game.gameStatus === 'lost') {
           // 踩雷，记录暴雷榜
           recordMineHit(currentPlayer.name);
@@ -322,6 +355,7 @@ io.on('connection', (socket) => {
             won: false,
             message: `💥 ${currentPlayer.name} 踩到雷了！`
           });
+          sendOpenClaw(`💥 [扫雷] ${currentPlayer.name} 在「${currentRoom}」踩到雷了！棋盘：${room.game.width}×${room.game.height}，雷数：${room.game.mines}`);
         }
       } else {
         // 普通揭格，记录积分（阶梯加成）
