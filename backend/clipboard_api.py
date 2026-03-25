@@ -52,24 +52,40 @@ def clipboard():
 
     if request.method == 'POST':
         data = request.get_json(silent=True) or {}
-        content = str(data.get('content', '')).strip()
-        if not content:
-            return jsonify({'error': 'empty content'}), 400
+        clip_type = data.get('type', 'text')  # 'text' or 'image'
 
-        entry = {
-            'content': content,
-            'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'source': data.get('source', 'unknown'),  # 'pc' / 'phone' / etc.
-        }
+        if clip_type == 'image':
+            image_data = str(data.get('data', '')).strip()
+            image_ext = str(data.get('ext', 'png'))
+            if not image_data:
+                return jsonify({'error': 'empty image data'}), 400
+            entry = {
+                'type': 'image',
+                'data': image_data,
+                'ext': image_ext,
+                'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'source': data.get('source', 'unknown'),
+            }
+        else:
+            content = str(data.get('content', '')).strip()
+            if not content:
+                return jsonify({'error': 'empty content'}), 400
+            entry = {
+                'type': 'text',
+                'content': content,
+                'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'source': data.get('source', 'unknown'),
+            }
+
         history.insert(0, entry)
         history = history[:MAX_HISTORY]
         _save(history)
-        return jsonify({'status': 'ok', 'entry': entry})
+        return jsonify({'status': 'ok', 'entry': {k: v for k, v in entry.items() if k != 'data'}})
 
     # GET → 返回最新一条
     if history:
         return jsonify(history[0])
-    return jsonify({'content': '', 'time': '', 'source': ''})
+    return jsonify({'type': 'text', 'content': '', 'time': '', 'source': ''})
 
 
 @clipboard_bp.route('/api/clipboard/history', methods=['GET'])
