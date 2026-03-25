@@ -8,12 +8,22 @@ SendMode Input
 API_URL := "http://150.158.110.168:5001/api/clipboard"
 API_KEY := "fengshtindeed4789"
 
+_clipChanged := false
+OnClipboardChange:
+    _clipChanged := true
+return
+
 ; ── Win + Shift + C : 推送剪贴板到 VPS ──────────────────
 #+c::
     beforeClip := ClipboardAll
+    _clipChanged := false
     Send, ^c
-    ClipWait, 1, 1
-    if ErrorLevel
+    Loop, 20 {
+        Sleep, 50
+        if _clipChanged
+            break
+    }
+    if (!_clipChanged)
     {
         if (beforeClip = "")
         {
