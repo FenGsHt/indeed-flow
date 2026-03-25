@@ -104,48 +104,44 @@ return
 ; ── Win + Shift + V : 从 VPS 拉取到本机剪贴板 ────────────
 #+v::
     tmpJson := A_Temp . "\clip_pull.json"
-    psGet := "(Invoke-WebRequest -Uri '" . API_URL . "' -Headers @{'X-API-Key'='" . API_KEY . "'} -UseBasicParsing).Content"
-           . " | Out-File -FilePath '" . tmpJson . "' -Encoding utf8 -NoNewline"
-    RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psGet%", , Hide
+    tmpPs1  := A_Temp . "\clip_pull.ps1"
+    tmpImg  := A_Temp . "\clip_pull.png"
+    tmpText := A_Temp . "\clip_text.txt"
 
-    FileRead, raw, %tmpJson%
-    FileDelete, %tmpJson%
+    ; 写 ps1 脚本文件（避免命令行长度限制）
+    psScript =
+    (LTrim
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$r = Invoke-WebRequest -Uri '%API_URL%' -Headers @{'X-API-Key'='%API_KEY%'} -UseBasicParsing
+$j = $r.Content | ConvertFrom-Json
+if ($j.type -eq 'image') {
+    [IO.File]::WriteAllBytes('%tmpImg%', [Convert]::FromBase64String($j.data))
+    $img = [System.Drawing.Image]::FromFile('%tmpImg%')
+    [System.Windows.Forms.Clipboard]::SetImage($img)
+    $img.Dispose()
+    'image' | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline
+} else {
+    $j.content | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline
+}
+    )
 
-    RegExMatch(raw, """type""\s*:\s*""([^""]+)""", mType)
-    clipType := mType1
+    FileDelete, %tmpPs1%
+    FileAppend, %psScript%, %tmpPs1%, UTF-8
+    RunWait, PowerShell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%tmpPs1%", , Hide
+    FileDelete, %tmpPs1%
 
-    if (clipType = "image") {
-        ; ── 图片拉取 ──
-        tmpImg := A_Temp . "\clip_pull.png"
-        RegExMatch(raw, """data""\s*:\s*""([^""]+)""", mData)
-        b64 := mData1
+    FileRead, result, %tmpText%
+    FileDelete, %tmpText%
+    result := RTrim(result, "`r`n")
 
-        psImg := "Add-Type -AssemblyName System.Windows.Forms;"
-               . "Add-Type -AssemblyName System.Drawing;"
-               . "$b = '" . b64 . "';"
-               . "[IO.File]::WriteAllBytes('" . tmpImg . "', [Convert]::FromBase64String($b));"
-               . "$img = [System.Drawing.Image]::FromFile('" . tmpImg . "');"
-               . "[System.Windows.Forms.Clipboard]::SetImage($img);"
-               . "$img.Dispose()"
-        RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psImg%", , Hide
+    if (result = "image") {
         FileDelete, %tmpImg%
         TrayTip, 🖼️ 图片已拉取, 图片已复制到剪贴板，按 Ctrl+V 粘贴, 1
-
+    } else if (result = "") {
+        TrayTip, 剪贴板同步, VPS 上暂无内容, 1
     } else {
-        ; ── 文字拉取 ──
-        tmpText := A_Temp . "\clip_text.txt"
-        psText := "$r = Invoke-RestMethod -Uri '" . API_URL . "' -Headers @{'X-API-Key'='" . API_KEY . "'};"
-                . "$r.content | Out-File -FilePath '" . tmpText . "' -Encoding utf8 -NoNewline"
-        RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psText%", , Hide
-        FileRead, content, %tmpText%
-        FileDelete, %tmpText%
-        content := RTrim(content, "`r`n")
-
-        if (content = "") {
-            TrayTip, 剪贴板同步, VPS 上暂无内容, 1
-            return
-        }
-        Clipboard := content
+        Clipboard := result
         ClipWait, 2
         TrayTip, 📋 文字已拉取, 内容已复制到本机剪贴板, 1
         Send, ^v
