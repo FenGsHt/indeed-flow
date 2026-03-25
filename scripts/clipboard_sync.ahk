@@ -11,17 +11,16 @@ API_KEY := "fengshtindeed4789"
 ; ── Win + Shift + C : 推送剪贴板到 VPS ──────────────────
 #+c::
     beforeClip := ClipboardAll
-    beforeLen  := StrLen(beforeClip)
     Send, ^c
-    ClipWait, 2, 1
-    afterLen := StrLen(ClipboardAll)
-    if (afterLen = 0 || afterLen = beforeLen) {
-        if (beforeLen = 0) {
+    ClipWait, 1, 1
+    if (ErrorLevel) {
+        ; Ctrl+C 超时，没复制到新内容，用原有剪贴板
+        if (beforeClip = "") {
             TrayTip, 剪贴板同步, 剪贴板为空，跳过, 1
             return
         }
         Clipboard := beforeClip
-        ClipWait, 1, 1
+        Sleep, 100
     }
 
     ; 用 PowerShell 判断类型：bitmap > 文件路径 > 文字中含图片路径 > 文字
@@ -42,7 +41,6 @@ API_KEY := "fengshtindeed4789"
     FileRead, detectedType, %tmpType%
     FileDelete, %tmpType%
     detectedType := Trim(detectedType, "`r`n ")
-
     if (detectedType = "image_bitmap" or InStr(detectedType, "image_file:")) {
         ; ── 图片推送 ──
         tmpImg  := A_Temp . "\clip_img.png"
