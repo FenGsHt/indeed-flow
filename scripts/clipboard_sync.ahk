@@ -104,8 +104,8 @@ return
 ; ── Win + Shift + V : 从 VPS 拉取到本机剪贴板 ────────────
 #+v::
     tmpJson := A_Temp . "\clip_pull.json"
-    psGet := "Invoke-RestMethod -Uri '" . API_URL . "' -Headers @{'X-API-Key'='" . API_KEY . "'}"
-           . " | ConvertTo-Json -Compress | Out-File -FilePath '" . tmpJson . "' -Encoding utf8 -NoNewline"
+    psGet := "(Invoke-WebRequest -Uri '" . API_URL . "' -Headers @{'X-API-Key'='" . API_KEY . "'} -UseBasicParsing).Content"
+           . " | Out-File -FilePath '" . tmpJson . "' -Encoding utf8 -NoNewline"
     RunWait, PowerShell.exe -NoProfile -WindowStyle Hidden -Command "%psGet%", , Hide
 
     FileRead, raw, %tmpJson%
