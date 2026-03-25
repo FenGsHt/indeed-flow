@@ -114,7 +114,7 @@ return
     FileAppend, if ($j.type -eq 'image') {`n, %tmpPs1%, UTF-8
     FileAppend,     [IO.File]::WriteAllBytes('%tmpImg%'`, [Convert]::FromBase64String($j.data))`n, %tmpPs1%, UTF-8
     FileAppend,     $img = [System.Drawing.Image]::FromFile('%tmpImg%')`n, %tmpPs1%, UTF-8
-    FileAppend,     [System.Windows.Forms.Clipboard]::SetImage($img)`n, %tmpPs1%, UTF-8
+    FileAppend,     [System.Windows.Forms.Clipboard]::SetDataObject($img`, $true)`n, %tmpPs1%, UTF-8
     FileAppend,     $img.Dispose()`n, %tmpPs1%, UTF-8
     FileAppend,     'image' | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline`n, %tmpPs1%, UTF-8
     FileAppend, } else {`n, %tmpPs1%, UTF-8
