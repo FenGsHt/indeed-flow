@@ -10,9 +10,14 @@ API_KEY := "fengshtindeed4789"
 
 ; ── Win + Shift + C : 推送剪贴板到 VPS ──────────────────
 #+c::
+    savedClipAll := ClipboardAll
     Clipboard := ""
     Send, ^c
     ClipWait, 2
+    if (Clipboard = "" && ClipboardAll = "") {
+        ClipboardAll := savedClipAll
+        ClipWait, 1
+    }
 
     ; 用 PowerShell 判断类型：bitmap > 文件路径 > 文字中含图片路径 > 文字
     tmpType := A_Temp . "\clip_type.txt"
