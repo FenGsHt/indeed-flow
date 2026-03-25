@@ -117,7 +117,6 @@
       width: 320px;
       height: 230px;
       transform-style: preserve-3d;
-      transition: transform 0.62s cubic-bezier(0.34, 1.06, 0.64, 1);
     }
 
     .wheel-hint {
@@ -140,7 +139,7 @@
       border: 1px solid;
       padding: 16px 14px 14px;
       cursor: pointer;
-      transition: opacity 0.5s, box-shadow 0.4s, border-color 0.4s;
+      transition: box-shadow 0.4s, border-color 0.4s;
       text-decoration: none;
       display: block;
       backface-visibility: hidden;
@@ -433,6 +432,7 @@
     controls.maxPolarAngle = Math.PI / 1.5;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.3;
+    controls.enableZoom = false;
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
@@ -681,65 +681,125 @@
   <!-- Wheel Carousel -->
   <script>
   (function () {
+    const stage  = document.querySelector('.wheel-stage');
     const drum   = document.getElementById('wheelDrum');
     const panels = Array.from(drum.querySelectorAll('.game-panel'));
     const N      = panels.length;
-    const RADIUS = 300;   // px — circle radius
-    const STEP   = 50;    // degrees between adjacent items
+    const RADIUS = 290;        // px — circle radius
+    const STEP   = 40;         // degrees per step (40° × 2 = 80° < 90° → 5 items visible)
+    const PX_PER_STEP = 85;    // pixels of drag = one item
 
-    // Place each panel on the drum circle
-    panels.forEach((p, i) => {
-      p.style.transform = `rotateX(${i * STEP}deg) translateZ(${RADIUS}px)`;
-    });
+    // Shortest circular path from pos to item i (returns float in [-N/2, N/2])
+    function shortPath(i, pos) {
+      let d = i - pos;
+      d = ((d + N / 2) % N + N) % N - N / 2;
+      return d;
+    }
 
-    let current = 0;
-    let locked  = false;
+    let curPos  = 0;   // current rendered position (float)
+    let tgtPos  = 0;   // snap target
+    let rafId   = null;
+    let isDrag  = false;
+    let dragY0  = 0;
+    let dragPos0 = 0;
+    let dragDist = 0;
 
-    function goTo(idx) {
-      current = ((idx % N) + N) % N;
-      drum.style.transform = `rotateX(${-current * STEP}deg)`;
+    function render(pos) {
       panels.forEach((p, i) => {
-        const diff = Math.min(Math.abs(i - current), N - Math.abs(i - current));
-        p.classList.toggle('wheel-active', diff === 0);
-        if (diff === 0)       { p.style.opacity = '1'; p.style.pointerEvents = 'auto'; }
-        else if (diff === 1)  { p.style.opacity = '0.52'; p.style.pointerEvents = 'none'; }
-        else if (diff === 2)  { p.style.opacity = '0.18'; p.style.pointerEvents = 'none'; }
-        else                  { p.style.opacity = '0';    p.style.pointerEvents = 'none'; }
+        const stepsOff = shortPath(i, pos);
+        const angle    = stepsOff * STEP;
+        const rad      = angle * Math.PI / 180;
+        const front    = Math.cos(rad);
+        p.style.transform    = `rotateX(${angle}deg) translateZ(${RADIUS}px)`;
+        p.style.opacity      = front > 0 ? String(Math.pow(front, 0.6).toFixed(3)) : '0';
+        p.classList.toggle('wheel-active', Math.abs(stepsOff) < 0.5);
+        p.style.pointerEvents = (Math.abs(stepsOff) < 0.5 && !isDrag) ? 'auto' : 'none';
       });
     }
 
-    // Click non-active → rotate to it; click active → navigate (default link)
+    function tick() {
+      const diff = tgtPos - curPos;
+      if (Math.abs(diff) < 0.001) { curPos = tgtPos; render(curPos); rafId = null; return; }
+      curPos += diff * 0.13;
+      render(curPos);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function animateTo(target) {
+      tgtPos = target;
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    }
+
+    function snapNearest() {
+      // Snap to nearest item via shortest path
+      const snapped = Math.round(curPos);
+      let d = snapped - curPos;
+      d = ((d + N / 2) % N + N) % N - N / 2;
+      animateTo(curPos + d);
+    }
+
+    function goTo(idx) {
+      const i = ((Math.round(idx)) % N + N) % N;
+      let d = i - curPos;
+      d = ((d + N / 2) % N + N) % N - N / 2;
+      animateTo(curPos + d);
+    }
+
+    render(0);
+
+    // ── Drag (capture phase so panels don't block it) ──
+    document.addEventListener('mousedown', e => {
+      if (!stage.contains(e.target)) return;
+      isDrag   = true;
+      dragY0   = e.clientY;
+      dragPos0 = curPos;
+      dragDist = 0;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      e.preventDefault();
+    }, true);
+
+    window.addEventListener('mousemove', e => {
+      if (!isDrag) return;
+      dragDist = Math.abs(e.clientY - dragY0);
+      const dy = e.clientY - dragY0;
+      curPos = tgtPos = dragPos0 - dy / PX_PER_STEP;
+      render(curPos);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!isDrag) return;
+      isDrag = false;
+      snapNearest();
+    });
+
+    // ── Click ──
     panels.forEach((p, i) => {
       p.addEventListener('click', e => {
-        if (i !== current) { e.preventDefault(); goTo(i); }
+        if (dragDist > 6) { e.preventDefault(); return; }
+        if (Math.abs(shortPath(i, curPos)) >= 0.5) { e.preventDefault(); goTo(i); }
       });
     });
 
-    // Throttled scroll
-    window.addEventListener('wheel', e => {
-      e.preventDefault();
-      if (locked) return;
-      locked = true;
-      goTo(e.deltaY > 0 ? current + 1 : current - 1);
-      setTimeout(() => locked = false, 680);
-    }, { passive: false });
-
-    // Touch swipe
-    let ty0 = 0;
-    window.addEventListener('touchstart', e => { ty0 = e.touches[0].clientY; }, { passive: true });
-    window.addEventListener('touchend',   e => {
-      const dy = ty0 - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 45) goTo(dy > 0 ? current + 1 : current - 1);
+    // ── Touch ──
+    let ty0 = 0, tPos0 = 0;
+    window.addEventListener('touchstart', e => {
+      ty0 = e.touches[0].clientY; tPos0 = curPos;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     }, { passive: true });
+    window.addEventListener('touchmove', e => {
+      const dy = e.touches[0].clientY - ty0;
+      curPos = tgtPos = tPos0 - dy / PX_PER_STEP;
+      render(curPos);
+    }, { passive: true });
+    window.addEventListener('touchend', () => snapNearest(), { passive: true });
 
-    // Keyboard
+    // ── Keyboard ──
     window.addEventListener('keydown', e => {
-      if (e.key === 'ArrowDown' || e.key === 's') goTo(current + 1);
-      if (e.key === 'ArrowUp'   || e.key === 'w') goTo(current - 1);
-      if (e.key === 'Enter') panels[current].click();
+      const cur = ((Math.round(curPos) % N) + N) % N;
+      if (e.key === 'ArrowDown' || e.key === 's') goTo(cur + 1);
+      if (e.key === 'ArrowUp'   || e.key === 'w') goTo(cur - 1);
+      if (e.key === 'Enter') panels[cur].click();
     });
-
-    goTo(0);
   })();
   </script>
 
