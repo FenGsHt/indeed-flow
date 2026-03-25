@@ -8,7 +8,7 @@ const { RoomManager, MinesweeperGame } = require('./game');
 
 const app = express();
 const server = http.createServer(app);
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168'];
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : ['http://localhost:5173', 'http://150.158.110.168', 'http://150.158.110.168:9000'];
 const io = new Server(server, {
   cors: {
     origin: ALLOWED_ORIGIN,

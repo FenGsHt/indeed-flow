@@ -135,6 +135,19 @@ jobs:
                pm2 start server.js --name minesweeper-server && \
                pm2 save"
 
+      - name: Configure nginx proxy for minesweeper WebSocket
+        run: |
+          scp -i ~/.ssh/id_rsa scripts/nginx_add_minesweeper_proxy.py \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_minesweeper_proxy.py
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo python3 /tmp/nginx_add_minesweeper_proxy.py; \
+             rm -f /tmp/nginx_add_minesweeper_proxy.py; \
+             (docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || (sudo docker exec 1Panel-openresty-EfE4 nginx -t 2>&1 \
+               && sudo docker exec 1Panel-openresty-EfE4 nginx -s reload) \
+             || echo 'WARNING: nginx reload failed'"
+
       - name: Deploy snake client
         uses: nick-fields/retry@v2
         with:

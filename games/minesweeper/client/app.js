@@ -1,5 +1,6 @@
 // 多人扫雷前端逻辑
-const SERVER_URL = 'http://150.158.110.168:3002';
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const SERVER_URL = IS_LOCAL ? 'http://localhost:3002' : '/';
 const DEFAULT_ROOM = '游乐场';
 const PLAYER_NAME_KEY = 'minesweeper_player_name';
 
@@ -78,6 +79,8 @@ function joinDefaultRoom() {
 // 初始化 Socket.io 连接
 function initSocket() {
   socket = io(SERVER_URL, {
+    path: IS_LOCAL ? '/socket.io' : '/minesweeper/socket.io',
+    transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,
