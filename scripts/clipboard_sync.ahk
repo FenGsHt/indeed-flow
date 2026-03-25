@@ -13,9 +13,10 @@ API_KEY := "fengshtindeed4789"
     beforeClip := ClipboardAll
     Send, ^c
     ClipWait, 1, 1
-    if (ErrorLevel) {
-        ; Ctrl+C 超时，没复制到新内容，用原有剪贴板
-        if (beforeClip = "") {
+    if ErrorLevel
+    {
+        if (beforeClip = "")
+        {
             TrayTip, 剪贴板同步, 剪贴板为空，跳过, 1
             return
         }
