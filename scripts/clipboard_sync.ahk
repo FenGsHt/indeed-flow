@@ -107,25 +107,19 @@ return
     tmpText := A_Temp . "\clip_text.txt"
 
     ; 写 ps1 脚本文件（避免命令行长度限制）
-    psScript =
-    (LTrim
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-$r = Invoke-WebRequest -Uri '%API_URL%' -Headers @{'X-API-Key'='%API_KEY%'} -UseBasicParsing
-$j = $r.Content | ConvertFrom-Json
-if ($j.type -eq 'image') {
-    [IO.File]::WriteAllBytes('%tmpImg%', [Convert]::FromBase64String($j.data))
-    $img = [System.Drawing.Image]::FromFile('%tmpImg%')
-    [System.Windows.Forms.Clipboard]::SetImage($img)
-    $img.Dispose()
-    'image' | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline
-} else {
-    $j.content | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline
-}
-    )
-
     FileDelete, %tmpPs1%
-    FileAppend, %psScript%, %tmpPs1%, UTF-8
+    FileAppend, Add-Type -AssemblyName System.Windows.Forms`nAdd-Type -AssemblyName System.Drawing`n, %tmpPs1%, UTF-8
+    FileAppend, $r = Invoke-WebRequest -Uri '%API_URL%' -Headers @{'X-API-Key'='%API_KEY%'} -UseBasicParsing`n, %tmpPs1%, UTF-8
+    FileAppend, $j = $r.Content | ConvertFrom-Json`n, %tmpPs1%, UTF-8
+    FileAppend, if ($j.type -eq 'image') {`n, %tmpPs1%, UTF-8
+    FileAppend,     [IO.File]::WriteAllBytes('%tmpImg%'`, [Convert]::FromBase64String($j.data))`n, %tmpPs1%, UTF-8
+    FileAppend,     $img = [System.Drawing.Image]::FromFile('%tmpImg%')`n, %tmpPs1%, UTF-8
+    FileAppend,     [System.Windows.Forms.Clipboard]::SetImage($img)`n, %tmpPs1%, UTF-8
+    FileAppend,     $img.Dispose()`n, %tmpPs1%, UTF-8
+    FileAppend,     'image' | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline`n, %tmpPs1%, UTF-8
+    FileAppend, } else {`n, %tmpPs1%, UTF-8
+    FileAppend,     $j.content | Out-File -FilePath '%tmpText%' -Encoding utf8 -NoNewline`n, %tmpPs1%, UTF-8
+    FileAppend, }`n, %tmpPs1%, UTF-8
     RunWait, PowerShell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%tmpPs1%", , Hide
     FileDelete, %tmpPs1%
 
