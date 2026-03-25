@@ -11,15 +11,17 @@ API_KEY := "fengshtindeed4789"
 ; ── Win + Shift + C : 推送剪贴板到 VPS ──────────────────
 #+c::
     beforeClip := ClipboardAll
+    beforeLen  := StrLen(beforeClip)
     Send, ^c
-    ClipWait, 2
-    if (ClipboardAll = "" || ClipboardAll = beforeClip) {
-        if (beforeClip = "") {
+    ClipWait, 2, 1
+    afterLen := StrLen(ClipboardAll)
+    if (afterLen = 0 || afterLen = beforeLen) {
+        if (beforeLen = 0) {
             TrayTip, 剪贴板同步, 剪贴板为空，跳过, 1
             return
         }
         Clipboard := beforeClip
-        ClipWait, 1
+        ClipWait, 1, 1
     }
 
     ; 用 PowerShell 判断类型：bitmap > 文件路径 > 文字中含图片路径 > 文字
