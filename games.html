@@ -676,6 +676,7 @@
       renderer.render(hudScene, hudCamera);
     }
     animate();
+    window._bgControls = controls; // expose so carousel can pause it during drag
   </script>
 
   <!-- Wheel Carousel -->
@@ -687,7 +688,7 @@
     const N      = panels.length;
     const RADIUS = 290;        // px — circle radius
     const STEP   = 46;         // degrees per step — wider gap between items
-    const PX_PER_STEP = 95;    // pixels of drag = one item
+    const PX_PER_STEP = 140;   // pixels of drag = one item (higher = less sensitive)
 
     // Shortest circular path from pos to item i (returns float in [-N/2, N/2])
     function shortPath(i, pos) {
@@ -755,7 +756,8 @@
       dragPos0 = curPos;
       dragDist = 0;
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-      document.body.style.overflow = 'hidden'; // prevent page scroll during drag
+      document.body.style.overflow = 'hidden';
+      if (window._bgControls) window._bgControls.enabled = false; // freeze background
       e.preventDefault();
     }, true);
 
@@ -771,7 +773,8 @@
     window.addEventListener('mouseup', () => {
       if (!isDrag) return;
       isDrag = false;
-      document.body.style.overflow = ''; // restore scroll
+      document.body.style.overflow = '';
+      if (window._bgControls) window._bgControls.enabled = true; // restore background
       snapNearest();
     });
 
