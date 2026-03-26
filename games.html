@@ -137,7 +137,7 @@
       left: 0; top: 0;
       background: rgba(7,8,10,0.88);
       border: 1px solid;
-      padding: 16px 14px 14px;
+      padding: 10px 14px 9px;
       cursor: pointer;
       transition: box-shadow 0.4s, border-color 0.4s;
       text-decoration: none;
@@ -178,51 +178,51 @@
     }
 
     .panel-node-id {
-      font-size: 9px;
+      font-size: 8px;
       letter-spacing: 0.2em;
       color: var(--accent);
       opacity: 0.7;
-      margin-bottom: 9px;
+      margin-bottom: 5px;
     }
 
     .panel-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       font-family: 'Inter', 'Noto Sans SC', sans-serif;
       color: #fff;
       letter-spacing: 0.03em;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .panel-status {
-      font-size: 9px;
+      font-size: 8px;
       letter-spacing: 0.13em;
       color: var(--accent);
       opacity: 0.75;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .panel-divider {
       height: 1px;
       background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
-      margin-bottom: 10px;
+      margin-bottom: 7px;
     }
 
     .panel-desc {
-      font-size: 11px;
-      line-height: 1.7;
+      font-size: 10px;
+      line-height: 1.6;
       color: rgba(221,229,237,0.48);
       font-family: 'Noto Sans SC', sans-serif;
       font-weight: 400;
       letter-spacing: 0;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .panel-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
-      margin-bottom: 14px;
+      margin-bottom: 8px;
     }
 
     .panel-tag {
@@ -686,8 +686,8 @@
     const panels = Array.from(drum.querySelectorAll('.game-panel'));
     const N      = panels.length;
     const RADIUS = 290;        // px — circle radius
-    const STEP   = 40;         // degrees per step (40° × 2 = 80° < 90° → 5 items visible)
-    const PX_PER_STEP = 85;    // pixels of drag = one item
+    const STEP   = 46;         // degrees per step — wider gap between items
+    const PX_PER_STEP = 95;    // pixels of drag = one item
 
     // Shortest circular path from pos to item i (returns float in [-N/2, N/2])
     function shortPath(i, pos) {
@@ -755,20 +755,23 @@
       dragPos0 = curPos;
       dragDist = 0;
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      document.body.style.overflow = 'hidden'; // prevent page scroll during drag
       e.preventDefault();
     }, true);
 
     window.addEventListener('mousemove', e => {
       if (!isDrag) return;
+      e.preventDefault(); // prevent background scroll
       dragDist = Math.abs(e.clientY - dragY0);
       const dy = e.clientY - dragY0;
-      curPos = tgtPos = dragPos0 - dy / PX_PER_STEP;
+      curPos = tgtPos = dragPos0 + dy / PX_PER_STEP; // + = natural direction
       render(curPos);
-    });
+    }, { passive: false });
 
     window.addEventListener('mouseup', () => {
       if (!isDrag) return;
       isDrag = false;
+      document.body.style.overflow = ''; // restore scroll
       snapNearest();
     });
 
@@ -788,7 +791,7 @@
     }, { passive: true });
     window.addEventListener('touchmove', e => {
       const dy = e.touches[0].clientY - ty0;
-      curPos = tgtPos = tPos0 - dy / PX_PER_STEP;
+      curPos = tgtPos = tPos0 + dy / PX_PER_STEP; // + = natural direction
       render(curPos);
     }, { passive: true });
     window.addEventListener('touchend', () => snapNearest(), { passive: true });
