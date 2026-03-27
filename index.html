@@ -791,15 +791,17 @@
           if (isNexus) {
             const statusLabels = {todo: 'Queued', playing: 'Active', completed: 'Cleared'};
             const statusLabel = statusLabels[status] || 'Queued';
-            const coverStyle = g.image
-              ? `background-image:url(${g.image});background-size:cover;background-position:center;`
-              : `background:${gradient};`;
+            const coverImg = g.image
+              ? `<img class="cover-slide active" src="${g.image}" loading="lazy" alt="${g.name}">`
+              : `<div class="cover-gradient" style="background:${gradient}"></div>`;
             return `
-            <div class="game-card status-${status}" style="animation-delay:${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
+            <div class="game-card status-${status}" style="animation-delay:${i*0.05}s" data-appid="${knownAppid}" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
               <div class="card-hover-border"></div>
-              <div class="game-cover" style="${coverStyle}">
+              <div class="game-cover">
+                ${coverImg}
                 <span class="status-badge ${status}">${statusLabel}</span>
                 ${steamCardBtn}
+                <div class="carousel-dots"></div>
               </div>
               <div class="game-info">
                 <div class="game-name">${g.name}</div>
@@ -924,6 +926,9 @@
           }
         });
 
+        // ── 封面轮播初始化 ────────────────────────────────────────────
+        initCarousels(list);
+
         // ── 价格：独立并行，用已知 appid 立即开始 ────────────────────
         const knownPriceItems = visibleGames.map(g => {
           const appid = extractAppId(g.source || g.url) || g.steam_appid || '';
@@ -943,6 +948,91 @@
       } catch {
         list.innerHTML = `<div class="empty-state"><div class="empty-text">加载失败</div></div>`;
       }
+    }
+
+    // ── 封面轮播 ──────────────────────────────────────────────────────
+    const _ssCache = {};   // appid → string[] | null (null = loading)
+
+    async function fetchScreenshots(appid) {
+      if (_ssCache[appid] !== undefined) return _ssCache[appid] || [];
+      _ssCache[appid] = null;
+      try {
+        const r = await fetch(`${API_BASE}/api/steam-game/${appid}`);
+        const d = await r.json();
+        // header + up to 5 thumbnails, deduplicate
+        const all = [d.headerUrl, ...(d.previewUrls || [])].filter(Boolean);
+        _ssCache[appid] = [...new Set(all)].slice(0, 6);
+      } catch {
+        _ssCache[appid] = [];
+      }
+      return _ssCache[appid];
+    }
+
+    function initCarousels(container) {
+      container.querySelectorAll('.game-card[data-appid]').forEach(card => {
+        const appid = card.dataset.appid;
+        if (!appid) return;
+        const cover = card.querySelector('.game-cover');
+        if (!cover) return;
+
+        let timer = null;
+        let slides = [];
+        let cur = 0;
+        let initialized = false;
+
+        async function buildSlides() {
+          if (initialized) return;
+          initialized = true;
+          const urls = await fetchScreenshots(appid);
+          if (!urls.length) return;
+
+          // Replace/add img slides
+          const existing = cover.querySelector('.cover-slide');
+          slides = urls.map((url, i) => {
+            const img = document.createElement('img');
+            img.className = 'cover-slide' + (i === 0 ? ' active' : '');
+            img.src = url;
+            img.loading = 'lazy';
+            img.alt = '';
+            if (i === 0 && existing) {
+              cover.insertBefore(img, existing);
+            } else {
+              cover.insertBefore(img, cover.querySelector('.status-badge'));
+            }
+            return img;
+          });
+          // Remove original stored image (first one already replaced by steam header)
+          if (existing && !slides.includes(existing)) existing.remove();
+
+          // Build dots
+          const dots = cover.querySelector('.carousel-dots');
+          if (dots && urls.length > 1) {
+            dots.innerHTML = urls.map((_, i) =>
+              `<span class="carousel-dot${i===0?' active':''}"></span>`
+            ).join('');
+          }
+        }
+
+        function goTo(idx) {
+          if (!slides.length) return;
+          slides[cur].classList.remove('active');
+          cover.querySelectorAll('.carousel-dot')[cur]?.classList.remove('active');
+          cur = (idx + slides.length) % slides.length;
+          slides[cur].classList.add('active');
+          cover.querySelectorAll('.carousel-dot')[cur]?.classList.add('active');
+        }
+
+        card.addEventListener('mouseenter', async () => {
+          await buildSlides();
+          if (slides.length <= 1) return;
+          cur = 0;
+          timer = setInterval(() => goTo(cur + 1), 2200);
+        });
+
+        card.addEventListener('mouseleave', () => {
+          clearInterval(timer); timer = null;
+        });
+      });
     }
 
     // 搜索Steam图片
