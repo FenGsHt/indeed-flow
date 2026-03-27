@@ -399,37 +399,64 @@ def search_steam_auto():
         return jsonify({'success': False, 'error': str(e)})
 
 
+_steam_detail_cache = {}  # { app_id: (timestamp, data) }
+_STEAM_CACHE_TTL = 600    # 10 min
+
 @games_bp.route('/api/steam-game/<app_id>', methods=['GET'])
 def get_steam_game_details(app_id):
-    try:
-        url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode())
-            if str(app_id) in data and data[str(app_id)].get('success'):
-                game_data = data[str(app_id)].get('data', {})
-                header_url = game_data.get('header_image', '') or (
-                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
-                )
-                screenshots = game_data.get('screenshots', [])
-                preview_urls = [
-                    s.get('path_thumbnail') or s.get('path_full')
-                    for s in screenshots[:3]
-                    if s.get('path_thumbnail') or s.get('path_full')
-                ]
-                return jsonify({
-                    'headerUrl': header_url,
-                    'previewUrls': preview_urls,
-                    'name': game_data.get('name', ''),
-                    'description': game_data.get('short_description', '')
-                })
-    except Exception as e:
-        print(f"Steam game details error: {e}")
+    import time
+    # ── In-memory cache ───────────────────────────────────────────
+    now = time.time()
+    if app_id in _steam_detail_cache:
+        ts, cached = _steam_detail_cache[app_id]
+        if now - ts < _STEAM_CACHE_TTL:
+            return jsonify(cached)
 
-    return jsonify({
-        'headerUrl': f"https://cdn.akamai.steamstatic.com/steam/apps/{app_id}/header.jpg",
-        'previewUrls': []
-    })
+    cdn_fallback = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+
+    # ── Try Steam API with retry ──────────────────────────────────
+    for attempt in range(3):
+        try:
+            url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l=schinese"
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+
+            if str(app_id) not in data:
+                break  # invalid appid, skip retries
+
+            entry = data[str(app_id)]
+            if not entry.get('success'):
+                # Rate-limited or region-locked — return CDN URL without caching
+                return jsonify({'headerUrl': cdn_fallback, 'previewUrls': []})
+
+            game_data = entry.get('data', {})
+            header_url = game_data.get('header_image') or cdn_fallback
+            screenshots = game_data.get('screenshots', [])
+            preview_urls = [
+                s.get('path_thumbnail') or s.get('path_full')
+                for s in screenshots[:5]
+                if s.get('path_thumbnail') or s.get('path_full')
+            ]
+            result = {
+                'headerUrl': header_url,
+                'previewUrls': preview_urls,
+                'name': game_data.get('name', ''),
+                'description': game_data.get('short_description', '')
+            }
+            _steam_detail_cache[app_id] = (now, result)
+            return jsonify(result)
+
+        except Exception as e:
+            print(f"Steam game details attempt {attempt+1}/3 for {app_id}: {e}")
+            if attempt < 2:
+                time.sleep(0.5 * (attempt + 1))
+
+    # ── All attempts failed — still return CDN header as usable fallback ──
+    fallback = {'headerUrl': cdn_fallback, 'previewUrls': []}
+    return jsonify(fallback)
 
 
 @games_bp.route('/api/games/<game_id>/image', methods=['PUT'])
