@@ -8,6 +8,21 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Universal game cover carousel ───────────────────────────── */
+.game-cover { position: relative; overflow: hidden; }
+
+.cover-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.55s ease;
+}
+.cover-slide.active { opacity: 1; }
+.cover-gradient { position: absolute; inset: 0; }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

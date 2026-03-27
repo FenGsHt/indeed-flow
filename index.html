@@ -791,8 +791,11 @@
           if (isNexus) {
             const statusLabels = {todo: 'Queued', playing: 'Active', completed: 'Cleared'};
             const statusLabel = statusLabels[status] || 'Queued';
-            const coverImg = g.image
-              ? `<img class="cover-slide active" src="${g.image}" loading="lazy" alt="${g.name}">`
+            const initialSrc = knownAppid
+              ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
+              : g.image || '';
+            const coverImg = initialSrc
+              ? `<img class="cover-slide active" src="${initialSrc}" loading="lazy" alt="${g.name}">`
               : `<div class="cover-gradient" style="background:${gradient}"></div>`;
             return `
             <div class="game-card status-${status}" style="animation-delay:${i*0.05}s" data-appid="${knownAppid}" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
@@ -827,9 +830,12 @@
           const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[status] || '📋 待玩';
           let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
-          const classicCoverInner = g.image
-            ? `<img class="cover-slide active" src="${g.image}" loading="lazy" alt="${g.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity 0.5s;">`
-            : `<div style="position:absolute;inset:0;background:${gradient}"></div>`;
+          const classicInitialSrc = knownAppid
+            ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
+            : g.image || '';
+          const classicCoverInner = classicInitialSrc
+            ? `<img class="cover-slide active" src="${classicInitialSrc}" loading="lazy" alt="${g.name}">`
+            : `<div class="cover-gradient" style="background:${gradient}"></div>`;
 
           return `
           <div class="game-card" style="animation-delay: ${i*0.05}s" data-appid="${knownAppid}" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
@@ -964,9 +970,8 @@
       try {
         const r = await fetch(`${API_BASE}/api/steam-game/${appid}`);
         const d = await r.json();
-        // header + up to 5 thumbnails, deduplicate
-        const all = [d.headerUrl, ...(d.previewUrls || [])].filter(Boolean);
-        _ssCache[appid] = [...new Set(all)].slice(0, 6);
+        // Only screenshot thumbnails (header is already shown as initial img)
+        _ssCache[appid] = (d.previewUrls || []).filter(Boolean).slice(0, 5);
       } catch {
         _ssCache[appid] = [];
       }
@@ -991,28 +996,24 @@
           const urls = await fetchScreenshots(appid);
           if (!urls.length) return;
 
-          // Replace/add img slides
-          const existing = cover.querySelector('.cover-slide');
-          slides = urls.map((url, i) => {
+          // Keep the initial header img as slide[0], add screenshots as slide[1..N]
+          const initialImg = cover.querySelector('.cover-slide');
+          slides = initialImg ? [initialImg] : [];
+
+          urls.forEach(url => {
             const img = document.createElement('img');
-            img.className = 'cover-slide' + (i === 0 ? ' active' : '');
+            img.className = 'cover-slide'; // starts opacity:0
             img.src = url;
             img.loading = 'lazy';
             img.alt = '';
-            if (i === 0 && existing) {
-              cover.insertBefore(img, existing);
-            } else {
-              cover.insertBefore(img, cover.querySelector('.status-badge'));
-            }
-            return img;
+            cover.insertBefore(img, cover.querySelector('.status-badge'));
+            slides.push(img);
           });
-          // Remove original stored image (first one already replaced by steam header)
-          if (existing && !slides.includes(existing)) existing.remove();
 
-          // Build dots
+          // Build dots only when multiple slides
           const dots = cover.querySelector('.carousel-dots');
-          if (dots && urls.length > 1) {
-            dots.innerHTML = urls.map((_, i) =>
+          if (dots && slides.length > 1) {
+            dots.innerHTML = slides.map((_, i) =>
               `<span class="carousel-dot${i===0?' active':''}"></span>`
             ).join('');
           }
