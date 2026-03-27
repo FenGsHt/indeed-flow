@@ -342,6 +342,22 @@
   background: none;
 }
 
+[data-theme="classic"] .game-cover { overflow: hidden; }
+
+[data-theme="classic"] .game-card:hover .carousel-dots { opacity: 1 !important; }
+
+[data-theme="classic"] .carousel-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  transition: background 0.3s, transform 0.3s;
+}
+[data-theme="classic"] .carousel-dot.active {
+  background: #fff;
+  transform: scale(1.3);
+}
+
 [data-theme="classic"] .cover-placeholder {
   font-size: 3rem;
   opacity: 0.5;

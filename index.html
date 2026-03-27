@@ -827,12 +827,17 @@
           const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[status] || '📋 待玩';
           let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
+          const classicCoverInner = g.image
+            ? `<img class="cover-slide active" src="${g.image}" loading="lazy" alt="${g.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity 0.5s;">`
+            : `<div style="position:absolute;inset:0;background:${gradient}"></div>`;
 
           return `
-          <div class="game-card" style="animation-delay: ${i*0.05}s" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
-            <div class="game-cover" style="background: ${g.image ? 'url(' + g.image + '),' + gradient : gradient}; background-size: cover; background-position: center center; background-repeat: no-repeat;">
+          <div class="game-card" style="animation-delay: ${i*0.05}s" data-appid="${knownAppid}" onclick='onGameCardClick(${JSON.stringify(g).replace(/'/g,"\\'")})'>
+            <div class="game-cover" style="position:relative;overflow:hidden;background:${gradient};">
+              ${classicCoverInner}
               <span class="status-badge" title="${status}">${statusIcon}</span>
               ${steamCardBtn}
+              <div class="carousel-dots" style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:4;opacity:0;transition:opacity 0.3s;"></div>
             </div>
             <div class="game-info">
               <div class="game-name">${g.name}</div>
