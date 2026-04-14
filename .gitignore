@@ -24,6 +24,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Local deploy notes (sensitive, do not commit)
+DEPLOY_NOTES.md
+
 # Logs and temp
 *.log
 *.bak
