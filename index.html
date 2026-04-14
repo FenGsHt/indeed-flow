@@ -1487,16 +1487,6 @@
       document.getElementById('detail-image').value = game.image || '';
       document.getElementById('detail-url').value = game.url || game.source || '';
       
-      // 显示现有图片预览
-      const preview = document.getElementById('detail-image-preview');
-      if (game.image) {
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + game.image + '" style="width:100%;height:150px;object-fit:cover;">';
-      } else {
-        preview.style.display = 'none';
-        preview.innerHTML = '';
-      }
-      
       // 加载 Steam 好评率
       loadSteamRating(game);
       
