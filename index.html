@@ -1274,14 +1274,11 @@
 
     // 当前选中的游戏
     let currentGame = null;    
-    // 图片URL预览功能
+    // 图片URL预览功能（元素已移除，保留函数体防止其他调用处报错）
     function previewImageFromUrl(url) {
       const preview = document.getElementById('image-preview');
-      if (!url) {
-        preview.style.display = 'none';
-        preview.innerHTML = '';
-        return;
-      }
+      if (!preview) return;
+      if (!url) { preview.style.display = 'none'; preview.innerHTML = ''; return; }
       preview.style.display = 'block';
       preview.innerHTML = '<img src="' + url + '" style="width:100%;height:150px;object-fit:cover;" onerror="this.parentElement.style.display=\'none\'">';
     }
@@ -1294,7 +1291,8 @@
       document.getElementById('game-notes').value = '';
       document.getElementById('game-priority').value = '100';
       document.getElementById('game-image-url').value = '';
-      document.getElementById('image-preview').style.display = 'none';
+      const _addPreview = document.getElementById('image-preview');
+      if (_addPreview) _addPreview.style.display = 'none';
       document.getElementById('add-modal').classList.add('show');
     }
 
@@ -1442,7 +1440,8 @@
         document.getElementById('game-source').value = '';
         document.getElementById('game-recommender').value = '';
         document.getElementById('game-notes').value = '';
-        document.getElementById('image-preview').style.display = 'none';
+        const _addPreview2 = document.getElementById('image-preview');
+        if (_addPreview2) _addPreview2.style.display = 'none';
 
         // 如果有Steam地址，尝试获取好评率
         if (url && url.includes('steampowered.com/app/')) {
