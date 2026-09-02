@@ -10,9 +10,11 @@ import json
 import re
 import subprocess
 import requests
+import hmac
+import hashlib
 from datetime import datetime
 from collections import Counter
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, session
 from flask_cors import CORS
 from pathlib import Path
 
@@ -26,6 +28,12 @@ from dice_api import dice_bp, init_dice_db
 from clipboard_api import clipboard_bp
 
 app = Flask(__name__, template_folder='.')
+# 访问令牌和会话签名只允许从部署环境读取，绝不写入前端或仓库。
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY', ''),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
 CORS(app)
 
 # 挂载游戏模块 Blueprint（所有 /api/games、/api/bookmarks 等路由）
@@ -43,6 +51,46 @@ DATA_DIR.mkdir(exist_ok=True)
 
 SKILLS_FILE = DATA_DIR / "skills.json"
 NEWS_FILE = DATA_DIR / "news.json"
+SITE_ACCESS_TOKEN = os.getenv('SITE_ACCESS_TOKEN', '')
+
+
+# ============== API: 前端访问验证 ==============
+
+def _access_configured():
+    return bool(SITE_ACCESS_TOKEN and app.config['SECRET_KEY'])
+
+
+def _access_token_fingerprint():
+    """令牌轮换后让旧会话自动失效，而不把令牌存进 Cookie。"""
+    return hashlib.sha256(SITE_ACCESS_TOKEN.encode('utf-8')).hexdigest()
+
+
+@app.route('/api/auth/status', methods=['GET'])
+def auth_status():
+    if not _access_configured():
+        return jsonify({'authenticated': False, 'configured': False}), 503
+
+    authenticated = (
+        session.get('site_access') is True
+        and hmac.compare_digest(session.get('site_access_token_hash', ''), _access_token_fingerprint())
+    )
+    return jsonify({'authenticated': authenticated, 'configured': True})
+
+
+@app.route('/api/auth/verify', methods=['POST'])
+def verify_access():
+    if not _access_configured():
+        return jsonify({'success': False, 'error': 'access verification is not configured'}), 503
+
+    data = request.get_json(silent=True) or {}
+    token = str(data.get('token', ''))
+    if not hmac.compare_digest(token, SITE_ACCESS_TOKEN):
+        return jsonify({'success': False, 'error': 'invalid token'}), 401
+
+    session.clear()
+    session['site_access'] = True
+    session['site_access_token_hash'] = _access_token_fingerprint()
+    return jsonify({'success': True})
 
 
 def load_json(filepath, default=None):

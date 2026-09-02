@@ -1,15 +1,10 @@
 /**
  * 2026-03-19: 全站访问令牌验证
- * 一次验证后 localStorage 永久有效
+ * 令牌仅提交给后端验证；浏览器中不保存令牌本身。
  * 所有页面在 <head> 中引入此脚本即可
  */
 (function() {
   'use strict';
-  var KEY = 'indeed_auth_token';
-  var CORRECT = 'fengshtindeed';
-
-  try { if (localStorage.getItem(KEY) === CORRECT) return; } catch(e) {}
-
   // 隐藏页面内容
   var hideStyle = document.createElement('style');
   hideStyle.id = 'auth-hide';
@@ -57,25 +52,65 @@
   ].join('');
   document.documentElement.appendChild(gate);
 
-  function verify() {
-    var input = document.getElementById('ag-input');
+  function unlock() {
+    gate.remove();
+    gateStyle.remove();
+    hideStyle.remove();
+  }
+
+  function setError(message) {
     var err = document.getElementById('ag-err');
-    if (input.value === CORRECT) {
-      try { localStorage.setItem(KEY, CORRECT); } catch(e) {}
-      gate.remove();
-      gateStyle.remove();
-      hideStyle.remove();
-    } else {
-      err.textContent = '令牌错误，请重试';
+    err.textContent = message;
+  }
+
+  async function verify() {
+    var input = document.getElementById('ag-input');
+    var button = document.getElementById('ag-btn');
+    button.disabled = true;
+    button.textContent = '验证中…';
+    try {
+      var response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token: input.value})
+      });
+      var result = await response.json();
+      if (response.ok && result.success) {
+        unlock();
+        return;
+      }
+      setError(response.status === 503 ? '验证服务尚未配置' : '令牌错误，请重试');
       input.value = '';
       input.focus();
       input.style.borderColor = '#ff4757';
       setTimeout(function() { input.style.borderColor = ''; }, 1500);
+    } catch (e) {
+      setError('验证服务不可用，请稍后重试');
+    } finally {
+      button.disabled = false;
+      button.textContent = '验 证';
     }
+  }
+
+  async function restoreSession() {
+    try {
+      var response = await fetch('/api/auth/status', {credentials: 'same-origin'});
+      var result = await response.json();
+      if (response.ok && result.authenticated) {
+        unlock();
+        return;
+      }
+      if (response.status === 503) setError('验证服务尚未配置');
+    } catch (e) {
+      setError('验证服务不可用，请稍后重试');
+    }
+    document.getElementById('ag-input').focus();
   }
 
   gate.querySelector('#ag-btn').addEventListener('click', verify);
   gate.querySelector('#ag-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') verify();
   });
+  restoreSession();
 })();

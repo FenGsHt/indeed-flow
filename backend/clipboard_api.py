@@ -8,6 +8,7 @@ GET  /api/clipboard/history → 获取最近 10 条历史
 
 import os
 import json
+import hmac
 from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, request, jsonify
@@ -22,8 +23,8 @@ CLIPBOARD_API_KEY = os.getenv('CLIPBOARD_API_KEY', '')
 
 def _check_auth():
     if not CLIPBOARD_API_KEY:
-        return True  # 未配置 key 则不鉴权（仅内网/tunnel 场景）
-    return request.headers.get('X-API-Key') == CLIPBOARD_API_KEY
+        return False
+    return hmac.compare_digest(request.headers.get('X-API-Key', ''), CLIPBOARD_API_KEY)
 
 
 def _load():

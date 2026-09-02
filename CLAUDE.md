@@ -51,4 +51,10 @@ indeed-flow/
 | SERVER_SSH_KEY | ed25519 私钥 |
 | SERVER_PATH | /opt/1panel/www/sites/indeed-flow-prod |
 | DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME | Flask 数据库连接 |
+| SITE_ACCESS_TOKEN | 网站访问令牌；只在 Flask 后端校验 |
+| FLASK_SECRET_KEY | Flask 会话签名密钥；应使用独立的高熵随机值 |
+| CLIPBOARD_API_KEY | 剪贴板同步接口密钥；PC 端通过 `INDEED_CLIPBOARD_API_KEY` 环境变量读取同一值 |
 | BARK_KEY | 部署通知推送 |
+
+部署前必须在 GitHub Actions Secrets 中设置上述三个令牌类变量。真实值只保存在
+GitHub Secrets、服务器 `backend/.env` 和受控客户端的环境变量中，不能写回代码或文档。

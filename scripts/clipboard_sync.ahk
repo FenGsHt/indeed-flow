@@ -6,7 +6,11 @@
 SendMode Input
 
 API_URL := "http://150.158.110.168:5001/api/clipboard"
-API_KEY := "fengshtindeed4789"
+EnvGet, API_KEY, INDEED_CLIPBOARD_API_KEY
+if (API_KEY = "") {
+    MsgBox, 16, 剪贴板同步, 未设置环境变量 INDEED_CLIPBOARD_API_KEY，脚本已停止。
+    ExitApp
+}
 
 _clipChanged := false
 OnClipboardChange:

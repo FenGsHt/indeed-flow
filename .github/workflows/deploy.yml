@@ -441,6 +441,8 @@ jobs:
                echo 'OPENCLAW_GROUP=${{ secrets.OPENCLAW_GROUP }}' >> .env && \
                echo 'RAWG_API_KEY=${{ secrets.RAWG_API_KEY }}' >> .env && \
                echo 'CLIPBOARD_API_KEY=${{ secrets.CLIPBOARD_API_KEY }}' >> .env && \
+               echo 'SITE_ACCESS_TOKEN=${{ secrets.SITE_ACCESS_TOKEN }}' >> .env && \
+               echo 'FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }}' >> .env && \
                pip3 install -q -r requirements.txt && \
                sudo systemctl restart flask-app && \
                sleep 2 && \
