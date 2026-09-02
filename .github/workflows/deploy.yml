@@ -36,6 +36,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    # 暂停游戏服务发布：保留服务器上现有进程，不上传、不重启、不改游戏 Nginx 配置。
+    env:
+      DEPLOY_GAMES: 'false'
 
     steps:
       - name: Checkout
@@ -57,16 +60,7 @@ jobs:
       - name: Prepare prod directory
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "mkdir -p ${{ secrets.SERVER_PATH }}/games/minesweeper/client \
-                      ${{ secrets.SERVER_PATH }}/games/minesweeper/scripts \
-                      ${{ secrets.SERVER_PATH }}/games/minesweeper/server \
-                      ${{ secrets.SERVER_PATH }}/games/snake/client \
-                      ${{ secrets.SERVER_PATH }}/games/snake/server \
-                      ${{ secrets.SERVER_PATH }}/games/dice/client \
-                      ${{ secrets.SERVER_PATH }}/games/dice/server \
-                      ${{ secrets.SERVER_PATH }}/games/billiards/client \
-                      ${{ secrets.SERVER_PATH }}/games/billiards/server \
-                      ${{ secrets.SERVER_PATH }}/backend && \
+            "mkdir -p ${{ secrets.SERVER_PATH }}/backend && \
              sudo chown -R \$(whoami) ${{ secrets.SERVER_PATH }}"
 
       - name: Deploy frontend (dist)
@@ -86,6 +80,7 @@ jobs:
       #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Deploy minesweeper client
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -106,6 +101,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/minesweeper/scripts/
 
       - name: Deploy minesweeper server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -116,6 +112,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/minesweeper/server/
 
       - name: Start minesweeper server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -136,6 +133,7 @@ jobs:
                pm2 save"
 
       - name: Configure nginx proxy for minesweeper WebSocket
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_minesweeper_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_minesweeper_proxy.py
@@ -149,6 +147,7 @@ jobs:
              || echo 'WARNING: nginx reload failed'"
 
       - name: Deploy snake client
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -163,6 +162,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/snake/
 
       - name: Deploy snake server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -173,6 +173,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/snake/server/
 
       - name: Start snake server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -193,6 +194,7 @@ jobs:
                pm2 save"
 
       - name: Deploy UNO client
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -211,6 +213,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/uno/
 
       - name: Deploy UNO server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -221,6 +224,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/uno/server/
 
       - name: Start UNO server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -241,6 +245,7 @@ jobs:
                pm2 save"
 
       - name: Configure nginx proxy for UNO WebSocket
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_uno_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_uno_proxy.py
@@ -254,6 +259,7 @@ jobs:
              || echo 'WARNING: nginx reload failed'"
 
       - name: Deploy dice client
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -268,6 +274,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/
 
       - name: Deploy dice server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -278,6 +285,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/dice/server/
 
       - name: Start dice server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -298,6 +306,7 @@ jobs:
                pm2 save"
 
       - name: Configure nginx proxy for dice WebSocket
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_dice_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_dice_proxy.py
@@ -311,6 +320,7 @@ jobs:
              || echo 'WARNING: nginx reload failed'"
 
       - name: Configure nginx proxy for snake WebSocket
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_snake_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_snake_proxy.py
@@ -329,6 +339,7 @@ jobs:
              || echo 'WARNING: nginx reload failed'"
 
       - name: Deploy billiards client
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -343,6 +354,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/
 
       - name: Deploy billiards server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -353,6 +365,7 @@ jobs:
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/games/billiards/server/
 
       - name: Start billiards server
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 3
@@ -373,6 +386,7 @@ jobs:
                pm2 save"
 
       - name: Register PM2 with systemd (auto-start on reboot)
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "export NVM_DIR=\$HOME/.nvm && . \$NVM_DIR/nvm.sh && \
@@ -382,6 +396,7 @@ jobs:
              echo 'PM2 startup registered, process list saved'"
 
       - name: Configure nginx proxy for billiards WebSocket
+        if: ${{ env.DEPLOY_GAMES == 'true' }}
         run: |
           scp -i ~/.ssh/id_rsa scripts/nginx_add_billiards_proxy.py \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/nginx_add_billiards_proxy.py
