@@ -54,7 +54,7 @@
 [data-theme="pear"] .pear-film-wash {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(10, 13, 10, .17) 0%, rgba(10, 13, 10, .36) 55%, rgba(232, 230, 222, .95) 88%, var(--pear-paper) 100%);
+  background: linear-gradient(180deg, rgba(10, 13, 10, .14) 0%, rgba(10, 13, 10, .3) 54%, rgba(232, 230, 222, .28) 100%);
 }
 
 [data-theme="pear"] .pear-film-grain {
@@ -176,7 +176,7 @@
 [data-theme="pear"] .tab-content {
   position: relative;
   padding: clamp(52px, 7vw, 110px) clamp(18px, 4vw, 72px) clamp(56px, 8vw, 130px);
-  background: var(--pear-paper);
+  background: transparent;
   border-left: 1px solid var(--pear-rule);
   border-right: 1px solid var(--pear-rule);
 }
@@ -185,8 +185,10 @@
   content: 'INDEED / ARCHIVE / SELECTED TITLES';
   display: block;
   margin: 0 0 clamp(25px, 4vw, 58px);
-  padding-bottom: 13px;
+  padding: 15px 18px 13px;
   border-bottom: 1px solid var(--pear-ink);
+  background: rgba(232, 230, 222, .86);
+  backdrop-filter: blur(4px);
   font: 400 clamp(9px, .7vw, 12px)/1 'Pear Mono', monospace;
   letter-spacing: .16em;
   color: var(--pear-ink);
@@ -195,8 +197,49 @@
 [data-theme="pear"] .online-games-section,
 [data-theme="pear"] .steam-recommendations {
   margin-bottom: clamp(52px, 7vw, 96px);
+  padding: clamp(18px, 2.4vw, 32px);
+  background: rgba(232, 230, 222, .84);
+  backdrop-filter: blur(4px);
   color: var(--pear-ink);
 }
+
+/* Hidden in every other theme.  In Pear it is a full-width breathing space for the film. */
+.pear-film-break { display: none; }
+
+[data-theme="pear"] .pear-film-break {
+  min-height: clamp(300px, 52vh, 640px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: clamp(56px, 8vw, 120px) calc(-1 * clamp(18px, 4vw, 72px));
+  padding: clamp(22px, 4vw, 64px);
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, .68);
+  border-bottom: 1px solid rgba(255, 255, 255, .68);
+  color: #f8f6ef;
+  background: linear-gradient(180deg, rgba(11, 13, 10, .04) 12%, rgba(11, 13, 10, .58) 100%);
+  text-shadow: 0 1px 18px rgba(0, 0, 0, .55);
+}
+
+[data-theme="pear"] .pear-film-break::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 33.333%, rgba(255,255,255,.28) calc(33.333% + 1px), transparent calc(33.333% + 1px), transparent 66.666%, rgba(255,255,255,.28) calc(66.666% + 1px), transparent calc(66.666% + 1px));
+}
+
+[data-theme="pear"] .pear-film-break-index,
+[data-theme="pear"] .pear-film-break-copy {
+  position: relative;
+  z-index: 1;
+  font: 400 clamp(9px, .72vw, 12px)/1.35 'Pear Mono', monospace;
+  letter-spacing: .17em;
+}
+
+[data-theme="pear"] .pear-film-break-copy { color: rgba(248, 246, 239, .78); }
 
 [data-theme="pear"] .online-games-title,
 [data-theme="pear"] .steam-rec-title {
@@ -267,7 +310,7 @@
 [data-theme="pear"] .status-badge { border-radius: 2px !important; background: var(--pear-paper) !important; color: var(--pear-ink) !important; border: 1px solid var(--pear-rule) !important; font-family: 'Pear Mono', monospace !important; }
 [data-theme="pear"] .steam-card-link { color: var(--pear-ink) !important; background: var(--pear-paper) !important; border-color: var(--pear-rule) !important; }
 
-[data-theme="pear"] #tab-news { background: var(--pear-paper); color: var(--pear-ink); }
+[data-theme="pear"] #tab-news { background: rgba(232, 230, 222, .94); color: var(--pear-ink); }
 [data-theme="pear"] .news-list { border-top: 1px solid var(--pear-rule); }
 [data-theme="pear"] .news-item { border-radius: 0 !important; border-color: var(--pear-rule) !important; background: transparent !important; color: var(--pear-ink) !important; }
 [data-theme="pear"] .news-title { color: var(--pear-ink) !important; font-family: 'Pear Display', Georgia, serif !important; }
@@ -311,6 +354,13 @@
   [data-theme="pear"] .nav-tabs { margin-left: 20px !important; }
   [data-theme="pear"] .nav-tab { min-width: 120px; }
   [data-theme="pear"] .tab-content { padding: 44px 15px 72px; }
+  [data-theme="pear"] .online-games-section,
+  [data-theme="pear"] .steam-recommendations { padding: 18px; }
+  [data-theme="pear"] .pear-film-break {
+    min-height: 38vh;
+    margin: 48px -15px;
+    padding: 22px 20px;
+  }
   [data-theme="pear"] .games-grid { grid-template-columns: 1fr; }
   [data-theme="pear"] .online-games-grid,
   [data-theme="pear"] .steam-rec-grid { grid-template-columns: 1fr; }
