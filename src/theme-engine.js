@@ -6,7 +6,7 @@
 import { initWebGL, destroyWebGL } from './webgl-bg.js';
 
 const LS_KEY = 'indeed-theme';
-const THEMES = ['nexus', 'classic', 'joypad', 'fallout'];
+const THEMES = ['nexus', 'classic', 'joypad', 'fallout', 'pear'];
 let threeLoaded = false;
 
 function loadThreeJS() {
@@ -91,6 +91,82 @@ function deactivateFallout() {
   if (_foPipboy)    { _foPipboy.remove();   _foPipboy = null; }
   if (_foGlitchTid) { clearTimeout(_foGlitchTid); _foGlitchTid = null; }
 }
+
+// ===== Pear film stage =====
+// 视频仅在 Pear 主题下挂载，按滚动位置切换，避免首屏同时下载所有片段。
+const PEAR_FILMS = [
+  { src: './pear/films/colossus.mp4', poster: './pear/films/colossus-poster.jpg' },
+  { src: './pear/films/signal.mp4', poster: './pear/films/signal-poster.jpg' },
+  { src: './pear/films/reveal.mp4', poster: './pear/films/reveal-poster.jpg' },
+];
+let _pearStage = null;
+let _pearVideo = null;
+let _pearFilmIndex = -1;
+let _pearScrollHandler = null;
+let _pearVisibilityHandler = null;
+
+function _setPearFilm(index) {
+  if (!_pearStage || !_pearVideo || index === _pearFilmIndex) return;
+  _pearFilmIndex = index;
+  const film = PEAR_FILMS[index];
+  _pearStage.style.setProperty('--pear-poster', `url("${film.poster}")`);
+  _pearVideo.poster = film.poster;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  _pearVideo.src = film.src;
+  _pearVideo.load();
+  _pearVideo.play().catch(() => {
+    // 浏览器低电量/自动播放策略下保留 poster 作为视觉回退。
+  });
+}
+
+function activatePear() {
+  if (_pearStage) return;
+
+  const stage = document.createElement('div');
+  stage.id = 'pear-film-stage';
+  stage.setAttribute('aria-hidden', 'true');
+  stage.innerHTML = '<video class="pear-film" muted playsinline loop preload="metadata"></video><div class="pear-film-wash"></div><div class="pear-film-grain"></div>';
+  document.body.insertBefore(stage, document.body.firstChild);
+
+  _pearStage = stage;
+  _pearVideo = stage.querySelector('video');
+  _pearFilmIndex = -1;
+
+  const updateFilm = () => {
+    const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    const progress = Math.min(0.999, window.scrollY / maxScroll);
+    _setPearFilm(Math.min(PEAR_FILMS.length - 1, Math.floor(progress * PEAR_FILMS.length)));
+  };
+  _pearScrollHandler = updateFilm;
+  window.addEventListener('scroll', updateFilm, { passive: true });
+
+  _pearVisibilityHandler = () => {
+    if (!_pearVideo || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (document.hidden) _pearVideo.pause();
+    else _pearVideo.play().catch(() => {});
+  };
+  document.addEventListener('visibilitychange', _pearVisibilityHandler);
+  updateFilm();
+}
+
+function deactivatePear() {
+  if (_pearScrollHandler) window.removeEventListener('scroll', _pearScrollHandler);
+  if (_pearVisibilityHandler) document.removeEventListener('visibilitychange', _pearVisibilityHandler);
+  if (_pearVideo) {
+    _pearVideo.pause();
+    _pearVideo.removeAttribute('src');
+    _pearVideo.load();
+  }
+  if (_pearStage) _pearStage.remove();
+  _pearStage = null;
+  _pearVideo = null;
+  _pearFilmIndex = -1;
+  _pearScrollHandler = null;
+  _pearVisibilityHandler = null;
+}
+// ============================
 
 function _startFoBg() {
   if (_foBgCanvas) return;
@@ -227,9 +303,11 @@ export function switchTheme(name) {
 
   destroyWebGL();
   deactivateFallout();
+  deactivatePear();
 
   if (name === 'nexus')   activateWebGL();
   if (name === 'fallout') activateFallout();
+  if (name === 'pear')    activatePear();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === name);
@@ -237,17 +315,22 @@ export function switchTheme(name) {
 }
 
 export function initTheme() {
+  const initialTheme = document.body.getAttribute('data-theme');
   const saved = localStorage.getItem(LS_KEY);
   const theme = THEMES.includes(saved) ? saved : 'nexus';
   document.body.setAttribute('data-theme', theme);
 
   if (theme === 'nexus')   activateWebGL();
   if (theme === 'fallout') activateFallout();
+  if (theme === 'pear')    activatePear();
 
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
     btn.addEventListener('click', () => switchTheme(btn.dataset.theme));
   });
+
+  // HTML 默认以 Nexus 结构首屏渲染；恢复到其他保存主题时需重绘对应卡片。
+  if (theme !== initialTheme && typeof window.loadGames === 'function') window.loadGames();
 }
 
 window.switchTheme = switchTheme;
