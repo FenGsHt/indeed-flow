@@ -101,6 +101,8 @@ const PEAR_FILMS = [
 ];
 let _pearStage = null;
 let _pearVideo = null;
+let _pearVideos = [];
+let _pearActiveVideoIndex = 0;
 let _pearFilmIndex = -1;
 let _pearScrollHandler = null;
 let _pearVisibilityHandler = null;
@@ -129,15 +131,28 @@ function _setPearFilm(index) {
   _pearFilmIndex = index;
   const film = PEAR_FILMS[index];
   _pearStage.style.setProperty('--pear-poster', `url("${film.poster}")`);
-  _pearVideo.poster = film.poster;
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  _pearVideo.src = film.src;
-  _pearVideo.load();
-  _pearVideo.play().catch(() => {
-    // 浏览器低电量/自动播放策略下保留 poster 作为视觉回退。
-  });
+  // 下一段先在隐藏图层就绪，再与当前画面交叉淡入淡出，避免直接替换 src 的闪跳。
+  const isFirstFilm = _pearFilmIndex === 0 && !_pearVideos.some(video => video.src);
+  const nextIndex = isFirstFilm ? 0 : 1 - _pearActiveVideoIndex;
+  const nextVideo = _pearVideos[nextIndex];
+  const currentVideo = _pearVideos[_pearActiveVideoIndex];
+  if (!nextVideo) return;
+
+  nextVideo.poster = film.poster;
+  nextVideo.src = film.src;
+  nextVideo.load();
+  nextVideo.addEventListener('canplay', () => {
+    nextVideo.play().catch(() => {
+      // 浏览器低电量/自动播放策略下，保留海报与上一段画面作为视觉回退。
+    });
+    nextVideo.classList.add('is-visible');
+    if (currentVideo && currentVideo !== nextVideo) currentVideo.classList.remove('is-visible');
+    _pearActiveVideoIndex = nextIndex;
+    _pearVideo = nextVideo;
+  }, { once: true });
 }
 
 function activatePear() {
@@ -146,11 +161,13 @@ function activatePear() {
   const stage = document.createElement('div');
   stage.id = 'pear-film-stage';
   stage.setAttribute('aria-hidden', 'true');
-  stage.innerHTML = '<video class="pear-film" muted playsinline loop preload="metadata"></video><div class="pear-film-wash"></div><div class="pear-film-grain"></div>';
+  stage.innerHTML = '<video class="pear-film" muted playsinline loop preload="metadata"></video><video class="pear-film" muted playsinline loop preload="metadata"></video><div class="pear-film-wash"></div><div class="pear-film-grain"></div>';
   document.body.insertBefore(stage, document.body.firstChild);
 
   _pearStage = stage;
-  _pearVideo = stage.querySelector('video');
+  _pearVideos = [...stage.querySelectorAll('video')];
+  _pearVideo = _pearVideos[0];
+  _pearActiveVideoIndex = 0;
   _pearFilmIndex = -1;
 
   const updateFilm = () => {
@@ -166,8 +183,8 @@ function activatePear() {
   window.addEventListener('scroll', updateFilm, { passive: true });
 
   _pearVisibilityHandler = () => {
-    if (!_pearVideo || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (document.hidden) _pearVideo.pause();
+    if (!_pearVideos.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (document.hidden) _pearVideos.forEach(video => video.pause());
     else _pearVideo.play().catch(() => {});
   };
   document.addEventListener('visibilitychange', _pearVisibilityHandler);
@@ -177,14 +194,16 @@ function activatePear() {
 function deactivatePear() {
   if (_pearScrollHandler) window.removeEventListener('scroll', _pearScrollHandler);
   if (_pearVisibilityHandler) document.removeEventListener('visibilitychange', _pearVisibilityHandler);
-  if (_pearVideo) {
-    _pearVideo.pause();
-    _pearVideo.removeAttribute('src');
-    _pearVideo.load();
-  }
+  _pearVideos.forEach(video => {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  });
   if (_pearStage) _pearStage.remove();
   _pearStage = null;
   _pearVideo = null;
+  _pearVideos = [];
+  _pearActiveVideoIndex = 0;
   _pearFilmIndex = -1;
   _pearScrollHandler = null;
   _pearVisibilityHandler = null;
