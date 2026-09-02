@@ -43,19 +43,6 @@
   background: #252a21 var(--pear-poster) center / cover no-repeat;
 }
 
-/* The film becomes a real content layer inside the editorial interlude. */
-[data-theme="pear"] .pear-film-break > #pear-film-stage[data-inline="true"] {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  animation: pear-film-arrive .72s cubic-bezier(.2, .75, .2, 1) both;
-}
-
-@keyframes pear-film-arrive {
-  from { opacity: .2; clip-path: inset(7% 5% 7% 5%); transform: scale(.975); }
-  to { opacity: 1; clip-path: inset(0); transform: scale(1); }
-}
-
 [data-theme="pear"] .pear-film {
   position: absolute;
   inset: 0;
@@ -195,7 +182,7 @@
 [data-theme="pear"] .tab-content {
   position: relative;
   padding: clamp(52px, 7vw, 110px) clamp(18px, 4vw, 72px) clamp(56px, 8vw, 130px);
-  background: transparent;
+  background: rgba(232, 230, 222, .62);
   border-left: 1px solid var(--pear-rule);
   border-right: 1px solid var(--pear-rule);
 }
@@ -206,7 +193,7 @@
   margin: 0 0 clamp(25px, 4vw, 58px);
   padding: 15px 18px 13px;
   border-bottom: 1px solid var(--pear-ink);
-  background: rgba(232, 230, 222, .86);
+  background: rgba(232, 230, 222, .62);
   backdrop-filter: blur(4px);
   font: 400 clamp(9px, .7vw, 12px)/1 'Pear Mono', monospace;
   letter-spacing: .16em;
@@ -217,7 +204,7 @@
 [data-theme="pear"] .steam-recommendations {
   margin-bottom: clamp(52px, 7vw, 96px);
   padding: clamp(18px, 2.4vw, 32px);
-  background: rgba(232, 230, 222, .84);
+  background: rgba(232, 230, 222, .62);
   backdrop-filter: blur(4px);
   color: var(--pear-ink);
 }
@@ -238,9 +225,9 @@
   overflow: hidden;
   border-top: 1px solid rgba(255, 255, 255, .68);
   border-bottom: 1px solid rgba(255, 255, 255, .68);
-  color: #f8f6ef;
-  background: #252a21;
-  text-shadow: 0 1px 18px rgba(0, 0, 0, .55);
+  color: var(--pear-ink);
+  background: rgba(232, 230, 222, .62);
+  text-shadow: 0 1px 12px rgba(255, 255, 255, .5);
 }
 
 [data-theme="pear"] .pear-film-break::before {
@@ -249,16 +236,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent 33.333%, rgba(255,255,255,.28) calc(33.333% + 1px), transparent calc(33.333% + 1px), transparent 66.666%, rgba(255,255,255,.28) calc(66.666% + 1px), transparent calc(66.666% + 1px));
-}
-
-[data-theme="pear"] .pear-film-break::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(11, 13, 10, .03) 20%, rgba(11, 13, 10, .58) 100%);
+  background: linear-gradient(90deg, transparent 33.333%, rgba(29,28,25,.18) calc(33.333% + 1px), transparent calc(33.333% + 1px), transparent 66.666%, rgba(29,28,25,.18) calc(66.666% + 1px), transparent calc(66.666% + 1px));
 }
 
 [data-theme="pear"] .pear-film-break-index,
@@ -269,7 +247,7 @@
   letter-spacing: .17em;
 }
 
-[data-theme="pear"] .pear-film-break-copy { color: rgba(248, 246, 239, .78); }
+[data-theme="pear"] .pear-film-break-copy { color: var(--pear-muted); }
 
 [data-theme="pear"] .online-games-title,
 [data-theme="pear"] .steam-rec-title {
@@ -340,7 +318,7 @@
 [data-theme="pear"] .status-badge { border-radius: 2px !important; background: var(--pear-paper) !important; color: var(--pear-ink) !important; border: 1px solid var(--pear-rule) !important; font-family: 'Pear Mono', monospace !important; }
 [data-theme="pear"] .steam-card-link { color: var(--pear-ink) !important; background: var(--pear-paper) !important; border-color: var(--pear-rule) !important; }
 
-[data-theme="pear"] #tab-news { background: rgba(232, 230, 222, .94); color: var(--pear-ink); }
+[data-theme="pear"] #tab-news { background: rgba(232, 230, 222, .62); color: var(--pear-ink); }
 [data-theme="pear"] .news-list { border-top: 1px solid var(--pear-rule); }
 [data-theme="pear"] .news-item { border-radius: 0 !important; border-color: var(--pear-rule) !important; background: transparent !important; color: var(--pear-ink) !important; }
 [data-theme="pear"] .news-title { color: var(--pear-ink) !important; font-family: 'Pear Display', Georgia, serif !important; }

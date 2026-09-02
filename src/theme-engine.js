@@ -107,25 +107,6 @@ let _pearFilmIndex = -1;
 let _pearScrollHandler = null;
 let _pearVisibilityHandler = null;
 
-// 影片窗口进入视口时，把同一个 video 节点移入内容流，而不是只透过背景层显示。
-function _setPearFilmPlacement(inline) {
-  if (!_pearStage) return;
-  const inlineHost = document.querySelector('.pear-film-break');
-
-  if (inline && inlineHost) {
-    if (_pearStage.parentElement !== inlineHost) {
-      inlineHost.prepend(_pearStage);
-      _pearStage.dataset.inline = 'true';
-    }
-    return;
-  }
-
-  if (_pearStage.parentElement !== document.body) {
-    _pearStage.removeAttribute('data-inline');
-    document.body.insertBefore(_pearStage, document.body.firstChild);
-  }
-}
-
 function _setPearFilm(index) {
   if (!_pearStage || !_pearVideo || index === _pearFilmIndex) return;
   _pearFilmIndex = index;
@@ -174,10 +155,6 @@ function activatePear() {
     const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
     const progress = Math.min(0.999, window.scrollY / maxScroll);
     _setPearFilm(Math.min(PEAR_FILMS.length - 1, Math.floor(progress * PEAR_FILMS.length)));
-
-    const filmBreak = document.querySelector('.pear-film-break');
-    const bounds = filmBreak?.getBoundingClientRect();
-    _setPearFilmPlacement(Boolean(bounds && bounds.top < window.innerHeight && bounds.bottom > 0));
   };
   _pearScrollHandler = updateFilm;
   window.addEventListener('scroll', updateFilm, { passive: true });
