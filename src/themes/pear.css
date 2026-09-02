@@ -131,7 +131,7 @@
   max-width: 9ch;
   margin: 0 0 .18em clamp(22px, 4vw, 72px);
   color: inherit;
-  font: 300 clamp(74px, 13.8vw, 220px)/.76 'Pear Display', Georgia, serif;
+  font: 300 clamp(62px, 10.5vw, 164px)/.8 'Pear Display', Georgia, serif;
   letter-spacing: -.07em;
   text-align: left;
   text-shadow: 0 2px 24px rgba(0,0,0,.24);
@@ -201,7 +201,7 @@
 [data-theme="pear"] .online-games-title,
 [data-theme="pear"] .steam-rec-title {
   color: var(--pear-ink);
-  font: 300 clamp(34px, 4vw, 68px)/.95 'Pear Display', Georgia, serif;
+  font: 300 clamp(29px, 3.35vw, 52px)/.98 'Pear Display', Georgia, serif;
   letter-spacing: -.04em;
 }
 
@@ -238,14 +238,14 @@
 
 [data-theme="pear"] .games-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   border-top: 1px solid var(--pear-rule);
   border-left: 1px solid var(--pear-rule);
 }
 
 [data-theme="pear"] .game-card {
-  min-height: 450px;
+  min-height: 390px;
   border: 0 !important;
   border-right: 1px solid var(--pear-rule) !important;
   border-bottom: 1px solid var(--pear-rule) !important;
@@ -258,11 +258,11 @@
 }
 
 [data-theme="pear"] .game-card:hover { background: #f8f6ee !important; transform: none !important; }
-[data-theme="pear"] .game-cover { height: clamp(210px, 23vw, 340px) !important; border-radius: 0 !important; background: #c6c7ba !important; }
+[data-theme="pear"] .game-cover { height: clamp(180px, 18vw, 280px) !important; border-radius: 0 !important; background: #c6c7ba !important; }
 [data-theme="pear"] .game-cover img { filter: grayscale(1) contrast(1.04); transition: filter .45s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
 [data-theme="pear"] .game-card:hover .game-cover img { filter: grayscale(.12) contrast(1.02); transform: scale(1.035); }
 [data-theme="pear"] .game-info { padding: 18px 20px 22px !important; }
-[data-theme="pear"] .game-name { color: var(--pear-ink) !important; font: 300 clamp(26px, 2.5vw, 42px)/.95 'Pear Display', Georgia, serif !important; letter-spacing: -.04em !important; }
+[data-theme="pear"] .game-name { color: var(--pear-ink) !important; font: 300 clamp(22px, 1.85vw, 32px)/1 'Pear Display', Georgia, serif !important; letter-spacing: -.035em !important; }
 [data-theme="pear"] .game-meta { color: var(--pear-muted) !important; font-family: 'Pear Mono', monospace !important; }
 [data-theme="pear"] .status-badge { border-radius: 2px !important; background: var(--pear-paper) !important; color: var(--pear-ink) !important; border: 1px solid var(--pear-rule) !important; font-family: 'Pear Mono', monospace !important; }
 [data-theme="pear"] .steam-card-link { color: var(--pear-ink) !important; background: var(--pear-paper) !important; border-color: var(--pear-rule) !important; }
@@ -298,11 +298,15 @@
 [data-theme="pear"] .btn-primary { background: var(--pear-ink); color: var(--pear-paper); border-radius: 2px; }
 [data-theme="pear"] .btn-secondary { background: transparent; color: var(--pear-ink); border: 1px solid var(--pear-ink); border-radius: 2px; }
 
+@media (max-width: 1050px) {
+  [data-theme="pear"] .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 760px) {
   [data-theme="pear"] .main-content { width: calc(100% - 30px); }
   [data-theme="pear"] .classic-header { min-height: 78vh; }
   [data-theme="pear"] .classic-header::before { background: none; }
-  [data-theme="pear"] .classic-header .logo { margin-left: 20px; font-size: clamp(72px, 22vw, 118px); }
+  [data-theme="pear"] .classic-header .logo { margin-left: 20px; font-size: clamp(58px, 18vw, 88px); }
   [data-theme="pear"] .classic-header .slogan,
   [data-theme="pear"] .nav-tabs { margin-left: 20px !important; }
   [data-theme="pear"] .nav-tab { min-width: 120px; }
