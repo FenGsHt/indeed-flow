@@ -780,12 +780,12 @@
           if (isNexus) {
             const statusLabels = {todo: 'Queued', playing: 'Active', completed: 'Cleared'};
             const statusLabel = statusLabels[status] || 'Queued';
-            const initialSrc = knownAppid
+            // 手工/接口保存的有效封面优先，Steam header 只作为没有封面时的兜底。
+            // 部分 Steam 新游戏没有旧 CDN 的 header.jpg，不能让它覆盖已有封面。
+            const initialSrc = savedImage || (knownAppid
               ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
-              : savedImage;
-            const fallbackSrc = savedImage
-              ? ` onerror="this.onerror=null;this.src='${savedImage}'"`
-              : ' onerror="this.onerror=null;this.style.display=\'none\'"';
+              : '');
+            const fallbackSrc = ' onerror="this.onerror=null;this.style.display=\'none\'"';
             const coverImg = initialSrc
               ? `<img class="cover-slide active" src="${initialSrc}" loading="lazy" alt="${g.name}"${fallbackSrc}>`
               : `<div class="cover-gradient" style="background:${gradient}"></div>`;
@@ -822,12 +822,10 @@
           const statusMap = {todo: '📋 待玩', playing: '🎮 游玩中', completed: '✅ 已完'};
           const statusIcon = statusMap[status] || '📋 待玩';
           let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
-          const classicInitialSrc = knownAppid
+          const classicInitialSrc = savedImage || (knownAppid
             ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
-            : savedImage;
-          const classicFallback = savedImage
-            ? ` onerror="this.onerror=null;this.src='${savedImage}'"`
-            : ' onerror="this.onerror=null;this.style.display=\'none\'"';
+            : '');
+          const classicFallback = ' onerror="this.onerror=null;this.style.display=\'none\'"';
           const classicCoverInner = classicInitialSrc
             ? `<img class="cover-slide active" src="${classicInitialSrc}" loading="lazy" alt="${g.name}"${classicFallback}>`
             : `<div class="cover-gradient" style="background:${gradient}"></div>`;
