@@ -752,6 +752,14 @@
         // Steam 评分会异步加载并更新
         const gamesWithRatings = games.map(g => ({ ...g, steamRating: null }));
 
+        // 数据库里旧记录偶尔会把简介等普通文本写进 image 字段。只允许可显示的图片来源，
+        // 避免浏览器将游戏标题/简介当成相对路径反复请求并刷出 404。
+        const validImageSource = (value) => {
+          if (typeof value !== 'string') return '';
+          const source = value.trim();
+          return /^(data:image\/|https?:\/\/|\/|\.\/|\.\.\/)/i.test(source) ? source : '';
+        };
+
         // 2026-03-20: 检测当前主题
         const isNexus = document.body.getAttribute('data-theme') === 'nexus';
 
@@ -764,6 +772,7 @@
           const status = g.status || 'todo';
           const recommenderText = g.recommender ? `👤 ${g.recommender}` : (g.created_by || 'Anonymous');
           const knownAppid = extractAppId(g.source || g.url) || g.steam_appid || '';
+          const savedImage = validImageSource(g.image);
           const steamCardBtn = knownAppid
             ? `<a class="steam-card-link" href="https://store.steampowered.com/app/${knownAppid}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Steam</a>`
             : `<a class="steam-card-link" style="display:none" data-pending-steam></a>`;
@@ -773,8 +782,10 @@
             const statusLabel = statusLabels[status] || 'Queued';
             const initialSrc = knownAppid
               ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
-              : g.image || '';
-            const fallbackSrc = g.image ? ` onerror="if(this.src!=='${g.image}')this.src='${g.image}'"` : '';
+              : savedImage;
+            const fallbackSrc = savedImage
+              ? ` onerror="this.onerror=null;this.src='${savedImage}'"`
+              : ' onerror="this.onerror=null;this.style.display=\'none\'"';
             const coverImg = initialSrc
               ? `<img class="cover-slide active" src="${initialSrc}" loading="lazy" alt="${g.name}"${fallbackSrc}>`
               : `<div class="cover-gradient" style="background:${gradient}"></div>`;
@@ -813,8 +824,10 @@
           let ratingHtml = `<span class="rating-loading" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;"></span>`;
           const classicInitialSrc = knownAppid
             ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${knownAppid}/header.jpg`
-            : g.image || '';
-          const classicFallback = g.image ? ` onerror="if(this.src!=='${g.image}')this.src='${g.image}'"` : '';
+            : savedImage;
+          const classicFallback = savedImage
+            ? ` onerror="this.onerror=null;this.src='${savedImage}'"`
+            : ' onerror="this.onerror=null;this.style.display=\'none\'"';
           const classicCoverInner = classicInitialSrc
             ? `<img class="cover-slide active" src="${classicInitialSrc}" loading="lazy" alt="${g.name}"${classicFallback}>`
             : `<div class="cover-gradient" style="background:${gradient}"></div>`;
