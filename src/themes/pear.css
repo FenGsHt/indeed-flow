@@ -273,13 +273,13 @@
   border-bottom: 1px solid var(--pear-rule) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  background: transparent !important;
+  background: rgba(248, 246, 238, .9) !important;
   color: var(--pear-ink) !important;
   transition: background .3s ease !important;
 }
 
 [data-theme="pear"] .online-game-card:hover,
-[data-theme="pear"] .steam-rec-card:hover { background: rgba(167,183,120,.18) !important; transform: none !important; }
+[data-theme="pear"] .steam-rec-card:hover { background: rgba(225, 232, 201, .94) !important; transform: none !important; }
 [data-theme="pear"] .online-game-card .game-card-icon { display: none; }
 [data-theme="pear"] .online-game-card .game-card-name,
 [data-theme="pear"] .steam-rec-card .game-name { color: var(--pear-ink) !important; font: 400 12px/1.2 'Pear Mono', monospace; letter-spacing: .08em; }
