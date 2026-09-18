@@ -182,7 +182,7 @@
 [data-theme="pear"] .tab-content {
   position: relative;
   padding: clamp(52px, 7vw, 110px) clamp(18px, 4vw, 72px) clamp(56px, 8vw, 130px);
-  background: rgba(232, 230, 222, .62);
+  background: transparent;
   border-left: 1px solid var(--pear-rule);
   border-right: 1px solid var(--pear-rule);
 }
@@ -193,8 +193,7 @@
   margin: 0 0 clamp(25px, 4vw, 58px);
   padding: 15px 18px 13px;
   border-bottom: 1px solid var(--pear-ink);
-  background: rgba(232, 230, 222, .62);
-  backdrop-filter: blur(4px);
+  background: transparent;
   font: 400 clamp(9px, .7vw, 12px)/1 'Pear Mono', monospace;
   letter-spacing: .16em;
   color: var(--pear-ink);
@@ -204,8 +203,7 @@
 [data-theme="pear"] .steam-recommendations {
   margin-bottom: clamp(52px, 7vw, 96px);
   padding: clamp(18px, 2.4vw, 32px);
-  background: rgba(232, 230, 222, .62);
-  backdrop-filter: blur(4px);
+  background: transparent;
   color: var(--pear-ink);
 }
 
@@ -226,7 +224,7 @@
   border-top: 1px solid rgba(255, 255, 255, .68);
   border-bottom: 1px solid rgba(255, 255, 255, .68);
   color: var(--pear-ink);
-  background: rgba(232, 230, 222, .62);
+  background: transparent;
   text-shadow: 0 1px 12px rgba(255, 255, 255, .5);
 }
 
